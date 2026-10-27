@@ -10,7 +10,7 @@ export default defineConfig({
     // One database per worktree, but files still share it; running files in
     // parallel would let one file's truncate wipe another's fixtures.
     fileParallelism: false,
-    include: ["tests/**/*.test.ts"],
+    include: ["tests/**/*.test.{ts,tsx}"],
   },
   resolve: {
     alias: {
