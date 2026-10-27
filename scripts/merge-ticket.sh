@@ -17,7 +17,7 @@ fi
 
 git merge --no-ff "$branch" -m "Merge $branch into $integration"
 
-if npm test && npm run typecheck && npm run build; then
+if npm test && npm run typecheck && npm run lint && npm run build; then
   echo "Merged $branch and verified."
 else
   echo "Verification failed; rolling back the merge." >&2
