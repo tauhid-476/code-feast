@@ -25,5 +25,9 @@ export async function joinAction(
   }
 
   // redirect() throws a control-flow error; keep it outside the try/catch.
-  redirect(`/e/${result.eventCode}`);
+  redirect(
+    result.eventStatus === "live"
+      ? `/e/${result.eventCode}/contest`
+      : `/e/${result.eventCode}`,
+  );
 }

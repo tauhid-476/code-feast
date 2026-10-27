@@ -8,9 +8,10 @@ export default function Forbidden() {
       <Card className="w-full max-w-md">
         <CardContent className="flex flex-col items-center gap-3 py-4 text-center">
           <p className="label">403 · Refused</p>
-          <h1 className="text-xl font-semibold">Not your surface</h1>
+          <h1 className="text-xl font-semibold">Not available to this account</h1>
           <p className="text-sm text-muted-foreground">
-            This account is not an organizer. Nothing here is available to you.
+            Organizers run events from the admin side and cannot join one.
+            Participants enter with a join code.
           </p>
           <Button className="mt-3" render={<Link href="/" />}>
             Go to your landing page
