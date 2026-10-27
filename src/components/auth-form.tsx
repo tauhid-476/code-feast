@@ -4,6 +4,15 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { authClient } from "@/lib/auth/client";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import {
+  Field,
+  FieldDescription,
+  FieldGroup,
+  FieldLabel,
+} from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
 
 type Mode = "sign-in" | "sign-up";
 
@@ -20,7 +29,11 @@ export function AuthForm({ mode }: { mode: Mode }) {
 
     const result =
       mode === "sign-up"
-        ? await authClient.signUp.email({ email, password, name: email.split("@")[0] })
+        ? await authClient.signUp.email({
+            email,
+            password,
+            name: email.split("@")[0],
+          })
         : await authClient.signIn.email({ email, password });
 
     if (result.error) {
@@ -36,68 +49,64 @@ export function AuthForm({ mode }: { mode: Mode }) {
   }
 
   return (
-    <form onSubmit={submit} className="flex flex-col gap-4">
-      <div className="flex flex-col gap-1.5">
-        <label className="label" htmlFor="email">
-          Email
-        </label>
-        <input
-          id="email"
-          className="input"
-          type="email"
-          autoComplete="email"
-          required
-          value={email}
-          onChange={(event) => setEmail(event.target.value)}
-        />
-      </div>
+    <form onSubmit={submit}>
+      <FieldGroup>
+        <Field>
+          <FieldLabel htmlFor="email">Email</FieldLabel>
+          <Input
+            id="email"
+            type="email"
+            autoComplete="email"
+            required
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+          />
+        </Field>
 
-      <div className="flex flex-col gap-1.5">
-        <label className="label" htmlFor="password">
-          Password
-        </label>
-        <input
-          id="password"
-          className="input"
-          type="password"
-          autoComplete={mode === "sign-up" ? "new-password" : "current-password"}
-          required
-          minLength={8}
-          value={password}
-          onChange={(event) => setPassword(event.target.value)}
-        />
-        {mode === "sign-up" ? (
-          <p className="text-xs text-faint">At least 8 characters.</p>
+        <Field>
+          <FieldLabel htmlFor="password">Password</FieldLabel>
+          <Input
+            id="password"
+            type="password"
+            autoComplete={mode === "sign-up" ? "new-password" : "current-password"}
+            required
+            minLength={8}
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+          />
+          {mode === "sign-up" ? (
+            <FieldDescription>At least 8 characters.</FieldDescription>
+          ) : null}
+        </Field>
+
+        {error ? (
+          <Alert variant="destructive">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
         ) : null}
-      </div>
 
-      {error ? (
-        <p className="banner banner-error" role="alert">
-          {error}
+        <Button type="submit" disabled={pending} className="w-full">
+          {mode === "sign-up" ? "Create account" : "Sign in"}
+        </Button>
+
+        <p className="text-center text-sm text-muted-foreground">
+          {mode === "sign-up" ? (
+            <>
+              Already registered?{" "}
+              <Link className="text-primary underline underline-offset-2" href="/sign-in">
+                Sign in
+              </Link>
+            </>
+          ) : (
+            <>
+              No account yet?{" "}
+              <Link className="text-primary underline underline-offset-2" href="/sign-up">
+                Register
+              </Link>
+            </>
+          )}
         </p>
-      ) : null}
-
-      <button className="btn btn-primary" type="submit" disabled={pending}>
-        {mode === "sign-up" ? "Create account" : "Sign in"}
-      </button>
-
-      <p className="text-center text-sm text-muted">
-        {mode === "sign-up" ? (
-          <>
-            Already registered?{" "}
-            <Link className="text-accent underline underline-offset-2" href="/sign-in">
-              Sign in
-            </Link>
-          </>
-        ) : (
-          <>
-            No account yet?{" "}
-            <Link className="text-accent underline underline-offset-2" href="/sign-up">
-              Register
-            </Link>
-          </>
-        )}
-      </p>
+      </FieldGroup>
     </form>
   );
 }

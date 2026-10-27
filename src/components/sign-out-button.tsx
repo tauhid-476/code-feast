@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { authClient } from "@/lib/auth/client";
+import { Button } from "@/components/ui/button";
 
 export function SignOutButton() {
   const router = useRouter();
@@ -16,8 +17,8 @@ export function SignOutButton() {
   }
 
   return (
-    <button className="btn btn-ghost" onClick={signOut} disabled={pending}>
+    <Button variant="ghost" size="sm" onClick={signOut} disabled={pending}>
       {pending ? "Signing out…" : "Sign out"}
-    </button>
+    </Button>
   );
 }

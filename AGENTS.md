@@ -64,6 +64,42 @@ not contain `_test`.
 7. **Secrets stay server-side.** Only `NEXT_PUBLIC_*` values reach the browser.
    `src/lib/env.ts` is the single place variables are read.
 
+## UI
+
+**Use shadcn components. Do not hand-roll UI primitives.** Everything in
+`src/components/ui/` is shadcn source and is the only allowed implementation of
+buttons, inputs, labels, cards, tables, badges, alerts, dialogs, selects, tabs,
+tooltips, separators, empty states, spinners, and toasts. If a component is
+missing, add it with the CLI instead of writing your own:
+
+```
+npx shadcn@latest add <component>
+```
+
+`components.json` is configured for Base UI (`base-nova`), the `cn` merge
+package, and `lucide-react`. Use the `render` prop for links, not `asChild`.
+
+**Before writing or reviewing any frontend code, load the `emil-design-eng`
+skill** (`skill` tool, id `emil-design-eng`) and apply its review checklist:
+exact transition properties, `ease-out` under 300ms, `:active` feedback, no
+`transition: all`, no `space-y-*`, `size-*` for equal dimensions, semantic color
+tokens only, and reduced-motion respect.
+
+House rules on top of shadcn:
+
+- The app is dark-only. Style with semantic tokens (`bg-card`,
+  `text-muted-foreground`, `border-border`, `text-primary`); never raw hex or
+  palette colors like `bg-zinc-800`.
+- Typography helpers that are not components live in `globals.css`: `.label`
+  for uppercase mono micro-labels, `.mono` for machine text, `.tabular` for
+  aligned numbers, `.prose-statement` for rendered Markdown.
+- Icons come from `lucide-react` and are passed as components, sized by the
+  component (`data-icon`), not with manual `size-4` classes inside a Button.
+- Feedback that is transient uses `toast()` from `sonner`; inline form failures
+  use `Alert variant="destructive"`.
+- Any new route should look like it belongs: same header rhythm, same spacing
+  scale, no gradients, no glass, no decorative motion.
+
 ## Testing
 
 Tests live at domain seams, against the real test database. Follow the `tdd`

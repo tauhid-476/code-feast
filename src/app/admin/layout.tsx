@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { SignOutButton } from "@/components/sign-out-button";
 import { requireOrganizer } from "@/lib/auth/guards";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
 
 export const dynamic = "force-dynamic";
 
@@ -9,19 +11,20 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
 
   return (
     <div className="flex flex-1 flex-col">
-      <header className="border-b border-line bg-surface/60">
-        <div className="mx-auto flex h-14 w-full max-w-6xl items-center gap-6 px-6">
+      <header className="border-b border-border bg-card/60">
+        <div className="mx-auto flex h-14 w-full max-w-6xl items-center gap-4 px-6">
           <Link href="/admin/events" className="flex items-baseline gap-2">
             <span className="text-sm font-semibold tracking-tight">Code Feast</span>
             <span className="label">Organizer</span>
           </Link>
-          <nav className="flex items-center gap-1 text-sm">
-            <Link className="btn btn-ghost" href="/admin/events">
+          <Separator orientation="vertical" className="h-4" />
+          <nav className="flex items-center gap-1">
+            <Button variant="ghost" size="sm" render={<Link href="/admin/events" />}>
               Events
-            </Link>
+            </Button>
           </nav>
           <div className="ml-auto flex items-center gap-3">
-            <span className="hidden text-xs text-faint sm:inline">
+            <span className="hidden text-xs text-muted-foreground sm:inline">
               {organizer.email}
             </span>
             <SignOutButton />

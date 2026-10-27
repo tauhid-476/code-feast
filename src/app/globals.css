@@ -1,44 +1,114 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
 
 /*
  * Code Feast visual language: an exam hall at night. Ink-dark surfaces, warm
  * paper text, one amber accent for the live clock, mono type for anything the
  * machine says. No gradients, no glass, no decoration that competes with code.
+ *
+ * The app is dark-only. shadcn's semantic tokens are mapped onto this palette,
+ * so `bg-background`, `text-muted-foreground`, `border-border`, and the rest of
+ * the shadcn component surface pick up the theme without per-component styling.
  */
 
 :root {
-  --bg: #0b0d0f;
-  --surface: #12161a;
-  --surface-2: #191e23;
-  --line: #262d34;
-  --line-strong: #39434d;
-  --text: #e9e4da;
-  --muted: #97a0aa;
-  --faint: #626c76;
-  --accent: #f2a33c;
-  --accent-ink: #1a1206;
-  --danger: #e5605f;
-  --danger-soft: #2a1517;
+  --background: #0b0d0f;
+  --foreground: #e9e4da;
+
+  --card: #12161a;
+  --card-foreground: #e9e4da;
+
+  --popover: #14181c;
+  --popover-foreground: #e9e4da;
+
+  --primary: #f2a33c;
+  --primary-foreground: #1a1206;
+
+  --secondary: #191e23;
+  --secondary-foreground: #e9e4da;
+
+  --muted: #191e23;
+  --muted-foreground: #97a0aa;
+
+  --accent: #1d2329;
+  --accent-foreground: #e9e4da;
+
+  --destructive: #e5605f;
+
+  --border: #262d34;
+  --input: #39434d;
+  --ring: #f2a33c;
+
   --success: #5cb87a;
-  --success-soft: #12251a;
+  --warning: #f0c674;
   --info: #6aa7d8;
+
+  --chart-1: #f2a33c;
+  --chart-2: #5cb87a;
+  --chart-3: #6aa7d8;
+  --chart-4: #e5605f;
+  --chart-5: #97a0aa;
+
+  --radius: 0.5rem;
+
+  --sidebar: #0f1316;
+  --sidebar-foreground: #e9e4da;
+  --sidebar-primary: #f2a33c;
+  --sidebar-primary-foreground: #1a1206;
+  --sidebar-accent: #191e23;
+  --sidebar-accent-foreground: #e9e4da;
+  --sidebar-border: #262d34;
+  --sidebar-ring: #f2a33c;
 }
 
 @theme inline {
-  --color-bg: var(--bg);
-  --color-surface: var(--surface);
-  --color-surface-2: var(--surface-2);
-  --color-line: var(--line);
-  --color-line-strong: var(--line-strong);
-  --color-text: var(--text);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
   --color-muted: var(--muted);
-  --color-faint: var(--faint);
+  --color-muted-foreground: var(--muted-foreground);
   --color-accent: var(--accent);
-  --color-accent-ink: var(--accent-ink);
-  --color-danger: var(--danger);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
   --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-info: var(--info);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --font-heading: var(--font-geist-sans);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
 }
 
 html {
@@ -48,30 +118,30 @@ html {
 body {
   background:
     radial-gradient(1200px 600px at 50% -10%, #171c21 0%, transparent 60%),
-    var(--bg);
-  color: var(--text);
+    var(--background);
+  color: var(--foreground);
   font-family: var(--font-geist-sans), system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 
 ::selection {
-  background: var(--accent);
-  color: var(--accent-ink);
+  background: var(--primary);
+  color: var(--primary-foreground);
 }
 
 :focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--ring);
   outline-offset: 2px;
 }
 
-/* ---------- primitives ---------- */
+/* ---------- typographic utilities ---------- */
 
 .label {
   font-family: var(--font-geist-mono), monospace;
   font-size: 0.6875rem;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--muted);
+  color: var(--muted-foreground);
 }
 
 .mono {
@@ -79,165 +149,14 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
-.card {
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: 0.5rem;
+.tabular {
+  font-variant-numeric: tabular-nums;
 }
 
-.input,
-.textarea,
-.select {
-  width: 100%;
-  background: var(--bg);
-  border: 1px solid var(--line-strong);
-  border-radius: 0.375rem;
-  padding: 0.55rem 0.7rem;
-  color: var(--text);
-  font-size: 0.9375rem;
-}
-
-.input:focus,
-.textarea:focus,
-.select:focus {
-  border-color: var(--accent);
-  outline: none;
-}
-
-.textarea {
-  font-family: var(--font-geist-mono), monospace;
-  font-size: 0.8125rem;
-  line-height: 1.55;
-  resize: vertical;
-}
-
-.btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.45rem;
-  border: 1px solid var(--line-strong);
-  background: var(--surface-2);
-  color: var(--text);
-  border-radius: 0.375rem;
-  padding: 0.5rem 0.9rem;
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition:
-    background 120ms ease,
-    border-color 120ms ease,
-    transform 80ms ease;
-  white-space: nowrap;
-}
-
-.btn:hover:not(:disabled) {
-  background: #20262c;
-  border-color: #4a5560;
-}
-
-.btn:active:not(:disabled) {
-  transform: translateY(1px);
-}
-
-.btn:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
-
-.btn-primary {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: var(--accent-ink);
-  font-weight: 600;
-}
-
-.btn-primary:hover:not(:disabled) {
-  background: #ffb54f;
-  border-color: #ffb54f;
-}
-
-.btn-danger {
-  border-color: #6b2a2c;
-  color: var(--danger);
-  background: var(--danger-soft);
-}
-
-.btn-ghost {
-  background: transparent;
-  border-color: transparent;
-  color: var(--muted);
-}
-
-.btn-ghost:hover:not(:disabled) {
-  background: var(--surface-2);
-  color: var(--text);
-}
-
-.banner {
-  border: 1px solid var(--line-strong);
-  border-radius: 0.375rem;
-  padding: 0.65rem 0.8rem;
-  font-size: 0.875rem;
-}
-
-.banner-error {
-  border-color: #6b2a2c;
-  background: var(--danger-soft);
-  color: #f0a3a2;
-}
-
-.banner-success {
-  border-color: #245434;
-  background: var(--success-soft);
-  color: #93d8a9;
-}
-
-.banner-warn {
-  border-color: #6b5220;
-  background: #241c0c;
-  color: #f0c674;
-}
-
-.pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-  border: 1px solid var(--line-strong);
-  border-radius: 999px;
-  padding: 0.1rem 0.55rem;
-  font-family: var(--font-geist-mono), monospace;
-  font-size: 0.6875rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--muted);
-}
-
-.pill-live {
-  border-color: #6b5220;
-  color: var(--accent);
-  background: #241c0c;
-}
-
-.pill-danger {
-  border-color: #6b2a2c;
-  color: var(--danger);
-  background: var(--danger-soft);
-}
-
-.pill-success {
-  border-color: #245434;
-  color: var(--success);
-  background: var(--success-soft);
-}
-
-.divider {
-  height: 1px;
-  background: var(--line);
-}
+/* ---------- markdown statement ---------- */
 
 .prose-statement {
-  color: var(--text);
+  color: var(--foreground);
   font-size: 0.9375rem;
   line-height: 1.7;
 }
@@ -280,15 +199,15 @@ body {
 .prose-statement code {
   font-family: var(--font-geist-mono), monospace;
   font-size: 0.85em;
-  background: var(--surface-2);
-  border: 1px solid var(--line);
+  background: var(--secondary);
+  border: 1px solid var(--border);
   border-radius: 0.25rem;
   padding: 0.1em 0.3em;
 }
 
 .prose-statement pre {
-  background: var(--bg);
-  border: 1px solid var(--line);
+  background: var(--background);
+  border: 1px solid var(--border);
   border-radius: 0.375rem;
   padding: 0.75rem;
   overflow-x: auto;
@@ -302,15 +221,15 @@ body {
 }
 
 .prose-statement a {
-  color: var(--accent);
+  color: var(--primary);
   text-decoration: underline;
   text-underline-offset: 2px;
 }
 
 .prose-statement blockquote {
-  border-left: 2px solid var(--line-strong);
+  border-left: 2px solid var(--border);
   padding-left: 0.8rem;
-  color: var(--muted);
+  color: var(--muted-foreground);
   margin: 0.8em 0;
 }
 
@@ -323,7 +242,7 @@ body {
 
 .prose-statement th,
 .prose-statement td {
-  border: 1px solid var(--line);
+  border: 1px solid var(--border);
   padding: 0.35rem 0.5rem;
   text-align: left;
 }

@@ -2,34 +2,42 @@
 
 import { useActionState } from "react";
 import { joinAction } from "@/app/join/actions";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
 
 export function JoinCodeForm() {
   const [state, formAction, pending] = useActionState(joinAction, null);
 
   return (
-    <form action={formAction} className="flex flex-col gap-3">
-      <label className="label" htmlFor="code">
-        Join code
-      </label>
-      <input
-        id="code"
-        name="code"
-        className="input mono text-center text-lg uppercase tracking-[0.4em]"
-        placeholder="ABC123"
-        autoComplete="off"
-        autoCapitalize="characters"
-        spellCheck={false}
-        maxLength={6}
-        required
-      />
-      {state?.error ? (
-        <p className="banner banner-error" role="alert">
-          {state.error}
-        </p>
-      ) : null}
-      <button className="btn btn-primary" type="submit" disabled={pending}>
-        {pending ? "Checking…" : "Enter event"}
-      </button>
+    <form action={formAction}>
+      <FieldGroup>
+        <Field>
+          <FieldLabel htmlFor="code">Join code</FieldLabel>
+          <Input
+            id="code"
+            name="code"
+            className="mono h-12 text-center text-lg tracking-[0.4em] uppercase"
+            placeholder="ABC123"
+            autoComplete="off"
+            autoCapitalize="characters"
+            spellCheck={false}
+            maxLength={6}
+            required
+          />
+        </Field>
+
+        {state?.error ? (
+          <Alert variant="destructive">
+            <AlertDescription>{state.error}</AlertDescription>
+          </Alert>
+        ) : null}
+
+        <Button type="submit" disabled={pending} className="w-full">
+          {pending ? "Checking…" : "Enter event"}
+        </Button>
+      </FieldGroup>
     </form>
   );
 }
