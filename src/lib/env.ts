@@ -37,6 +37,19 @@ export function isOrganizerEmail(email: string | null | undefined): boolean {
   return organizerEmails().includes(email.trim().toLowerCase());
 }
 
+/**
+ * E2B credentials are optional at import time: the app builds and the test
+ * suite runs without a key. The runner provider refuses only when it is asked
+ * to create or connect to a sandbox.
+ */
+export function e2bApiKey(): string | undefined {
+  return process.env.E2B_API_KEY || undefined;
+}
+
+export function e2bTemplateId(): string | undefined {
+  return process.env.E2B_TEMPLATE_ID || undefined;
+}
+
 export const LANGUAGES = ["python", "java", "cpp"] as const;
 export type Language = (typeof LANGUAGES)[number];
 
