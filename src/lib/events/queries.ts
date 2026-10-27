@@ -1,4 +1,4 @@
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq, ne } from "drizzle-orm";
 import { getDb } from "@/lib/db/client";
 import { events } from "@/lib/db/schema";
 
@@ -32,4 +32,31 @@ export async function listOrganizerEvents(
     .from(events)
     .where(eq(events.createdBy, organizerId))
     .orderBy(desc(events.createdAt));
+}
+
+/**
+ * Resolves a Join Code to the event it grants entry to. Ended events no longer
+ * resolve, which is also what makes a regenerated code stop working at once.
+ */
+export async function findEventByJoinCode(
+  code: string,
+): Promise<EventSummary | null> {
+  const normalized = code.trim().toUpperCase();
+  if (!normalized) return null;
+
+  const [row] = await getDb()
+    .select({
+      id: events.id,
+      title: events.title,
+      status: events.status,
+      durationMinutes: events.durationMinutes,
+      code: events.code,
+      startsAt: events.startsAt,
+      deadlineAt: events.deadlineAt,
+    })
+    .from(events)
+    .where(and(eq(events.code, normalized), ne(events.status, "ended")))
+    .limit(1);
+
+  return row ?? null;
 }
