@@ -34,6 +34,28 @@ export async function listOrganizerEvents(
     .orderBy(desc(events.createdAt));
 }
 
+/** One event, but only if the acting organizer owns it. */
+export async function getOrganizerEvent(
+  organizerId: string,
+  eventId: string,
+): Promise<EventSummary | null> {
+  const [row] = await getDb()
+    .select({
+      id: events.id,
+      title: events.title,
+      status: events.status,
+      durationMinutes: events.durationMinutes,
+      code: events.code,
+      startsAt: events.startsAt,
+      deadlineAt: events.deadlineAt,
+    })
+    .from(events)
+    .where(and(eq(events.id, eventId), eq(events.createdBy, organizerId)))
+    .limit(1);
+
+  return row ?? null;
+}
+
 /**
  * Resolves a Join Code to the event it grants entry to. Ended events no longer
  * resolve, which is also what makes a regenerated code stop working at once.
