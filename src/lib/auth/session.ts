@@ -2,12 +2,10 @@ import "server-only";
 
 import { auth } from "./server";
 import { isOrganizerEmail } from "@/lib/env";
+import type { SessionUser, Viewer } from "./roles";
 
-export type SessionUser = {
-  id: string;
-  email: string;
-  name: string;
-};
+export { landingFor } from "./roles";
+export type { SessionUser, Viewer } from "./roles";
 
 /**
  * The session user, or null. Never throws on an anonymous request.
@@ -23,26 +21,10 @@ export async function getSessionUser(): Promise<SessionUser | null> {
   };
 }
 
-export type Viewer =
-  | { kind: "anonymous" }
-  | { kind: "organizer"; user: SessionUser }
-  | { kind: "participant"; user: SessionUser };
-
 export async function getViewer(): Promise<Viewer> {
   const user = await getSessionUser();
   if (!user) return { kind: "anonymous" };
   return isOrganizerEmail(user.email)
     ? { kind: "organizer", user }
     : { kind: "participant", user };
-}
-
-export function landingFor(viewer: Viewer): string {
-  switch (viewer.kind) {
-    case "organizer":
-      return "/admin/events";
-    case "participant":
-      return "/join";
-    default:
-      return "/sign-in";
-  }
 }
