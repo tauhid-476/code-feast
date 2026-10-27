@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { EventSummary } from "@/lib/events/queries";
+import { RegenerateCodeButton } from "@/components/regenerate-code-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -47,7 +48,7 @@ export function EventList({ events }: { events: EventSummary[] }) {
             <TableHead className="label">Status</TableHead>
             <TableHead className="label">Duration</TableHead>
             <TableHead className="label">Join code</TableHead>
-            <TableHead className="w-0" />
+            <TableHead className="label w-0 text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -64,13 +65,18 @@ export function EventList({ events }: { events: EventSummary[] }) {
                 <span className="mono tracking-[0.18em]">{event.code}</span>
               </TableCell>
               <TableCell className="text-right">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  render={<Link href={`/admin/events/${event.id}`} />}
-                >
-                  Open
-                </Button>
+                <div className="flex items-center justify-end gap-1">
+                  {event.status === "draft" ? (
+                    <RegenerateCodeButton eventId={event.id} />
+                  ) : null}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    render={<Link href={`/admin/events/${event.id}`} />}
+                  >
+                    Open
+                  </Button>
+                </div>
               </TableCell>
             </TableRow>
           ))}
