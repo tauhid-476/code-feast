@@ -17,6 +17,10 @@ fi
 
 git merge --no-ff "$branch" -m "Merge $branch into $integration"
 
+# New routes only get typed after the generator runs, so refresh route types
+# before typechecking; `next build` would do it too, but it runs too late.
+npx next typegen
+
 if npm test && npm run typecheck && npm run lint && npm run build; then
   echo "Merged $branch and verified."
 else
