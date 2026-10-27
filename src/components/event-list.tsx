@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { EventSummary } from "@/lib/events/queries";
+import { EventStatusBadge } from "@/components/event-status-badge";
 import { RegenerateCodeButton } from "@/components/regenerate-code-button";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Empty,
@@ -17,12 +17,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-
-function StatusBadge({ status }: { status: string }) {
-  if (status === "live") return <Badge>live</Badge>;
-  if (status === "ended") return <Badge variant="outline">ended</Badge>;
-  return <Badge variant="secondary">draft</Badge>;
-}
 
 export function EventList({ events }: { events: EventSummary[] }) {
   if (events.length === 0) {
@@ -56,7 +50,7 @@ export function EventList({ events }: { events: EventSummary[] }) {
             <TableRow key={event.id}>
               <TableCell className="font-medium">{event.title}</TableCell>
               <TableCell>
-                <StatusBadge status={event.status} />
+                <EventStatusBadge status={event.status} />
               </TableCell>
               <TableCell className="text-muted-foreground tabular">
                 {event.durationMinutes} min
