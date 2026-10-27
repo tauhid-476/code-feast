@@ -60,3 +60,31 @@ export async function findEventByJoinCode(
 
   return row ?? null;
 }
+
+/**
+ * The ended event a code used to name. Join asks for this only after the open
+ * lookup misses, so a refusal can say "ended" instead of "never existed".
+ */
+export async function findEndedEventByJoinCode(
+  code: string,
+): Promise<EventSummary | null> {
+  const normalized = code.trim().toUpperCase();
+  if (!normalized) return null;
+
+  const [row] = await getDb()
+    .select({
+      id: events.id,
+      title: events.title,
+      status: events.status,
+      durationMinutes: events.durationMinutes,
+      code: events.code,
+      startsAt: events.startsAt,
+      deadlineAt: events.deadlineAt,
+    })
+    .from(events)
+    .where(and(eq(events.code, normalized), eq(events.status, "ended")))
+    .orderBy(desc(events.createdAt))
+    .limit(1);
+
+  return row ?? null;
+}
