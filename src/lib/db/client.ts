@@ -4,6 +4,14 @@ import { schema } from "./schema";
 
 export type Database = NodePgDatabase<typeof schema>;
 
+/** The handle an open transaction hands to its callback. */
+export type Transaction = Parameters<
+  Parameters<Database["transaction"]>[0]
+>[0];
+
+/** A database handle or an open transaction; both run the same queries. */
+export type Executor = Pick<Database, "select" | "update" | "execute">;
+
 const globalForDb = globalThis as unknown as {
   pool?: Pool;
   db?: Database;
