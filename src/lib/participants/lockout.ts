@@ -92,6 +92,26 @@ export async function lockAtDeadline(
   return rows.map(toParticipant);
 }
 
+/**
+ * Entering the contest is what makes a participant "solving"; Start
+ * deliberately does not mark the roster on their behalf (ticket 08). The write
+ * is conditional on `joined`, so entering twice is harmless and a locked
+ * participant is never reopened by a stale tab.
+ */
+export async function markSolving(
+  participantId: string,
+  at: Date,
+  executor: Executor = getDb(),
+): Promise<Participant | null> {
+  const [row] = await executor
+    .update(participants)
+    .set({ status: "solving", lastSeenAt: at })
+    .where(and(eq(participants.id, participantId), eq(participants.status, "joined")))
+    .returning(participantColumns);
+
+  return row ? toParticipant(row) : null;
+}
+
 export type ParticipantCounts = {
   /** Everyone who joined, whatever their status. */
   participants: number;

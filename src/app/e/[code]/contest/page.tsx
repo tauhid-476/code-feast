@@ -1,15 +1,21 @@
 import { redirect } from "next/navigation";
-import { SignOutButton } from "@/components/sign-out-button";
-import { Card, CardContent } from "@/components/ui/card";
+import { ContestWorkspace } from "@/components/contest-workspace";
 import { requireParticipant } from "@/lib/auth/guards";
+import { listDrafts } from "@/lib/drafts/manage";
+import { listContestProblems } from "@/lib/problems/contest";
+import { readContestGate } from "@/lib/participants/gate";
+import { markSolving } from "@/lib/participants/lockout";
 import { loadParticipantContext } from "@/lib/participants/queries";
 import { contestDestination } from "@/lib/participants/routes";
+import { now as serverNow } from "@/lib/time";
 
 export const dynamic = "force-dynamic";
 
 /**
- * Placeholder only: ticket 09 replaces this body with the fullscreen gate, the
- * split pane, the editor, and autosave. The gate below stays.
+ * The contest route. Reachable only with the fullscreen gate cookie the enter
+ * action sets: a typed URL without it goes back to the Lobby gate. The gate, the
+ * deadline lockout, and the ended-event redirect are all decided by
+ * `contestDestination`, so this page cannot drift from the lobby.
  */
 export default async function ContestPage({ params }: PageProps<"/e/[code]">) {
   const { code } = await params;
@@ -18,31 +24,40 @@ export default async function ContestPage({ params }: PageProps<"/e/[code]">) {
 
   if (!context || !context.participant) redirect("/join");
 
-  const destination = contestDestination(context);
+  const gate = await readContestGate(code, {
+    eventId: context.event.id,
+    participantId: context.participant.id,
+  });
+  const destination = contestDestination(context, { entered: gate });
   if (destination) redirect(destination);
 
-  return (
-    <main className="flex flex-1 items-center justify-center p-6">
-      <div className="w-full max-w-md">
-        <div className="mb-6 flex items-start justify-between gap-4">
-          <div>
-            <p className="label">Contest</p>
-            <h1 className="mt-1 text-xl font-semibold tracking-tight">
-              {context.event.title}
-            </h1>
-          </div>
-          <SignOutButton />
-        </div>
+  // Entering is what makes a participant "solving" (ticket 08 leaves Start
+  // alone). The enter action writes this; repeating it here heals a lost write
+  // and covers a refresh.
+  if (context.participant.status === "joined") {
+    await markSolving(context.participant.id, serverNow());
+  }
 
-        <Card>
-          <CardContent className="flex flex-col gap-2">
-            <p className="text-sm font-medium">The contest view is coming.</p>
-            <p className="text-sm text-muted-foreground">
-              Your event is live. The problem list and editor open here.
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-    </main>
+  const [problems, drafts] = await Promise.all([
+    listContestProblems(context),
+    listDrafts(context),
+  ]);
+
+  return (
+    <ContestWorkspace
+      code={context.event.code}
+      eventTitle={context.event.title}
+      participantId={context.participant.id}
+      participantName={context.participant.displayName}
+      problems={problems}
+      drafts={drafts.map((draft) => ({
+        problemId: draft.problemId,
+        language: draft.language,
+        code: draft.code,
+        updatedAt: draft.updatedAt.toISOString(),
+      }))}
+      serverNow={serverNow().toISOString()}
+      deadlineAt={context.event.deadlineAt?.toISOString() ?? null}
+    />
   );
 }
