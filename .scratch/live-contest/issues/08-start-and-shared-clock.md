@@ -65,11 +65,11 @@ How each guarantee is met:
 - **Late join.** Joining creates a row; the event's `deadline_at` is untouched,
   so the next read locks them at the shared deadline (tested).
 - **Editing gate.** Problem and Sample Case edits are refused after Start via
-  the existing `event_not_draft` gate (tested). Starter Code and Harness
-  authoring does not exist on this base (ticket 04 is not merged yet); when it
-  lands it must write through `lockDraftEvent` in `problems/manage.ts`, which is
-  the same gate, or the freeze test above will not cover it. This is the one
-  line of the checklist that depends on ticket 04 landing.
+  the existing `event_not_draft` gate (tested). Ticket 04 was merged into this
+  branch after the fact; its `saveProblemStarter` writes through the same
+  `requireDraftProblem` + `lockDraftEvent` gate, and the freeze test now covers
+  Starter Code and Harness writes explicitly, so no edit route escapes the
+  freeze.
 - **Live view.** `/admin/events/[id]/live` renders the health strip (roster,
   solving, locked, ready sandboxes, time remaining) plus Start / Extend +10 /
   End now. Start and End now confirm; the Start dialog names the current
@@ -77,8 +77,8 @@ How each guarantee is met:
 
 Downstream tickets:
 
-- **09:** call `listContestProblems(await loadParticipantContext(...))`. Starter
-  lists will be empty until ticket 04 is merged. The health strip counts
+- **09:** call `listContestProblems(await loadParticipantContext(...))`, which
+  now carries ticket 04's per-language Starter Code. The health strip counts
   `solving` from `participants.status`, and Start deliberately does not mark
   people as solving on their behalf; 09/13 should set `status = 'solving'` when
   a participant actually enters the contest, otherwise the strip keeps showing

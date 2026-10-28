@@ -3,7 +3,12 @@ import { eq } from "drizzle-orm";
 import { startEvent, extendDeadline, endEvent } from "@/lib/events/clock";
 import { getEventHealth } from "@/lib/events/live";
 import { startConfirmationText } from "@/lib/events/copy";
-import { moveProblem, updateProblem, createProblem } from "@/lib/problems/manage";
+import {
+  moveProblem,
+  updateProblem,
+  createProblem,
+  saveProblemStarter,
+} from "@/lib/problems/manage";
 import { listContestProblems } from "@/lib/problems/contest";
 import { loadParticipantContext } from "@/lib/participants/queries";
 import { joinEventByCode } from "@/lib/participants/join";
@@ -588,6 +593,12 @@ describe("freeze", () => {
     await expect(
       moveProblem(actor, problem.id, "down"),
     ).rejects.toMatchObject({ code: "event_not_draft" });
+    await expect(
+      saveProblemStarter(actor, problem.id, "python", {
+        starterCode: "def solve():\n    return 1\n",
+        harnessCode: "print(solve())\n",
+      }),
+    ).rejects.toMatchObject({ code: "event_not_draft" });
   });
 
   it("still allows those writes while the event is a draft", async () => {
@@ -600,5 +611,14 @@ describe("freeze", () => {
 
     expect(updated.title).toBe("Renamed");
     expect(updated.sampleCases).toHaveLength(2);
+
+    const withStarter = await saveProblemStarter(actor, problem.id, "python", {
+      starterCode: "def solve():\n    return 1\n",
+      harnessCode: "print(solve())\n",
+    });
+    expect(
+      withStarter.starters.find((pair) => pair.language === "python")
+        ?.starterCode,
+    ).toContain("return 1");
   });
 });
