@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { moveProblemAction } from "@/app/admin/events/[id]/actions";
 import { ProblemCompleteness } from "@/components/problem-completeness";
 import { ProblemEditor } from "@/components/problem-editor";
+import { TestProblemDialog } from "@/components/test-problem-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -95,38 +96,45 @@ export function ProblemSet({
                       <ProblemCompleteness starters={problem.starters} />
                     </div>
                   </div>
-                  {editable ? (
-                    <div className="flex shrink-0 items-center gap-1">
-                      <Button
-                        variant="ghost"
-                        size="icon-sm"
-                        aria-label={`Move ${problem.title} up`}
-                        onClick={() => move(problem.id, "up")}
-                        disabled={index === 0 || pending}
-                      >
-                        <ArrowUp />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon-sm"
-                        aria-label={`Move ${problem.title} down`}
-                        onClick={() => move(problem.id, "down")}
-                        disabled={index === problems.length - 1 || pending}
-                      >
-                        <ArrowDown />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() =>
-                          setEditor({ mode: "edit", problemId: problem.id })
-                        }
-                      >
-                        <Pencil data-icon="inline-start" />
-                        Edit
-                      </Button>
-                    </div>
-                  ) : null}
+                  <div className="flex shrink-0 items-center gap-1">
+                    <TestProblemDialog
+                      eventId={eventId}
+                      problemId={problem.id}
+                      problemTitle={problem.title}
+                    />
+                    {editable ? (
+                      <>
+                        <Button
+                          variant="ghost"
+                          size="icon-sm"
+                          aria-label={`Move ${problem.title} up`}
+                          onClick={() => move(problem.id, "up")}
+                          disabled={index === 0 || pending}
+                        >
+                          <ArrowUp />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon-sm"
+                          aria-label={`Move ${problem.title} down`}
+                          onClick={() => move(problem.id, "down")}
+                          disabled={index === problems.length - 1 || pending}
+                        >
+                          <ArrowDown />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() =>
+                            setEditor({ mode: "edit", problemId: problem.id })
+                          }
+                        >
+                          <Pencil data-icon="inline-start" />
+                          Edit
+                        </Button>
+                      </>
+                    ) : null}
+                  </div>
                 </CardContent>
               </Card>
             </li>
