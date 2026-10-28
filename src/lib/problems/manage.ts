@@ -1,8 +1,14 @@
 import { and, asc, eq, sql } from "drizzle-orm";
 import { getDb } from "@/lib/db/client";
-import { events, problems, testCases } from "@/lib/db/schema";
+import {
+  events,
+  problemStarters,
+  problems,
+  testCases,
+} from "@/lib/db/schema";
 import { DomainError } from "@/lib/errors";
 import { isOrganizerEmail } from "@/lib/env";
+import { LANGUAGE_LABELS, isLanguage, type Language } from "@/lib/languages";
 import {
   getProblem,
   listProblems,
@@ -287,6 +293,82 @@ export async function updateProblem(
 }
 
 export type MoveDirection = "up" | "down";
+
+/** The two hidden/visible halves of one language's authoring pair. */
+export type StarterPairInput = {
+  starterCode: string;
+  harnessCode: string;
+};
+
+function validateStarterPair(
+  language: Language,
+  input: StarterPairInput,
+): StarterPairInput {
+  const label = LANGUAGE_LABELS[language];
+  if (typeof input?.starterCode !== "string" || !input.starterCode.trim()) {
+    throw new DomainError(
+      "starter_required",
+      `${label} Starter Code is the whole file a participant opens; it cannot be empty.`,
+    );
+  }
+  if (typeof input?.harnessCode !== "string" || !input.harnessCode.trim()) {
+    throw new DomainError(
+      "harness_required",
+      `The ${label} Harness is appended at run time; it cannot be empty.`,
+    );
+  }
+  // Store both as typed: indentation and blank lines are part of a source file.
+  return { starterCode: input.starterCode, harnessCode: input.harnessCode };
+}
+
+/**
+ * Saves the Starter Code and Harness for one language. A pair is unique per
+ * Problem and language, so a second save updates the same row rather than
+ * adding another.
+ */
+export async function saveProblemStarter(
+  actor: ProblemActor,
+  problemId: string,
+  language: string,
+  input: StarterPairInput,
+): Promise<ProblemSummary> {
+  assertOrganizer(actor, "edit a problem");
+  const { eventId } = await requireDraftProblem(actor, problemId);
+
+  if (!isLanguage(language)) {
+    throw new DomainError(
+      "language_invalid",
+      "A problem holds Starter Code for Python 3, Java, and C++ only.",
+    );
+  }
+  const pair = validateStarterPair(language, input);
+
+  await getDb().transaction(async (tx) => {
+    await lockDraftEvent(tx, eventId);
+
+    await tx
+      .insert(problemStarters)
+      .values({
+        problemId,
+        language,
+        starterCode: pair.starterCode,
+        harnessCode: pair.harnessCode,
+      })
+      .onConflictDoUpdate({
+        target: [problemStarters.problemId, problemStarters.language],
+        set: {
+          starterCode: pair.starterCode,
+          harnessCode: pair.harnessCode,
+        },
+      });
+  });
+
+  const updated = await getProblem(problemId);
+  if (!updated) {
+    throw new DomainError("problem_not_found", "Problem not found.", 404);
+  }
+  return updated;
+}
 
 /**
  * Swaps a problem with its neighbour and renumbers the whole set. Positions

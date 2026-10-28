@@ -6,6 +6,7 @@ import {
   createProblemAction,
   updateProblemAction,
 } from "@/app/admin/events/[id]/actions";
+import { ProblemLanguages } from "@/components/problem-languages";
 import { Statement } from "@/components/statement";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -213,19 +214,6 @@ export function ProblemEditor({
               </div>
             </section>
 
-            {/*
-              Seam for ticket 04: the per-language Starter Code and Harness
-              editors mount here. Nothing in this ticket reads them.
-            */}
-            <section className="rounded-lg border border-dashed border-border p-4">
-              <h3 className="label">Starter code and harness</h3>
-              <p className="mt-1 text-sm text-muted-foreground">
-                {problem
-                  ? "Per-language starter code and harness editors arrive in the next ticket."
-                  : "Save this problem first, then attach per-language starter code and harness."}
-              </p>
-            </section>
-
             {error ? (
               <Alert variant="destructive">
                 <AlertDescription>{error}</AlertDescription>
@@ -251,6 +239,18 @@ export function ProblemEditor({
             </div>
           </div>
         </form>
+
+        {problem ? (
+          <ProblemLanguages eventId={eventId} problem={problem} />
+        ) : (
+          <section className="mt-6 rounded-lg border border-dashed border-border p-4">
+            <h3 className="text-sm font-medium">Starter code and harness</h3>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Save this problem first, then attach Starter Code and Harness for
+              Python 3, Java, and C++.
+            </p>
+          </section>
+        )}
       </CardContent>
     </Card>
   );

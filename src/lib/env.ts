@@ -50,18 +50,16 @@ export function e2bTemplateId(): string | undefined {
   return process.env.E2B_TEMPLATE_ID || undefined;
 }
 
-export const LANGUAGES = ["python", "java", "cpp"] as const;
-export type Language = (typeof LANGUAGES)[number];
-
-export const LANGUAGE_LABELS: Record<Language, string> = {
-  python: "Python 3",
-  java: "Java",
-  cpp: "C++",
-};
-
-export function isLanguage(value: string): value is Language {
-  return (LANGUAGES as readonly string[]).includes(value);
-}
+/**
+ * Language vocabulary lives in a neutral module so client components can read
+ * it without importing anything that touches `process.env`.
+ */
+export {
+  LANGUAGES,
+  LANGUAGE_LABELS,
+  isLanguage,
+  type Language,
+} from "./languages";
 
 export const STRIKE_LIMIT = 3;
 export const STRIKE_DEDUPE_WINDOW_MS = 2_000;
