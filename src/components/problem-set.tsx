@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { ArrowDown, ArrowUp, Pencil, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { moveProblemAction } from "@/app/admin/events/[id]/actions";
+import { ProblemCompleteness } from "@/components/problem-completeness";
 import { ProblemEditor } from "@/components/problem-editor";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -65,8 +66,8 @@ export function ProblemSet({
           <EmptyHeader>
             <EmptyTitle>No problems yet</EmptyTitle>
             <EmptyDescription>
-              Add the first problem: a title, a Markdown statement, and two
-              sample test cases.
+              Add the first problem: a title, a Markdown statement, two sample
+              test cases, then Starter Code and a Harness for each language.
             </EmptyDescription>
           </EmptyHeader>
         </Empty>
@@ -88,9 +89,11 @@ export function ProblemSet({
                         <Badge variant="outline">{problem.difficulty}</Badge>
                       ) : null}
                     </div>
-                    <p className="mt-0.5 text-xs text-muted-foreground">
-                      {problem.sampleCases.length} sample test cases
-                    </p>
+                    <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
+                      <span>{problem.sampleCases.length} sample test cases</span>
+                      <span aria-hidden>·</span>
+                      <ProblemCompleteness starters={problem.starters} />
+                    </div>
                   </div>
                   {editable ? (
                     <div className="flex shrink-0 items-center gap-1">

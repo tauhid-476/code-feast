@@ -6,9 +6,11 @@ import { actionError } from "@/lib/errors";
 import {
   createProblem,
   moveProblem,
+  saveProblemStarter,
   updateProblem,
   type MoveDirection,
   type ProblemInput,
+  type StarterPairInput,
 } from "@/lib/problems/manage";
 
 export type ProblemActionState = { error: string } | { ok: true };
@@ -68,6 +70,28 @@ export async function moveProblemAction(
       { id: organizer.id, email: organizer.email },
       problemId,
       direction,
+    );
+    revalidatePath(authoringPath(eventId));
+    return { ok: true };
+  } catch (error) {
+    return actionError(error);
+  }
+}
+
+export async function saveProblemStarterAction(
+  eventId: string,
+  problemId: string,
+  language: string,
+  input: StarterPairInput,
+): Promise<ProblemActionState> {
+  const organizer = await requireOrganizer();
+
+  try {
+    await saveProblemStarter(
+      { id: organizer.id, email: organizer.email },
+      problemId,
+      language,
+      input,
     );
     revalidatePath(authoringPath(eventId));
     return { ok: true };
