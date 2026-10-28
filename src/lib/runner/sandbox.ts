@@ -1,6 +1,9 @@
 import {
   CommandExitError,
+  FileNotFoundError,
+  NotFoundError,
   Sandbox,
+  SandboxNotFoundError,
   SandboxNotRunningError,
   SandboxUnreachableError,
   TimeoutError,
@@ -106,6 +109,51 @@ function pacedCreate<T>(create: () => Promise<T>): Promise<T> {
   return run;
 }
 
+/**
+ * The parts of an E2B command handle stdin feeding needs. Narrow on purpose so
+ * the "process already finished" rule can be tested without a live sandbox.
+ */
+export type StdinTarget = {
+  sendStdin(data: string): Promise<void>;
+  closeStdin(): Promise<void>;
+};
+
+/**
+ * True when stdin could not be delivered because the command had already
+ * finished. E2B answers with a plain `NotFoundError` naming a pid; a sandbox or
+ * file that is gone is a `SandboxNotFoundError` / `FileNotFoundError` and must
+ * keep failing, because those are real runner failures.
+ */
+function isFinishedProcess(error: unknown): boolean {
+  return (
+    error instanceof NotFoundError &&
+    !(error instanceof SandboxNotFoundError) &&
+    !(error instanceof FileNotFoundError)
+  );
+}
+
+/**
+ * Delivers stdin, then closes it so a program reading to EOF terminates.
+ *
+ * A command that never reads stdin can exit before the stream is attached; E2B
+ * then refuses the write with "process ... not found". That is not a failure —
+ * the command produced its output without ever asking for input — so the write
+ * is skipped and the caller still collects the result from `wait()`. Without
+ * this, every fast program would surface as a runner error.
+ */
+export async function feedStdin(
+  handle: StdinTarget,
+  input: string | undefined,
+): Promise<void> {
+  try {
+    if (input !== undefined) await handle.sendStdin(input);
+    await handle.closeStdin();
+  } catch (error) {
+    if (isFinishedProcess(error)) return;
+    throw error;
+  }
+}
+
 class E2BSandboxHandle implements SandboxHandle {
   constructor(private readonly sandbox: Sandbox) {}
 
@@ -130,10 +178,7 @@ class E2BSandboxHandle implements SandboxHandle {
     })) as CommandHandle;
 
     try {
-      if (options.stdin !== undefined) await handle.sendStdin(options.stdin);
-      // Always close stdin: a program reading until EOF would otherwise hang
-      // until the command timeout even when the input is empty.
-      await handle.closeStdin();
+      await feedStdin(handle, options.stdin);
     } catch (error) {
       await handle.kill().catch(() => false);
       throw error;
