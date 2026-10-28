@@ -171,13 +171,18 @@ describe("lobby routing", () => {
     expect(context?.participant?.status).toBe("joined");
   });
 
-  it("sends a participant re-entering a live event straight to the contest", async () => {
+  it("shows a participant re-entering a live event the fullscreen gate", async () => {
     await joinLive("LIVE02");
 
     const context = await loadParticipantContext("LIVE02", solver.id, {
       now: addMinutes(startsAt, 30),
     });
-    expect(lobbyDestination(context)).toBe("/e/LIVE02/contest");
+    // Ticket 09: live no longer means "already in the contest"; the lobby
+    // renders the gate until the enter action has been through fullscreen.
+    expect(lobbyDestination(context)).toBeNull();
+    expect(lobbyDestination(context, { entered: true })).toBe(
+      "/e/LIVE02/contest",
+    );
   });
 
   it("keeps a draft event in the lobby", async () => {
@@ -273,7 +278,7 @@ describe("contest gate", () => {
   const startsAt = new Date("2026-10-28T18:00:00.000Z");
   const deadlineAt = addMinutes(startsAt, 90);
 
-  it("stays in the contest while the event is live and the participant is unlocked", async () => {
+  it("returns an ungated live participant to the lobby gate", async () => {
     const event = await insertEvent({
       code: "CONST1",
       status: "live",
@@ -285,7 +290,8 @@ describe("contest gate", () => {
     const context = await loadParticipantContext("CONST1", solver.id, {
       now: addMinutes(startsAt, 10),
     });
-    expect(contestDestination(context)).toBeNull();
+    expect(contestDestination(context, { entered: false })).toBe("/e/CONST1");
+    expect(contestDestination(context, { entered: true })).toBeNull();
   });
 
   it("returns a draft event to the lobby", async () => {

@@ -1,0 +1,35 @@
+import type { Language } from "@/lib/languages";
+
+/**
+ * The serializable shape the contest page hands to the workspace. It is built
+ * from `listContestProblems` and `listDrafts`, so it never carries Harness text.
+ */
+
+export type ContestSampleCaseView = {
+  position: number;
+  input: string;
+  expectedOutput: string;
+};
+
+export type ContestStarterView = {
+  language: Language;
+  starterCode: string;
+};
+
+export type ContestProblemView = {
+  id: string;
+  position: number;
+  title: string;
+  difficulty: string | null;
+  statementMd: string;
+  sampleCases: ContestSampleCaseView[];
+  starters: ContestStarterView[];
+};
+
+export type ContestDraftView = {
+  problemId: string;
+  language: Language;
+  code: string;
+  /** ISO instant, already the server's `updated_at`. */
+  updatedAt: string;
+};
