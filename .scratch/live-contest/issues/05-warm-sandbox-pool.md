@@ -50,23 +50,43 @@ the pool logic is exercised without an E2B key.
 - Sandboxes are only killed when a row cannot be inserted or the pool is
   discarded; release never kills. Sandboxes are reused for the whole event.
 
-**Verified against the fake provider, not live E2B**
+**Verified against the fake provider at build time; four items now verified live**
 
-Every pool test above runs against `FakeSandboxProvider`. `E2B_API_KEY` was
-empty while this ticket was built, so the following are **not** yet verified
-against a real sandbox and are handed to tickets 18/19:
+Every pool test above runs against `FakeSandboxProvider`. When the ticket was
+built `E2B_API_KEY` was empty, so four behaviours were handed to tickets 18/19.
+A live account became available later, and one of them turned out to be broken:
 
-- real `Sandbox.create` latency and the 1-creation-per-second pacing gate;
+- ~~`commands.run({ background: true, stdin: true })` + `sendStdin`/
+  `closeStdin`~~ — **was broken, now fixed.**
+  A command that exits before stdin is attached (any program that never reads
+  stdin, or finishes fast — i.e. most submissions) made E2B refuse the write
+  with `NotFoundError: [not_found] process with pid N not found`, which the
+  handle rethrew as a sandbox error. `feedStdin()` in
+  `src/lib/runner/sandbox.ts` now treats a finished process as a normal
+  outcome: the write is skipped and `wait()` still returns stdout, stderr and
+  the exit code. `SandboxNotFoundError` and `FileNotFoundError` are still
+  failures, because those are real runner faults. Covered by
+  `tests/ticket-05-stdin-feed.test.ts`. Live check through the app's own
+  provider after the fix: `printf hello`, `echo hi`, a stdin reader, and a
+  zero-length stdin reader all returned correct output.
+- real `Sandbox.create` latency: **~0.6s** per sandbox on this account.
+- timeout mapping: a command past its limit throws `SandboxTimeoutError` in
+  **~1.4s** for a 1s limit, carrying partial stdout. Unchanged by the fix.
+- `writeFile` creates parent directories; `/work` is writable and the sandbox
+  runs as uid 1000, so ticket 06 can use `/work/<run>/…` without a `mkdir`.
+
+Still open, and now known to block Java:
+
+- **The default E2B template has `python3` (3.11.6) and `g++`, and no
+  `javac`.** `E2B_TEMPLATE_ID` is empty locally, so Java cannot compile until a
+  template with a JDK is built and configured. This is a hard prerequisite for
+  tickets 18/19 and for any Java rehearsal.
 - whether `allowInternetAccess: false` actually blocks egress in the deployed
   template;
-- whether `commands.run({ background: true, stdin: true })` +
-  `sendStdin`/`closeStdin` behaves as the installed types claim for a program
-  that reads until EOF;
 - `isRunning()` behaviour on a sandbox killed out-of-band at the API level.
 
 The provider refuses with a clear `runner_not_configured` DomainError (503)
-when a key is missing, which is the only path currently reachable in
-production.
+when a key is missing.
 
 **For ticket 06**
 

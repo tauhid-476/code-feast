@@ -5,10 +5,26 @@ import type {
   SandboxRunResult,
 } from "@/lib/runner/sandbox";
 
+/** One recorded `run` call, handed to a scripted handler. */
+export type FakeRunCall = {
+  id: string;
+  command: string;
+  options: SandboxRunOptions;
+};
+
+/**
+ * Scripts a single `run` call. Returning nothing falls back to the default
+ * success, so a handler only has to describe the calls it cares about.
+ */
+export type FakeRunHandler = (
+  call: FakeRunCall,
+) => Promise<SandboxRunResult | null> | SandboxRunResult | null;
+
 /**
  * An in-memory stand-in for E2B. It records the transport calls the pool makes
  * and lets a test kill a sandbox out-of-band or make a run fail, so the pool's
  * claim/release/replace behaviour is exercised without a network or a key.
+ * A run handler scripts stdout, exit codes, stderr and slow runs.
  */
 export class FakeSandboxProvider implements SandboxProvider {
   readonly created: string[] = [];
@@ -23,6 +39,9 @@ export class FakeSandboxProvider implements SandboxProvider {
 
   /** When set, `run` throws instead of returning a result. */
   runError: Error | null = null;
+
+  /** When set, `run` asks it for a result before falling back. */
+  runHandler: FakeRunHandler | null = null;
 
   /**
    * When true, connecting to a dead sandbox succeeds but `isAlive` reports
@@ -62,8 +81,13 @@ export class FakeSandboxProvider implements SandboxProvider {
         this.written.push({ id, path, content });
       },
       run: async (command, options = {}) => {
-        this.runs.push({ id, command, options });
+        const call: FakeRunCall = { id, command, options };
+        this.runs.push(call);
         if (this.runError) throw this.runError;
+        if (this.runHandler) {
+          const scripted = await this.runHandler(call);
+          if (scripted) return scripted;
+        }
         const result: SandboxRunResult = {
           stdout: "",
           stderr: "",
