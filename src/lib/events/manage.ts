@@ -34,7 +34,7 @@ export function generateJoinCode(): string {
   return code;
 }
 
-function assertOrganizer(actor: EventActor, action: string): void {
+export function assertOrganizer(actor: EventActor, action: string): void {
   if (!isOrganizerEmail(actor.email)) {
     throw new DomainError(
       "not_organizer",
