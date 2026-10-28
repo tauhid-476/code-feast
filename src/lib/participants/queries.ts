@@ -1,25 +1,21 @@
-import { and, desc, eq, ne } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { getDb } from "@/lib/db/client";
 import { events, participants } from "@/lib/db/schema";
 import { now as serverNow } from "@/lib/time";
 import type { EventSummary } from "@/lib/events/queries";
+import {
+  lockAtDeadline,
+  participantColumns,
+  toParticipant,
+  type Participant,
+  type ParticipantRow,
+} from "./lockout";
 
-export type ParticipantStatus = "joined" | "solving" | "locked_out";
-export type LockoutReason = "submitted" | "deadline" | "eliminated";
-
-export type Participant = {
-  id: string;
-  eventId: string;
-  userId: string;
-  displayName: string;
-  email: string;
-  status: ParticipantStatus;
-  joinedAt: Date;
-  lockedAt: Date | null;
-  lockoutReason: LockoutReason | null;
-  strikes: number;
-  shortlisted: boolean;
-};
+export type {
+  LockoutReason,
+  Participant,
+  ParticipantStatus,
+} from "./lockout";
 
 export type ParticipantContext = {
   event: EventSummary;
@@ -41,43 +37,6 @@ const eventColumns = {
   deadlineAt: events.deadlineAt,
 };
 
-const participantColumns = {
-  id: participants.id,
-  eventId: participants.eventId,
-  userId: participants.userId,
-  displayName: participants.displayName,
-  email: participants.email,
-  status: participants.status,
-  joinedAt: participants.joinedAt,
-  lockedAt: participants.lockedAt,
-  lockoutReason: participants.lockoutReason,
-  strikes: participants.strikes,
-  shortlisted: participants.shortlisted,
-};
-
-type ParticipantRow = {
-  id: string;
-  eventId: string;
-  userId: string;
-  displayName: string;
-  email: string;
-  status: string;
-  joinedAt: Date;
-  lockedAt: Date | null;
-  lockoutReason: string | null;
-  strikes: number;
-  shortlisted: boolean;
-};
-
-/** The check constraints are the source of truth; the casts narrow to them. */
-function toParticipant(row: ParticipantRow): Participant {
-  return {
-    ...row,
-    status: row.status as ParticipantStatus,
-    lockoutReason: row.lockoutReason as LockoutReason | null,
-  };
-}
-
 /**
  * Lockout is reconciled, never scheduled: the first read at or past the
  * deadline locks the participant at the deadline itself, not at the moment we
@@ -95,22 +54,12 @@ async function reconcileDeadline(
     return participant;
   }
 
-  const [locked] = await getDb()
-    .update(participants)
-    .set({
-      status: "locked_out",
-      lockoutReason: "deadline",
-      lockedAt: event.deadlineAt,
-    })
-    .where(
-      and(
-        eq(participants.id, participant.id),
-        ne(participants.status, "locked_out"),
-      ),
-    )
-    .returning(participantColumns);
-
-  if (locked) return toParticipant(locked);
+  const [locked] = await lockAtDeadline(
+    getDb(),
+    { participantId: participant.id },
+    event.deadlineAt,
+  );
+  if (locked) return locked;
 
   // A concurrent read locked them first; return whatever won.
   const [current] = await getDb()
