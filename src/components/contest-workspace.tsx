@@ -295,6 +295,7 @@ export function ContestWorkspace({
           <div className="min-h-0 flex-1">
             {hydrated && buffer ? (
               <ContestEditor
+                joinCode={code}
                 problemId={problem.id}
                 language={language}
                 defaultValue={buffer.code}

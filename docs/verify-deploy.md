@@ -153,6 +153,19 @@ there is no code on that screen and no way back to the editor. Opening
 second time writes nothing: there is still exactly one submission, with the code
 of every problem you had autosaved and the language you last used for it.
 
+**A working blocked paste looks like:** inside the editor, `Ctrl/Cmd+V`,
+right-click → Paste, middle click, and dragging text in all do nothing to the
+code. A blocked paste shows **Pasting is disabled.**; right-click shows no menu
+and no toast. Copying out with `Ctrl/Cmd+C` still works. Each attempt reaches the
+server without costing a strike:
+
+```sql
+select kind, counted, created_at from violations order by created_at desc;
+```
+
+The rows read `paste_blocked` or `context_menu_blocked` with `counted = false`,
+and `participants.strikes` is still `0` after a refresh.
+
 **A working Deadline lockout looks like:** close the tab before the Deadline and
 return after it. The first page load locks you at the Deadline itself — the
 locked screen says **Deadline**, and the recorded submission is the last
@@ -216,6 +229,8 @@ as you go, and set `**Status:** resolved` once all seven are ticked. Append a
 | **Run** says `Run did not start` | The message is the server's. `The runner is busy…` means the pool could not serve it in 20s — check the health strip and `vercel logs`. `Runs are limited to one every two seconds.` is the rate limit. `Your contest is locked.` means the deadline passed. |
 | **Submit** says `Your latest changes are not saved yet` | The last keystrokes never reached `/api/draft` (the Not saved banner is the same signal). Nothing was submitted; restore the connection and press Submit again. |
 | **Submit** does nothing, or the locked screen never appears | Check `vercel logs` for `submitContestAction`. A locked screen with no elapsed time means `participants.locked_at` is null — look at the row, not the page. |
+| Pasting works in the editor | The guards did not mount — check the browser console for a Monaco error. The deployment must include both the editor changes and `/api/violation`. |
+| A paste is blocked but no `violations` row appears | The `POST /api/violation` request failed. Check `vercel logs`; a closed tab before the request landed is the usual cause, and the attempt is still blocked. |
 | `/api/run` 500s | The participants table is missing `run_in_flight_at` / `last_run_at`: apply migrations (§4 of `docs/deploy.md`) before deploying the code. |
 
 Useful commands:
