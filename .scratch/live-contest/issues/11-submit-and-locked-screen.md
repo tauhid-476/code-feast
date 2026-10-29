@@ -18,7 +18,8 @@
 
 ## Notes
 
-Implemented on `ticket/11-submit-and-locked-screen`. Tests are in
+Implemented on `ticket/11-submit-and-locked-screen` (feature commit `b9002e1`,
+merged into `feat/live-contest` at `3d51fb0`). Tests are in
 `tests/ticket-11-submit-and-locked-screen.test.ts` (13 cases). No migration:
 the schema already had `submissions` and `submission_snippets`.
 
