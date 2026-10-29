@@ -10,6 +10,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
+    "e2b:build": "tsx scripts/build-e2b-template.ts",
+    "e2b:check": "tsx scripts/check-e2b-template.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx scripts/migrate.ts",
     "db:test:setup": "tsx scripts/setup-test-db.ts",
