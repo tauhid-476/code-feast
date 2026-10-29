@@ -8,11 +8,11 @@
 
 - [x] The app is deployed and served over HTTPS, with authentication working against the production database.
 - [x] Sign-in and sign-out return to the deployed host rather than a local address.
-- [ ] Sandboxes can be created and claimed from the deployed app, and the pool reaches its target size.
-- [ ] A smoke path passes on the deployed URL: sign in as Organizer, author an Event with one Problem, start it, and join as a Participant.
+- [x] Sandboxes can be created and claimed from the deployed app, and the pool reaches its target size.
+- [x] A smoke path passes on the deployed URL: sign in as Organizer, author an Event with one Problem, start it, and join as a Participant.
 - [x] Environment configuration is documented, and no secret value reaches the browser bundle.
 - [ ] Fullscreen is granted on the deployed host, confirming the secure-context requirement is met.
-- [ ] A deploy can be repeated without manual data repair, and the schema is applied by a repeatable migration path.
+- [x] A deploy can be repeated without manual data repair, and the schema is applied by a repeatable migration path.
 
 ## Notes
 
@@ -172,3 +172,44 @@ The human's first walkthrough found the Problem test panel failing with
 Deployed `code-feast-e5hb5zepz` to https://code-feast-chi.vercel.app
 (`vercel deploy --prod`, same tree, no git remote). Verified over HTTP:
 `/` → 307 `/sign-in`, `/api/auth/ok` → 200, no Deployment Protection gate.
+
+### Verified on the deployed host (2026-10-29)
+
+The human walked `docs/verify-deploy.md` end to end on
+<https://code-feast-chi.vercel.app>. Six of the seven boxes are now ticked; the
+one left is the fullscreen grant, which no server-side check can prove.
+
+- Authored a draft Event, one Problem ("Two Sum"), a Starter Code and a Harness
+  per language, then a second Problem ("Maximum Subarray") to re-test with a
+  different stdin shape.
+- The test panel ran **all three languages** against both sample cases and
+  returned 2/2 each. This is the only place the real E2B path is exercised
+  before the event, and it is what caught the cold-pool deadlock (ticket 05).
+- Start Event filled the pool: `runner_pool` held **20 rows, all `ready`**,
+  created 09:38Z in pairs about 1.5s apart — E2B's one-per-second create pace.
+  Connecting to a sandbox id out of that batch returned a live JDK sandbox
+  (`nproc` 2, `Mem` 1982 MiB), so the rows pointed at real sandboxes.
+- Joined the same Event from a second browser session as a Participant and saw
+  the contest view. Run and Submit are tickets 10–13, so the smoke path stops
+  there by design — nothing is missing from this ticket's scope.
+
+Two findings for the rehearsal (ticket 19), neither a defect in what was built:
+
+1. **`SANDBOX_TIMEOUT_MS` is one hour, and events can run longer.** The test
+   Event was 90 minutes. At minute 60 every sandbox in the pool expires at once.
+   `claimSandbox` health-checks on claim, so a Run marks the dead row, replaces
+   it and retries rather than failing — the contest survives — but a mid-event
+   burst of twenty 20–40s cold starts is what participants would feel. Either
+   keep event deadlines under an hour, or raise the sandbox timeout above the
+   longest deadline.
+2. **`Sandbox.list()` is not a reliable inventory.** It returned zero sandboxes
+   while one of the ids in `runner_pool` still connected and ran a command. Use
+   `runner_pool` as the source of truth and `Sandbox.connect(id)` to prove
+   liveness; do not trust the list to tell you whether the pool is warm.
+
+Also worth knowing: the pool is **not** drained at End. Rows stay `ready` and
+point at sandboxes that later expire, so the next Start finds twenty stale rows,
+`replenishPool` counts them as present and creates nothing, and the first claims
+prune them one at a time. Self-healing by design, but it means the first
+participant of the next event may pay a cold start even after Start reports a
+full pool.
