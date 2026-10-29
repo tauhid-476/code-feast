@@ -100,4 +100,8 @@ covers the counter, the one-alt-tab case, the heartbeat, elimination, and the
 **Return fullscreen** recovery, and the failure table names the new symptoms
 (counter never moves, counted row missing, refresh banner, heartbeat 409).
 
-Merge commit: (recorded by the merge step)
+Merge commit: `97d3ccd` (`git merge --no-ff` into `feat/live-contest`, parent
+`c15a636`). The merge gate passed on the merged tree: `npm test` 17 files /
+242 tests, `npm run typecheck`, `npm run lint`, and `npm run build` all green.
+No migration and no new environment variable, so nothing to deploy for this
+ticket beyond the code.
