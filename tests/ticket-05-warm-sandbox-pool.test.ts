@@ -43,16 +43,17 @@ describe("warm sandbox pool", () => {
     await expect(getReadyCount()).resolves.toBe(0);
   });
 
-  it("waits for a sandbox when the pool is empty and replenishment arrives", async () => {
+  it("fills an empty pool itself so the first Run cannot deadlock", async () => {
     const provider = new FakeSandboxProvider();
+    await expect(getReadyCount()).resolves.toBe(0);
 
-    const pending = claimSandbox({ provider, timeoutMs: 10_000 });
-    // Give the claimer a chance to find nothing before the pool is filled.
-    await new Promise((resolve) => setTimeout(resolve, 150));
-    await expect(replenishPool({ provider, target: 1 })).resolves.toBe(1);
+    // SPEC §7: a request that finds the pool short replenishes it. Before this,
+    // a cold pool was filled only by an action that ran *after* a successful
+    // Run, so the first Run could never succeed and nothing ever filled it.
+    const claim = await claimSandbox({ provider, timeoutMs: 10_000 });
 
-    const claim = await pending;
     expect(claim.sandboxId).toBe("sandbox-1");
+    expect(provider.created).toEqual(["sandbox-1"]);
     expect(provider.connected).toEqual(["sandbox-1"]);
   });
 
@@ -147,11 +148,24 @@ describe("warm sandbox pool", () => {
     await expect(getReadyCount()).resolves.toBe(3);
   });
 
-  it("returns a 503 when no sandbox is claimable before the deadline", async () => {
+  it("returns a 503 when the pool is at target but every sandbox is claimed", async () => {
     const provider = new FakeSandboxProvider();
+    await replenishPool({ provider, target: 1 });
+    await claimSandbox({ provider });
 
+    // Nothing is claimable and the pool is already at target, so the claim must
+    // bound itself rather than create sandboxes without limit.
     await expect(
       claimSandbox({ provider, timeoutMs: 150 }),
+    ).rejects.toMatchObject({ code: "runner_busy", status: 503 });
+    expect(provider.created).toHaveLength(1);
+  });
+
+  it("returns a 503 when the sandbox provider cannot create a sandbox", async () => {
+    const provider = createE2BSandboxProvider({ apiKey: "" });
+
+    await expect(
+      claimSandbox({ provider, timeoutMs: 5_000 }),
     ).rejects.toMatchObject({ code: "runner_busy", status: 503 });
   });
 

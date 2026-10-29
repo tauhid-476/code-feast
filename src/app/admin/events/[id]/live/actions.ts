@@ -1,9 +1,11 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import { requireOrganizer } from "@/lib/auth/guards";
 import { actionError } from "@/lib/errors";
 import { endEvent, extendDeadline, startEvent } from "@/lib/events/clock";
+import { scheduleReplenish } from "@/lib/runner/pool";
 
 export type ClockActionState =
   | { error: string }
@@ -25,6 +27,11 @@ export async function startEventAction(
       { id: organizer.id, email: organizer.email },
       eventId,
     );
+    // Start is the moment the pool stops being hypothetical: warm it to
+    // POOL_TARGET so the first participant's Run does not pay for the cold
+    // start (SPEC §7). `after()` outlives the response, which is what the
+    // twenty creations at E2B's one-per-second pace need.
+    after(scheduleReplenish());
     revalidateEvent(eventId);
     return { ok: true, changed };
   } catch (error) {

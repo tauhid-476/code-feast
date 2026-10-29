@@ -120,6 +120,14 @@ type ClaimedRow = {
 
 const BUSY_MESSAGE = "The runner is busy, try again in a moment.";
 
+/**
+ * What a claim asks the pool for when it finds nothing ready. One sandbox is
+ * enough to serve the claim in front of us; the route layer tops the pool up to
+ * `POOL_TARGET` afterwards. Asking for the full target here would make a single
+ * organizer test create twenty sandboxes.
+ */
+const COLD_START_TARGET = 1;
+
 function runnerBusy(): DomainError {
   return new DomainError("runner_busy", BUSY_MESSAGE, 503);
 }
@@ -172,6 +180,7 @@ export async function claimSandbox({
 }: ClaimOptions = {}): Promise<SandboxClaim> {
   const deadline = Date.now() + timeoutMs;
   let replacedDeadSandbox = false;
+  let requestedReplenish = false;
 
   while (true) {
     const row = await claimReadyRow();
@@ -197,6 +206,19 @@ export async function claimSandbox({
 
       await recordHealthyClaim(row.id);
       return { poolId: row.id, sandboxId: row.sandbox_id, handle };
+    }
+
+    // SPEC §7: replenishment happens on any request that finds the pool short.
+    // Waiting alone is not enough — on a cold pool nothing else is filling it,
+    // so the claim would always time out and the first Run could never succeed.
+    // Not awaited: the loop below keeps polling while the sandbox is created.
+    if (!requestedReplenish) {
+      requestedReplenish = true;
+      void replenishPool({ provider, target: COLD_START_TARGET }).catch(
+        (error) => {
+          console.error("[runner] cold-start replenish failed", error);
+        },
+      );
     }
 
     const remaining = deadline - Date.now();

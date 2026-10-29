@@ -103,3 +103,30 @@ withClaimedSandbox({ provider?, timeoutMs? }, async (claim) => {
 `SandboxTimeoutError` means TLE; any other throw means a sandbox error. Both
 must be reported, not swallowed. The handle is reused across Runs, so write
 files under a per-run directory to avoid stale artifacts.
+
+### Cold-pool deadlock (found in production, 2026-10-29)
+
+The first Run on a fresh deploy failed with
+`503 "The runner is busy, try again in a moment."` forever, not once.
+
+`claimSandbox` only *waited* for a `ready` row, and the sole `replenishPool`
+call sat in `after()` **after** a successful Run (`testProblemAction`). On a cold
+pool no Run could succeed, so nothing ever called it, so no Run could ever
+succeed. SPEC §7 says replenishment happens "on any request that finds the pool
+short" — the implementation put the trigger on the one request that could not
+happen.
+
+Fixed in two places:
+
+- `claimSandbox` now starts a `replenishPool` when it finds nothing ready, and
+  keeps polling while that sandbox is created. It asks for `COLD_START_TARGET`
+  (1), not `POOL_TARGET`, so one organizer test does not create twenty
+  sandboxes; the claim loop picks the sandbox up as soon as the row lands.
+- `testProblemAction` registers `after(scheduleReplenish())` *before* the Run,
+  so a busy or failed Run still leaves the pool filling, and `startEventAction`
+  now warms the pool too — `docs/deploy.md` claimed Start filled it, and nothing
+  did.
+
+Tests: "fills an empty pool itself so the first Run cannot deadlock" (the
+regression), plus the 503 path re-expressed as "pool at target, every sandbox
+claimed" and "provider cannot create a sandbox". 179 tests, 13 files, green.
