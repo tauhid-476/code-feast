@@ -163,6 +163,22 @@ vercel env add E2B_API_KEY production
 vercel env add E2B_TEMPLATE_ID production
 ```
 
+**Neon Auth trusted domains** — a fresh branch has **no** trusted domains, and
+until the deployed host is one, every sign-in fails with
+`403 {"code":"INVALID_ORIGIN"}`. This is not a cookie or proxy problem; the auth
+service rejects the `Origin` header before the app sees anything. Add the host
+before the first smoke test:
+
+```bash
+npx neonctl neon-auth domain add https://<production-host> \
+  --project-id <project-id> --branch production
+npx neonctl neon-auth domain list --project-id <project-id> --branch production
+```
+
+Add every origin the branch is used from — a custom domain, and `localhost` if
+you develop against this branch. Removing a domain is
+`neonctl neon-auth domain delete`.
+
 **`vercel.json`** — there is none, on purpose. Nothing this app needs is
 expressible there:
 
@@ -206,7 +222,9 @@ domain (or a protection bypass token).
 
 ## 7. Post-deploy smoke path
 
-The path the ticket asks for, with what "working" looks like:
+The path the ticket asks for, with what "working" looks like.
+`docs/verify-deploy.md` is the fill-in version of this list, with the deployed
+URLs and the failure modes.
 
 1. **Sign in as Organizer** at `https://<host>/sign-in`. You land on `/` and see
    the organizer navigation, not the participant landing page.

@@ -6,8 +6,8 @@
 
 **Status:** ready-for-agent
 
-- [ ] The app is deployed and served over HTTPS, with authentication working against the production database.
-- [ ] Sign-in and sign-out return to the deployed host rather than a local address.
+- [x] The app is deployed and served over HTTPS, with authentication working against the production database.
+- [x] Sign-in and sign-out return to the deployed host rather than a local address.
 - [ ] Sandboxes can be created and claimed from the deployed app, and the pool reaches its target size.
 - [ ] A smoke path passes on the deployed URL: sign in as Organizer, author an Event with one Problem, start it, and join as a Participant.
 - [x] Environment configuration is documented, and no secret value reaches the browser bundle.
@@ -16,13 +16,62 @@
 
 ## Notes
 
+### Deployed (2026-10-29)
+
+Live at <https://code-feast-chi.vercel.app>, Vercel project
+`khan-tauheeds-projects/code-feast`. There is no git remote on this repo, so the
+deploy is `vercel deploy --prod` from the working tree rather than a
+Git-connected project.
+
+- Neon branch `production` (`br-hidden-violet-b8o7atng`), created from `main`, in
+  project `misty-sound-19889374`. It has its own Neon Auth base URL, so its
+  users are separate from development.
+- `npm run db:migrate` ran against it with `DATABASE_URL_UNPOOLED` exported from
+  `.env.production.local`: 1 migration recorded, 10 tables in `public`. The
+  branch inherited the schema from `main`, so the run was a no-op — which is the
+  repeatability claim, not a failure.
+- Seven variables set for the Production environment only. The four the manifest
+  marks non-secret (`NEON_AUTH_BASE_URL`, `NEON_AUTH_JWKS_URL`, `ADMIN_EMAILS`,
+  `E2B_TEMPLATE_ID`) are stored as *Config* so they stay readable in the
+  dashboard; the three secrets are *Sensitive*. A new Vercel project defaults
+  everything to Sensitive, so they had to be re-added.
+- `ADMIN_EMAILS` is `tauheedxd90@gmail.com`. The Organizer account was created on
+  the production URL, which is why `/admin/events` renders instead of the
+  participant landing page.
+
+Verified over HTTP: HTTPS with no Deployment Protection gate; sign-in, sign-out
+and `/api/auth/ok`; `/` → `/admin/events` (200, "No events", so the production
+database is live and empty); `/join` → 403 for an Organizer.
+
+### The trusted-domain trap
+
+The production branch started with **no trusted domains**, so every sign-in on
+the deployed host returned `403 {"code":"INVALID_ORIGIN"}` — the auth service
+rejects the `Origin` header before the app runs, so no amount of cookie or proxy
+debugging helps. Fixed with
+`neonctl neon-auth domain add https://code-feast-chi.vercel.app`. `docs/deploy.md`
+§5 now records the step, because every fresh branch reproduces it.
+
+The branch also inherited the 4 development auth users from `main`. They are the
+developer's own accounts and can sign in to production; `docs/verify-deploy.md`
+has the query to list them and the command to delete them.
+
+### Still to verify
+
+`docs/verify-deploy.md` is the walk-through for the five unticked boxes: the
+Problem test panel (one sandbox, all three languages), Start Event and the pool
+reaching `POOL_TARGET` (20 × 2 GiB ≈ 40 GiB), a second Participant joining, the
+fullscreen grant, and a second deploy to prove repetition. None of it was run —
+the live E2B checks were deliberately left to the human, and the in-app browser
+was not connected to the session.
+
 ### Split
 
-The infrastructure half is done and on `ticket/18-production-deploy`. Every
-checkbox above still unticked needs a deploy, and this machine is logged out of
-Vercel (`npx vercel whoami` → "Logged out") with no project linked, so they wait
-on the human's `vercel login` / `vercel link` / first deploy. Nothing here was
-run against production, and no migration was applied to the production database.
+The infrastructure half was done on `ticket/18-production-deploy` while the
+machine was still logged out of Vercel and no project was linked. At that point
+nothing had been run against production and no migration had been applied to the
+production database — see **Deployed** above for what changed after `vercel
+login` and `vercel link`.
 
 ### The JDK template (the blocker)
 
@@ -101,15 +150,15 @@ under `.next/static`.
 
 ### Waiting on the human
 
-1. `vercel login`, `vercel link`, add the env vars from `docs/deploy.md` §1.
-2. `neon branches create --name production` (or pick the branch), then
-   `neon env pull --branch production --file .env.production.local …`.
-3. `npm run db:migrate` against that branch's `DATABASE_URL_UNPOOLED`.
-4. First deploy, then the smoke path in `docs/deploy.md` §7.
-5. Tick the remaining checkboxes. The last one is half-met: the migration path is
-   in place and repeatable, but "a deploy can be repeated" needs a second deploy
-   to prove.
+Done: `vercel login`, project `code-feast` linked and created, the seven env vars
+added, the `production` branch created and pulled into `.env.production.local`,
+the migration applied, and the first deploy shipped.
 
-Gates on this branch: `npx next typegen`, `npm test` (12 files, 148 tests),
+Still open:
+
+1. The five unticked boxes — `docs/verify-deploy.md` walks them in order.
+2. A second `vercel deploy --prod` to prove the repeat.
+
+Gates on this branch: `npx next typegen`, `npm test` (13 files, 178 tests),
 `npm run typecheck`, `npm run lint`, `npm run build` — all green.
 
