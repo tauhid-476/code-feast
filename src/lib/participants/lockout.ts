@@ -1,6 +1,11 @@
-import { and, eq, ne, sql } from "drizzle-orm";
+import { and, desc, eq, ne, sql } from "drizzle-orm";
 import { getDb, type Executor } from "@/lib/db/client";
-import { participants } from "@/lib/db/schema";
+import {
+  drafts,
+  participants,
+  submissionSnippets,
+  submissions,
+} from "@/lib/db/schema";
 
 /** The Participant vocabulary lives here so every read and write agrees. */
 export type ParticipantStatus = "joined" | "solving" | "locked_out";
@@ -59,15 +64,116 @@ export function toParticipant(row: ParticipantRow): Participant {
 
 export type LockScope = { participantId: string } | { eventId: string };
 
+export type FinalizeLockoutInput = {
+  reason: LockoutReason;
+  lockedAt: Date;
+};
+
 /**
- * The one deadline-lockout write, shared by the read-path reconciliation, the
- * bulk reconciliation in the live health strip, and End now. `locked_at` is the
+ * Freezes the Participant's work as one Submission: the last autosaved code of
+ * every Problem, in the language they last used for it. A Submission is unique
+ * per Participant, so a second call is a no-op rather than a second record.
+ *
+ * Only drafts exist here. The Harness lives in `problem_starters` and is never
+ * copied into a draft, which is what keeps a Submission free of it.
+ */
+async function recordSubmission(
+  executor: Executor,
+  participantId: string,
+  input: FinalizeLockoutInput,
+): Promise<void> {
+  const [submission] = await executor
+    .insert(submissions)
+    .values({
+      participantId,
+      lockedAt: input.lockedAt,
+      reason: input.reason,
+    })
+    // A participant who was reinstated and locked again gets one Submission,
+    // rewritten for the new lockout rather than a second row.
+    .onConflictDoUpdate({
+      target: submissions.participantId,
+      set: { lockedAt: input.lockedAt, reason: input.reason },
+    })
+    .returning({ id: submissions.id });
+
+  // Snippets are replaced so a reopened contest never shows the previous
+  // lockout's code.
+  await executor
+    .delete(submissionSnippets)
+    .where(eq(submissionSnippets.submissionId, submission.id));
+
+  const latest = await executor
+    .selectDistinctOn([drafts.problemId], {
+      problemId: drafts.problemId,
+      language: drafts.language,
+      code: drafts.code,
+    })
+    .from(drafts)
+    .where(eq(drafts.participantId, participantId))
+    .orderBy(
+      drafts.problemId,
+      desc(drafts.updatedAt),
+      // A same-millisecond tie must not make the snapshot depend on row order.
+      drafts.language,
+    );
+
+  if (latest.length === 0) return;
+
+  await executor.insert(submissionSnippets).values(
+    latest.map((snippet) => ({
+      submissionId: submission.id,
+      problemId: snippet.problemId,
+      language: snippet.language,
+      code: snippet.code,
+    })),
+  );
+}
+
+/**
+ * The one lockout write. Conditional on the Participant not already being
+ * locked, which makes concurrent readers safe and preserves a `submitted` or
+ * `eliminated` reason. Returning null means someone else won the race.
+ *
+ * The Submission is written by the same executor, so a caller that passes an
+ * open transaction gets the lock and the frozen code atomically.
+ */
+export async function finalizeLockout(
+  executor: Executor,
+  participantId: string,
+  input: FinalizeLockoutInput,
+): Promise<Participant | null> {
+  const [row] = await executor
+    .update(participants)
+    .set({
+      status: "locked_out",
+      lockoutReason: input.reason,
+      lockedAt: input.lockedAt,
+    })
+    .where(
+      and(
+        eq(participants.id, participantId),
+        ne(participants.status, "locked_out"),
+      ),
+    )
+    .returning(participantColumns);
+
+  if (!row) return null;
+
+  await recordSubmission(executor, participantId, input);
+  return toParticipant(row);
+}
+
+/**
+ * The deadline-lockout write, shared by the read-path reconciliation, the bulk
+ * reconciliation in the live health strip, and End now. `locked_at` is the
  * deadline itself, never the moment the server noticed, so a laptop that was
  * closed at minute 88 still has an honest lockout time (ADR 0002).
  *
  * The write is conditional on the participant not already being locked, which
  * is what makes concurrent reads safe and preserves a `submitted` or
- * `eliminated` reason.
+ * `eliminated` reason. Each participant locked here also gets the Submission
+ * their drafts add up to, in the same transaction when the caller has one.
  */
 export async function lockAtDeadline(
   executor: Executor,
@@ -88,6 +194,13 @@ export async function lockAtDeadline(
     })
     .where(and(target, ne(participants.status, "locked_out")))
     .returning(participantColumns);
+
+  for (const row of rows) {
+    await recordSubmission(executor, row.id, {
+      reason: "deadline",
+      lockedAt: deadlineAt,
+    });
+  }
 
   return rows.map(toParticipant);
 }

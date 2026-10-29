@@ -2,11 +2,12 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Play, Send } from "lucide-react";
+import { Play } from "lucide-react";
 import { ContestCountdown } from "@/components/contest-countdown";
 import { ContestEditor } from "@/components/contest-editor";
 import { ContestRunOutcome } from "@/components/contest-run-outcome";
 import { Statement } from "@/components/statement";
+import { SubmitContest } from "@/components/submit-contest";
 import { useContestDrafts } from "@/components/use-contest-drafts";
 import { useContestRun } from "@/components/use-contest-run";
 import type {
@@ -44,8 +45,8 @@ function languagesFor(problem: ContestProblemView): Language[] {
  * the top right.
  *
  * Run executes the current buffer against the Problem's Sample Test Cases and
- * shows the answer under the editor. Submit is ticket 11's, and is still a
- * disabled placeholder rather than a button that lies.
+ * shows the answer under the editor. Submit asks for confirmation, freezes the
+ * autosaved work, and sends the participant to the terminal screen.
  */
 export function ContestWorkspace({
   code,
@@ -73,7 +74,7 @@ export function ContestWorkspace({
     problems[0] ? languagesFor(problems[0])[0] : "python",
   );
 
-  const { hydrated, buffers, updateCode, retryAll, dirtyCount, saving, failed, saved } =
+  const { hydrated, buffers, updateCode, retryAll, flushAll, dirtyCount, saving, failed, saved } =
     useContestDrafts({
       code,
       participantId,
@@ -145,10 +146,7 @@ export function ContestWorkspace({
             deadlineAt={deadlineAt}
           />
           {/* Ticket 11 owns Submit: confirmation, lockout, terminal screen. */}
-          <Button type="button" size="sm" disabled>
-            <Send data-icon="inline-end" />
-            Submit
-          </Button>
+          <SubmitContest code={code} flush={flushAll} disabled={!hydrated} />
         </div>
       </header>
 

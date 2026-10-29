@@ -10,7 +10,10 @@ export type Transaction = Parameters<
 >[0];
 
 /** A database handle or an open transaction; both run the same queries. */
-export type Executor = Pick<Database, "select" | "update" | "execute">;
+export type Executor = Pick<
+  Database,
+  "select" | "selectDistinctOn" | "insert" | "update" | "delete" | "execute"
+>;
 
 const globalForDb = globalThis as unknown as {
   pool?: Pool;

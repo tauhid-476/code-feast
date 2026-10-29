@@ -133,7 +133,7 @@ Open `/join`, enter the Event's join code.
 Organizer, `/join` correctly returns `403`.
 
 When the Event is live, open a Problem, press **Run** with a solution, then
-submit it.
+press **Submit**.
 
 **A working Run looks like:** a panel opens under the editor reading
 `2 of 2 sample test cases pass`, with each sample's input, expected, actual,
@@ -143,6 +143,20 @@ stderr, exit code and duration. Your code is unchanged and nothing was submitted
 a failure. If the warm pool is empty the Run waits up to 20 seconds and then says
 `The runner is busy, try again in a moment.`; the countdown keeps running and
 Run works again afterwards.
+
+**A working Submit looks like:** the confirmation says submitting ends your
+contest and cannot be undone. **Keep working** closes it and leaves you in the
+editor with nothing recorded. **Submit and lock** sends you to
+`/e/<CODE>/locked`, which shows the reason (**Submitted**) and your elapsed time;
+there is no code on that screen and no way back to the editor. Opening
+`/e/<CODE>/contest` afterwards returns to the locked screen. Pressing Submit a
+second time writes nothing: there is still exactly one submission, with the code
+of every problem you had autosaved and the language you last used for it.
+
+**A working Deadline lockout looks like:** close the tab before the Deadline and
+return after it. The first page load locks you at the Deadline itself — the
+locked screen says **Deadline**, and the recorded submission is the last
+autosaved code, not an empty one or the code from before your last edits.
 
 ### 7. Review the submission
 
@@ -200,6 +214,8 @@ as you go, and set `**Status:** resolved` once all seven are ticked. Append a
 | Everything redirects to a Vercel login | Deployment Protection is on for that deployment. Production should be public; previews are protected by default. |
 | Sign-in succeeds but you land on the participant page | The email is not in `ADMIN_EMAILS`. |
 | **Run** says `Run did not start` | The message is the server's. `The runner is busy…` means the pool could not serve it in 20s — check the health strip and `vercel logs`. `Runs are limited to one every two seconds.` is the rate limit. `Your contest is locked.` means the deadline passed. |
+| **Submit** says `Your latest changes are not saved yet` | The last keystrokes never reached `/api/draft` (the Not saved banner is the same signal). Nothing was submitted; restore the connection and press Submit again. |
+| **Submit** does nothing, or the locked screen never appears | Check `vercel logs` for `submitContestAction`. A locked screen with no elapsed time means `participants.locked_at` is null — look at the row, not the page. |
 | `/api/run` 500s | The participants table is missing `run_in_flight_at` / `last_run_at`: apply migrations (§4 of `docs/deploy.md`) before deploying the code. |
 
 Useful commands:

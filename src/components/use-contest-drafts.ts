@@ -57,7 +57,7 @@ export function useContestDrafts({
   const clockRef = useRef<ClockAnchor>(anchorClock(serverNow, 0));
   const buffersRef = useRef<Record<string, ContestBuffer>>({});
   const timersRef = useRef(new Map<string, ReturnType<typeof setTimeout>>());
-  const inFlightRef = useRef(new Set<string>());
+  const inFlightRef = useRef(new Map<string, Promise<void>>());
   const hydratedRef = useRef(false);
 
   const [buffers, setBuffersState] = useState<Record<string, ContestBuffer>>({});
@@ -134,63 +134,71 @@ export function useContestDrafts({
     setHydrated(true);
   }, [drafts, participantId, problems]);
 
-  async function persist(key: string) {
+  function persist(key: string): Promise<void> {
     const buffer = buffersRef.current[key];
-    if (!buffer?.pendingSave) return;
-    if (inFlightRef.current.has(key)) return;
+    if (!buffer?.pendingSave) return Promise.resolve();
+
+    // A second click, Retry, or flush joins the request already on the wire
+    // instead of sending a duplicate or pretending the save is done.
+    const running = inFlightRef.current.get(key);
+    if (running) return running;
 
     const { problemId, language } = splitKey(key);
     const sentCode = buffer.code;
 
-    inFlightRef.current.add(key);
-    setSaveState(key, "saving");
-    let acknowledged = false;
+    const request = (async () => {
+      setSaveState(key, "saving");
+      let acknowledged = false;
 
-    try {
-      const response = await fetch("/api/draft", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        signal: AbortSignal.timeout(15_000),
-        body: JSON.stringify({
-          joinCode: code,
-          problemId,
-          language,
-          code: sentCode,
-        }),
-      });
-
-      if (!response.ok) throw new Error(`draft save failed: ${response.status}`);
-
-      const body = (await response.json()) as { updatedAt: string };
-      const updatedAt = Date.parse(body.updatedAt);
-      if (!Number.isFinite(updatedAt)) throw new Error("draft save: bad time");
-      acknowledged = true;
-
-      const current = buffersRef.current[key];
-      if (current?.code === sentCode) {
-        setBuffers((prev) => ({
-          ...prev,
-          [key]: { code: sentCode, updatedAt, pendingSave: false },
-        }));
-        writeLocalDraft(storageKey(participantId, problemId, language), {
-          code: sentCode,
-          updatedAt,
+      try {
+        const response = await fetch("/api/draft", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          signal: AbortSignal.timeout(15_000),
+          body: JSON.stringify({
+            joinCode: code,
+            problemId,
+            language,
+            code: sentCode,
+          }),
         });
-        setSaveState(key, "saved");
+
+        if (!response.ok) throw new Error(`draft save failed: ${response.status}`);
+
+        const body = (await response.json()) as { updatedAt: string };
+        const updatedAt = Date.parse(body.updatedAt);
+        if (!Number.isFinite(updatedAt)) throw new Error("draft save: bad time");
+        acknowledged = true;
+
+        const current = buffersRef.current[key];
+        if (current?.code === sentCode) {
+          setBuffers((prev) => ({
+            ...prev,
+            [key]: { code: sentCode, updatedAt, pendingSave: false },
+          }));
+          writeLocalDraft(storageKey(participantId, problemId, language), {
+            code: sentCode,
+            updatedAt,
+          });
+          setSaveState(key, "saved");
+        }
+      } catch {
+        // Leave the buffer pending. The banner, the Retry button, the next
+        // keystroke, and the browser coming back online all resend it; a failed
+        // request never retries in a tight loop.
+        setSaveState(key, "error");
+      } finally {
+        inFlightRef.current.delete(key);
+        // Only a save that reached the server is worth an immediate follow-up;
+        // that follow-up carries keystrokes made while the request was in flight.
+        if (acknowledged && buffersRef.current[key]?.pendingSave) {
+          schedule(key, RETRY_MS);
+        }
       }
-    } catch {
-      // Leave the buffer pending. The banner, the Retry button, the next
-      // keystroke, and the browser coming back online all resend it; a failed
-      // request never retries in a tight loop.
-      setSaveState(key, "error");
-    } finally {
-      inFlightRef.current.delete(key);
-      // Only a save that reached the server is worth an immediate follow-up;
-      // that follow-up carries keystrokes made while the request was in flight.
-      if (acknowledged && buffersRef.current[key]?.pendingSave) {
-        schedule(key, RETRY_MS);
-      }
-    }
+    })();
+
+    inFlightRef.current.set(key, request);
+    return request;
   }
 
   function schedule(key: string, delay = SAVE_DEBOUNCE_MS) {
@@ -231,6 +239,38 @@ export function useContestDrafts({
       if (!buffer.pendingSave) continue;
       void persist(key);
     }
+  }
+
+  /**
+   * Submit freezes what the server has, so every keystroke still waiting on the
+   * debounce must reach it first. Returns false when something could not be
+   * saved: the Submit is then refused rather than freezing a snapshot that is
+   * missing the participant's last lines.
+   */
+  async function flushAll(): Promise<boolean> {
+    const pending = () =>
+      Object.keys(buffersRef.current).filter(
+        (key) => buffersRef.current[key]?.pendingSave,
+      );
+
+    // Two passes: the first sends what is pending now, the second carries
+    // keystrokes typed while the first request was on the wire.
+    for (let pass = 0; pass < 2; pass += 1) {
+      const keys = pending();
+      if (keys.length === 0) return true;
+
+      for (const key of keys) {
+        const timer = timersRef.current.get(key);
+        if (timer) {
+          clearTimeout(timer);
+          timersRef.current.delete(key);
+        }
+      }
+
+      await Promise.all(keys.map((key) => persist(key)));
+    }
+
+    return pending().length === 0;
   }
 
   // A local copy newer than the server is resynced once the workspace opens.
@@ -291,6 +331,7 @@ export function useContestDrafts({
     buffers,
     updateCode,
     retryAll,
+    flushAll,
     dirtyCount,
     saving: states.includes("saving"),
     failed: states.includes("error"),

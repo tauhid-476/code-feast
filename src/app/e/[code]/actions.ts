@@ -1,11 +1,17 @@
 "use server";
 
 import { requireParticipant } from "@/lib/auth/guards";
-import { now as serverNow } from "@/lib/time";
-import { grantContestGate, readContestGate } from "@/lib/participants/gate";
+import { submitContest } from "@/lib/contest/submit";
+import { actionError, isDomainError } from "@/lib/errors";
+import {
+  clearContestGate,
+  grantContestGate,
+  readContestGate,
+} from "@/lib/participants/gate";
 import { markSolving } from "@/lib/participants/lockout";
 import { loadParticipantContext } from "@/lib/participants/queries";
 import { contestDestination } from "@/lib/participants/routes";
+import { now as serverNow } from "@/lib/time";
 
 export type EnterContestResult = { error: string } | { href: string };
 
@@ -49,4 +55,45 @@ export async function enterContestAction(
   }
 
   return { href: `/e/${context.event.code}/contest` };
+}
+
+export type SubmitContestResult = { error: string } | { href: string };
+
+/**
+ * The Participant's Submit (SPEC §5.7). The client asks for confirmation first;
+ * this action is the write. It clears the fullscreen gate either way, so the
+ * terminal screen is not backed by a cookie that still opens the editor.
+ *
+ * A participant already locked is sent to the terminal screen instead of
+ * seeing an error: the refusal is that no second Submission is written.
+ */
+export async function submitContestAction(
+  code: string,
+): Promise<SubmitContestResult> {
+  const user = await requireParticipant();
+  const context = await loadParticipantContext(code, user.id);
+
+  if (!context || !context.participant) {
+    return { error: "Join this event before submitting." };
+  }
+
+  const lockedHref = `/e/${context.event.code}/locked`;
+
+  if (context.participant.status === "locked_out") {
+    await clearContestGate(context.event.code);
+    return { href: lockedHref };
+  }
+
+  try {
+    await submitContest(context, { now: serverNow() });
+  } catch (error) {
+    if (isDomainError(error) && error.code === "contest_locked") {
+      await clearContestGate(context.event.code);
+      return { href: lockedHref };
+    }
+    return actionError(error);
+  }
+
+  await clearContestGate(context.event.code);
+  return { href: lockedHref };
 }
