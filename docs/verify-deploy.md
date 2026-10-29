@@ -17,7 +17,7 @@ your judgement.
 | Neon project | `misty-sound-19889374` (`code-feast`) |
 | Neon branch | `production` (`br-hidden-violet-b8o7atng`), endpoint `ep-spring-hall-b8rgovsv` |
 | Neon Auth base | `https://ep-spring-hall-b8rgovsv.neonauth.c-14.us-east-1.aws.neon.tech/neondb/auth` |
-| Organizer account | `tauheedxd90@gmail.com` — password in `../code-feast-notes/prod-organizer-credentials.md`, outside the repo |
+| Organizer account | `tauheedxd90@gmail.com` — password in `/Users/khantauhid/coding/code-feast-notes/prod-organizer-credentials.md` (outside the repo) |
 | Env vars | 7 set for **Production** only: `DATABASE_URL`, `NEON_AUTH_BASE_URL`, `NEON_AUTH_JWKS_URL`, `NEON_AUTH_COOKIE_SECRET`, `ADMIN_EMAILS`, `E2B_API_KEY`, `E2B_TEMPLATE_ID` |
 
 `E2B_TEMPLATE_ID` is `cbhhpuy8mlv96jgoy8ho`, the JDK template. If a Java run
