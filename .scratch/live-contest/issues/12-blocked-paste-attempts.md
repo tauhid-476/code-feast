@@ -4,13 +4,13 @@
 
 **Blocked by:** 09: Contest view: fullscreen gate, editor, autosave
 
-**Status:** ready-for-agent
+**Status:** resolved
 
-- [ ] Pasting is blocked via the keyboard shortcut, the context menu, middle click, drag and drop, and the editor's built-in paste command.
-- [ ] Every blocked route produces the same toast: "Pasting is disabled."
-- [ ] The right-click context menu inside the editor is suppressed.
-- [ ] Copying out of the editor is allowed and unaffected.
-- [ ] Each blocked attempt is logged with its kind and a timestamp, marked uncounted.
-- [ ] Blocked attempts never increment the Participant's strike count, however many occur.
-- [ ] Blocked attempts are recorded server-side, so they survive a refresh.
-- [ ] A blocked attempt never interrupts typing or undo history.
+- [x] Pasting is blocked via the keyboard shortcut, the context menu, middle click, drag and drop, and the editor's built-in paste command.
+- [x] Every blocked route produces the same toast: "Pasting is disabled."
+- [x] The right-click context menu inside the editor is suppressed.
+- [x] Copying out of the editor is allowed and unaffected.
+- [x] Each blocked attempt is logged with its kind and a timestamp, marked uncounted.
+- [x] Blocked attempts never increment the Participant's strike count, however many occur.
+- [x] Blocked attempts are recorded server-side, so they survive a refresh.
+- [x] A blocked attempt never interrupts typing or undo history.
