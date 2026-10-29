@@ -56,6 +56,11 @@ export type RunOptions = {
    * left behind by a crashed run can be dated; tests can move it.
    */
   now?: Date;
+  /**
+   * How long a claim waits for a sandbox before the Run answers 503. SPEC §7
+   * fixes it at 20s; tests shorten it so the bound is exercised, not slept.
+   */
+  claimTimeoutMs?: number;
 };
 
 /** Python/C++ get 3s per case; Java gets 6s because the JVM must start. */
@@ -263,7 +268,7 @@ export async function runAgainstSamples(
   const startedAt = options.now ?? serverNow();
 
   return withClaimedSandbox(
-    { provider: options.provider },
+    { provider: options.provider, timeoutMs: options.claimTimeoutMs },
     async ({ handle }) => {
       const result = emptyResult();
       // The sandbox is reused by every Run, so this Run owns one directory:

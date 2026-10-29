@@ -127,6 +127,10 @@ export const participants = pgTable(
     shortlisted: boolean("shortlisted").notNull().default(false),
     activeSessionId: text("active_session_id"),
     lastSeenAt: timestamp("last_seen_at", { withTimezone: true }),
+    // Run rate limiting (ticket 10): which Run is in flight, and when the last
+    // one finished. Operational state, not a record of what was run.
+    runInFlightAt: timestamp("run_in_flight_at", { withTimezone: true }),
+    lastRunAt: timestamp("last_run_at", { withTimezone: true }),
   },
   (t) => [
     uniqueIndex("participants_event_user_unique").on(t.eventId, t.userId),

@@ -132,7 +132,17 @@ Open `/join`, enter the Event's join code.
 **Working looks like:** you land in the lobby, not on the admin pages. As an
 Organizer, `/join` correctly returns `403`.
 
-When the Event is live, open a Problem, run a solution and submit it.
+When the Event is live, open a Problem, press **Run** with a solution, then
+submit it.
+
+**A working Run looks like:** a panel opens under the editor reading
+`2 of 2 sample test cases pass`, with each sample's input, expected, actual,
+stderr, exit code and duration. Your code is unchanged and nothing was submitted
+— a Run is feedback only. Pressing Run again within two seconds says
+`Runs are limited to one every two seconds.` That is the rate limit working, not
+a failure. If the warm pool is empty the Run waits up to 20 seconds and then says
+`The runner is busy, try again in a moment.`; the countdown keeps running and
+Run works again afterwards.
 
 ### 7. Review the submission
 
@@ -189,6 +199,8 @@ as you go, and set `**Status:** resolved` once all seven are ticked. Append a
 | `/admin/events` 500s | `DATABASE_URL` or the migration. Check the production branch is the one in Vercel, then `npm run db:migrate`. |
 | Everything redirects to a Vercel login | Deployment Protection is on for that deployment. Production should be public; previews are protected by default. |
 | Sign-in succeeds but you land on the participant page | The email is not in `ADMIN_EMAILS`. |
+| **Run** says `Run did not start` | The message is the server's. `The runner is busy…` means the pool could not serve it in 20s — check the health strip and `vercel logs`. `Runs are limited to one every two seconds.` is the rate limit. `Your contest is locked.` means the deadline passed. |
+| `/api/run` 500s | The participants table is missing `run_in_flight_at` / `last_run_at`: apply migrations (§4 of `docs/deploy.md`) before deploying the code. |
 
 Useful commands:
 
