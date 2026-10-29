@@ -19,6 +19,7 @@ import {
   HEARTBEAT_INTERVAL_MS,
   heartbeatReport,
 } from "@/lib/contest/heartbeat";
+import { CONTEST_SESSION_HEADER } from "@/lib/participants/session";
 import {
   isCountedViolationKind,
   STRIKE_LIMIT,
@@ -64,10 +65,16 @@ export type ContestSupervision = {
 
 export function useContestSupervision({
   code,
+  sessionId,
   initialStrikes,
+  onSessionRefused,
 }: {
   code: string;
+  /** This tab's session, sent with every beat and violation (ticket 14). */
+  sessionId: string;
   initialStrikes: number;
+  /** This tab lost the contest: show the explanation instead of refreshing. */
+  onSessionRefused: () => void;
 }): ContestSupervision {
   const [strikes, setStrikes] = useState(initialStrikes);
   // The browser's own state, not a copy: a refresh that left fullscreen behind
@@ -116,11 +123,23 @@ export function useContestSupervision({
       void fetch("/api/violation", {
         method: "POST",
         keepalive: true,
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          [CONTEST_SESSION_HEADER]: sessionId,
+        },
         body: JSON.stringify({ joinCode: codeRef.current, kind }),
       })
         .then(async (response) => {
           if (!response.ok) {
+            if (response.status === 409) {
+              const refusal = (await response.json().catch(() => null)) as {
+                code?: string;
+              } | null;
+              if (refusal?.code === "session_superseded") {
+                onSessionRefused();
+                return;
+              }
+            }
             if ([401, 403, 404, 409].includes(response.status)) router.refresh();
             return;
           }
@@ -135,7 +154,7 @@ export function useContestSupervision({
           // heartbeat reports the same state to the server.
         });
     },
-    [apply, router],
+    [apply, onSessionRefused, router, sessionId],
   );
 
   const enterFullscreen = useCallback(() => {
@@ -180,7 +199,10 @@ export function useContestSupervision({
         const response = await fetch("/api/heartbeat", {
           method: "POST",
           keepalive: true,
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            [CONTEST_SESSION_HEADER]: sessionId,
+          },
           body: JSON.stringify({
             joinCode: codeRef.current,
             ...heartbeatReport(
@@ -190,6 +212,15 @@ export function useContestSupervision({
           }),
         });
         if (!response.ok) {
+          if (response.status === 409) {
+            const refusal = (await response.json().catch(() => null)) as {
+              code?: string;
+            } | null;
+            if (refusal?.code === "session_superseded") {
+              onSessionRefused();
+              return;
+            }
+          }
           if ([401, 403, 404, 409].includes(response.status)) router.refresh();
           return;
         }
@@ -207,7 +238,7 @@ export function useContestSupervision({
       cancelled = true;
       window.clearInterval(timer);
     };
-  }, [apply, router]);
+  }, [apply, onSessionRefused, router, sessionId]);
 
   return { strikes, report, outOfFullscreen: !fullscreen, enterFullscreen };
 }

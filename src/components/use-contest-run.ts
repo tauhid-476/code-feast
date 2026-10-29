@@ -2,6 +2,7 @@
 
 import { useCallback, useRef, useState } from "react";
 import type { Language } from "@/lib/languages";
+import { CONTEST_SESSION_HEADER } from "@/lib/participants/session";
 import type { RunResult } from "@/lib/runner/run";
 
 /** A Run can wait 20s for a sandbox, compile for 15s, and run two samples. */
@@ -28,11 +29,17 @@ export type StartRunInput = {
  */
 export function useContestRun({
   joinCode,
+  sessionId,
   onLocked,
+  onSessionRefused,
 }: {
   joinCode: string;
+  /** This tab's session, sent with the Run; a displaced tab is refused. */
+  sessionId: string;
   /** A 409 means the contest is no longer this view: refresh into the right one. */
   onLocked?: () => void;
+  /** A 409 for `session_superseded`: another tab took over, explain it in place. */
+  onSessionRefused?: () => void;
 }) {
   const [state, setState] = useState<ContestRunState>({
     running: false,
@@ -55,15 +62,24 @@ export function useContestRun({
       try {
         const response = await fetch("/api/run", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            [CONTEST_SESSION_HEADER]: sessionId,
+          },
           signal: AbortSignal.timeout(RUN_TIMEOUT_MS),
           body: JSON.stringify({ joinCode, ...input }),
         });
         const body = (await response.json().catch(() => null)) as
-          | { result?: RunResult; error?: string }
+          | { result?: RunResult; error?: string; code?: string }
           | null;
 
-        if (response.status === 409) onLocked?.();
+        if (response.status === 409) {
+          if (body?.code === "session_superseded" && onSessionRefused) {
+            onSessionRefused();
+          } else {
+            onLocked?.();
+          }
+        }
 
         if (!response.ok || !body?.result) {
           setState({
@@ -91,7 +107,7 @@ export function useContestRun({
         inFlight.current = false;
       }
     },
-    [joinCode, onLocked],
+    [joinCode, sessionId, onLocked, onSessionRefused],
   );
 
   /** Discards a verdict as soon as the code it describes changes. */

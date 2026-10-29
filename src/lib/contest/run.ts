@@ -33,8 +33,8 @@ export const RUN_MIN_INTERVAL_MS = 2_000;
 
 export type ContestRunOptions = RunOptions & {
   /**
-   * The browser session running. A displaced session may not Run (ticket 14);
-   * a Run writes nothing, so the loaded row is enough here.
+   * The tab running. A displaced tab may not Run (ticket 14); a Run writes
+   * nothing, so the loaded row is enough here.
    */
   sessionId?: string | null;
 };

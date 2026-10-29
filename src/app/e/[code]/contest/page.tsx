@@ -1,15 +1,12 @@
 import { redirect } from "next/navigation";
-import { ContestWorkspace } from "@/components/contest-workspace";
-import { SessionTakeover } from "@/components/session-takeover";
-import { SignOutButton } from "@/components/sign-out-button";
+import { ContestSessionGate } from "@/components/contest-session-gate";
 import { requireParticipant } from "@/lib/auth/guards";
 import { listDrafts } from "@/lib/drafts/manage";
 import { listContestProblems } from "@/lib/problems/contest";
-import { readContestGate, readContestSession } from "@/lib/participants/gate";
+import { readContestGate } from "@/lib/participants/gate";
 import { markSolving } from "@/lib/participants/lockout";
 import { loadParticipantContext } from "@/lib/participants/queries";
 import { contestDestination } from "@/lib/participants/routes";
-import { isActiveSession } from "@/lib/participants/session";
 import { now as serverNow } from "@/lib/time";
 
 export const dynamic = "force-dynamic";
@@ -20,10 +17,11 @@ export const dynamic = "force-dynamic";
  * deadline lockout, and the ended-event redirect are all decided by
  * `contestDestination`, so this page cannot drift from the lobby.
  *
- * The browser session decides which of two open windows gets the editor (SPEC
- * §6, ticket 14). This render is the authority: the session that no longer
- * matches `participants.active_session_id` is shown the explanation instead of
- * the workspace, without waiting for a heartbeat to discover it.
+ * Which tab holds the contest (SPEC §6, ticket 14) cannot be decided here: a
+ * session belongs to one tab and lives in its `sessionStorage`, which a server
+ * render cannot see. So the page renders `ContestSessionGate`, which claims or
+ * verifies this tab's id before the workspace mounts. The refusal itself is
+ * still the server's: every write is checked against `active_session_id`.
  */
 export default async function ContestPage({ params }: PageProps<"/e/[code]">) {
   const { code } = await params;
@@ -39,17 +37,6 @@ export default async function ContestPage({ params }: PageProps<"/e/[code]">) {
   const destination = contestDestination(context, { entered: gate });
   if (destination) redirect(destination);
 
-  const sessionId = await readContestSession(code);
-  if (!isActiveSession(context.participant, sessionId)) {
-    return (
-      <SessionTakeover
-        eventTitle={context.event.title}
-        participantName={context.participant.displayName}
-        action={<SignOutButton />}
-      />
-    );
-  }
-
   // Entering is what makes a participant "solving" (ticket 08 leaves Start
   // alone). The enter action writes this; repeating it here heals a lost write
   // and covers a refresh.
@@ -61,9 +48,10 @@ export default async function ContestPage({ params }: PageProps<"/e/[code]">) {
     listContestProblems(context),
     listDrafts(context),
   ]);
+  const at = serverNow();
 
   return (
-    <ContestWorkspace
+    <ContestSessionGate
       code={context.event.code}
       eventTitle={context.event.title}
       participantId={context.participant.id}
@@ -75,8 +63,7 @@ export default async function ContestPage({ params }: PageProps<"/e/[code]">) {
         code: draft.code,
         updatedAt: draft.updatedAt.toISOString(),
       }))}
-      strikes={context.participant.strikes}
-      serverNow={serverNow().toISOString()}
+      serverNow={at.toISOString()}
       deadlineAt={context.event.deadlineAt?.toISOString() ?? null}
     />
   );

@@ -25,10 +25,10 @@ export function sessionSupersededMessage(): string {
 }
 
 /**
- * The whole explanation the older session shows (SPEC §10: "Newest session
- * wins; older goes read-only and is logged"). It is one string so the terminal
- * state and the toast cannot drift.
+ * The whole explanation the older tab shows (SPEC §10: "Newest session wins;
+ * older goes read-only and is logged"). It is one string so every surface that
+ * explains the handover cannot drift.
  */
 export function sessionTakeoverText(): string {
-  return "You opened the contest in another place, so that session is now the live one. This window is read-only: Run, Submit, and autosave are closed. Your latest code is still saved and is waiting in the newer session. Holding the event open twice costs one strike.";
+  return "You opened the contest in another tab, so that tab is now the live one. This tab is read-only: Run, Submit, and autosave are closed. Your latest code is still saved and is waiting in the newer tab. Holding the event open twice costs one strike.";
 }

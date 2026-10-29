@@ -52,7 +52,7 @@ export type DraftOptions = {
   /** Tests move the clock; the app never passes this. */
   now?: Date;
   /**
-   * The browser session saving. A displaced session is refused, and the check
+   * The tab saving. A displaced tab is refused, and the check
    * runs under the participant row lock so a save already in flight when the
    * takeover commits cannot overwrite the winner's code (ticket 14).
    */

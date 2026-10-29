@@ -2,26 +2,32 @@ import { DomainError } from "@/lib/errors";
 import { sessionSupersededMessage } from "@/lib/contest/copy";
 
 /**
- * Which browser holds a Participant's live contest (SPEC §6, SPEC §10).
+ * Which tab holds a Participant's live contest (SPEC §6, SPEC §10).
  *
- * A session is the fullscreen gate a browser came through: the enter action
- * mints one random id per browser and writes it to `participants.active_session_id`.
- * The newest one wins. Every write against the contest names its session, and
- * the one that no longer matches is read-only — refused by the server, not by
- * the tab choosing to stop.
+ * A session belongs to one browser tab: the tab claims one when it first opens
+ * the contest, the server mints the id, and the tab keeps it in `sessionStorage`
+ * so a refresh is the same session while a new tab is a new one. The newest tab
+ * wins; the one it displaced is read-only — refused by the server at every
+ * write, not by the tab choosing to stop.
+ *
+ * The id travels on every contest request (`x-contest-session` for the route
+ * handlers, an argument to the Submit action). A request without it is refused
+ * once a tab holds the contest; only the session action may mint, and minting
+ * always takes over and costs the strike.
  *
  * A Participant with no session yet has nothing to compare against: rows from
- * before ticket 14, a lobby, or a fixture. The first session to claim becomes
- * the active one, so this is never a way for a displaced session to write.
+ * before ticket 14, a lobby, or a fixture. The first tab to claim becomes the
+ * active one.
  */
 
-export const SESSION_SUPERSEDED_CODE = "session_superseded";
+/** Shared by the route handlers and the browser; not a secret, an identity. */
+export const CONTEST_SESSION_HEADER = "x-contest-session";
 
 export type SessionHolder = {
   activeSessionId: string | null;
 };
 
-/** True when this session is the one allowed to write for this Participant. */
+/** True when this tab is the one allowed to write for this Participant. */
 export function isActiveSession(
   participant: SessionHolder,
   sessionId: string | null,
@@ -31,9 +37,9 @@ export function isActiveSession(
 }
 
 /**
- * The refusal every contest write shares. `sessionId` is the caller's browser
- * session, read from its cookie; a missing one is a refusal once another
- * session holds the participant.
+ * The refusal every contest write shares. A missing id is a refusal too: that
+ * is what stops a displaced tab from dropping its header to look like the
+ * first one.
  */
 export function requireActiveSession(
   participant: SessionHolder,
@@ -42,7 +48,7 @@ export function requireActiveSession(
   if (isActiveSession(participant, sessionId)) return;
 
   throw new DomainError(
-    SESSION_SUPERSEDED_CODE,
+    "session_superseded",
     sessionSupersededMessage(),
     409,
   );

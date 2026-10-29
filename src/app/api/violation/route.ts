@@ -1,8 +1,8 @@
 import { z } from "zod";
 import { getViewer } from "@/lib/auth/session";
 import { isDomainError } from "@/lib/errors";
-import { readContestSession } from "@/lib/participants/gate";
 import { loadParticipantContext } from "@/lib/participants/queries";
+import { CONTEST_SESSION_HEADER } from "@/lib/participants/session";
 import { now as serverNow } from "@/lib/time";
 import { logViolation } from "@/lib/violations/log";
 import { recordStrike } from "@/lib/violations/strikes";
@@ -56,7 +56,7 @@ export async function POST(request: Request) {
   const context = await loadParticipantContext(parsed.joinCode, viewer.user.id, {
     now: at,
   });
-  const sessionId = await readContestSession(parsed.joinCode);
+  const sessionId = request.headers.get(CONTEST_SESSION_HEADER);
 
   try {
     if (isCountedViolationKind(parsed.kind)) {
@@ -88,7 +88,10 @@ export async function POST(request: Request) {
     );
   } catch (error) {
     if (isDomainError(error)) {
-      return Response.json({ error: error.message }, { status: error.status });
+      return Response.json(
+        { error: error.message, code: error.code },
+        { status: error.status },
+      );
     }
     console.error(error);
     return Response.json(

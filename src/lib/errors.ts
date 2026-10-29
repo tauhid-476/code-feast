@@ -17,9 +17,13 @@ export function isDomainError(error: unknown): error is DomainError {
   return error instanceof DomainError;
 }
 
-/** Server Actions return `{ error }` instead of throwing across the boundary. */
-export function actionError(error: unknown): { error: string } {
-  if (isDomainError(error)) return { error: error.message };
+/**
+ * Server Actions return `{ error }` instead of throwing across the boundary.
+ * The `code` rides along so a client can tell a refusal it must explain (a
+ * takeover, `session_superseded`) from one it should refresh into (a lockout).
+ */
+export function actionError(error: unknown): { error: string; code?: string } {
+  if (isDomainError(error)) return { error: error.message, code: error.code };
   console.error(error);
   return { error: "Something went wrong. Try again." };
 }

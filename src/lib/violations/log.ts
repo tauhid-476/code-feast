@@ -28,7 +28,7 @@ export type LogViolationInput = {
 export type LogViolationOptions = {
   /** Tests move the clock; the app never passes this. */
   now?: Date;
-  /** The browser session reporting; a displaced one is refused (ticket 14). */
+  /** The tab reporting; a displaced one is refused (ticket 14). */
   sessionId?: string | null;
 };
 

@@ -25,7 +25,7 @@ import { recordStrike } from "./strikes";
 export type RecordHeartbeatOptions = {
   /** Tests move the clock; the app never passes this. */
   now?: Date;
-  /** The browser session beating; the takeover check is above. */
+  /** The tab beating; the takeover check is above. */
   sessionId?: string | null;
 };
 

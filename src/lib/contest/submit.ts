@@ -28,7 +28,7 @@ import { now as serverNow } from "@/lib/time";
 export type SubmitOptions = {
   /** Tests move the clock; the app never passes this. */
   now?: Date;
-  /** The browser session submitting. */
+  /** The tab submitting; a displaced one is refused (ticket 14). */
   sessionId?: string | null;
 };
 

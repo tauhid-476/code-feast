@@ -17,36 +17,45 @@
 
 ## Notes
 
-Feature commit `4d05144` on `ticket/14-duplicate-session`. Tests are in
-`tests/ticket-14-duplicate-session.test.ts` (11 cases; the full suite is 253
-tests in 18 files). No migration: `participants.active_session_id` and
-`last_seen_at` already existed.
+Feature commit `4d05144`, notes `dcea41a`, per-tab revision `ticket 14: give
+every tab its own session` — the third commit on `ticket/14-duplicate-session`.
+Tests are in `tests/ticket-14-duplicate-session.test.ts` (14 cases; the full
+suite is 256 tests in 18 files). No migration: `participants.active_session_id`
+and `last_seen_at` already existed.
 
-### The session is the browser that crossed the gate
+### A session is a tab
 
-The smallest thing consistent with what was already there: the fullscreen gate
-is already the server's proof that *this browser* entered this event, and the
-enter action is already the one place that mints it. Ticket 14 adds a second
-http-only cookie scoped to `/e/<CODE>`, `cf_session_<CODE>`, holding a random
-UUID (`ensureContestSession`). It is server-minted, so a displaced tab cannot
-name itself back in, and it survives a refresh because the enter action keeps
-one it finds. A second browser has no such cookie, gets a new id, and the claim
-in `startContestSession` (`src/lib/contest/session.ts`) writes it to
-`participants.active_session_id` and charges the strike.
+A session belongs to one browser tab. Its id lives in that tab's
+`sessionStorage` under `cf_session_<CODE>`, so a refresh is the same session and
+a new tab arrives without one. No cookie carries the session: cookies are shared
+by every tab of a browser, which is exactly what this must not do. The
+fullscreen gate cookie is unchanged.
+
+The server still mints the id. The contest page cannot decide this in a server
+render — `sessionStorage` is invisible to React Server Components — so it
+renders `ContestSessionGate`, a client component that calls
+`contestSessionAction(code, id)` with the id the tab has, or `null`. Null mints a
+`randomUUID()` in `openContestSession` (`src/lib/contest/session.ts`), writes it
+to `participants.active_session_id`, and, when another session held it, charges
+the `duplicate_session` strike. A provided id is only **verified**: a displaced
+tab that reloads goes read-only instead of claiming the contest back, so two
+idle tabs cannot ping-pong strikes, and a refresh of the active tab costs
+nothing.
 
 The claim is one transaction over the participant row locked `FOR UPDATE`:
-read the row, compare the session, write the new one, and count the strike
-with the same machinery as every other counted signal (`countStrike` was
-extracted from `recordStrike` for exactly this). So two entries arriving
-together produce one winner and one strike, a refresh of the winner produces
-neither, and a takeover inside the two-second window costs nothing — switching
-windows to the second browser is the same gesture as the blur it caused in the
-first.
+read the row, compare the session, write the new one, and count the strike with
+the same machinery as every other counted signal (`countStrike` was extracted
+from `recordStrike` for exactly this). So two tabs opening together produce one
+winner and one strike, and a takeover inside the two-second window costs nothing
+— switching windows to the second tab is the same gesture as the blur it caused
+in the first.
 
-A session **is a browser**, not a tab: cookies are shared by tabs, so a second
-tab is the same session by construction. A second browser or a private window
-is a second session. `docs/verify-deploy.md` says so, because the first manual
-test anyone tries is a second tab.
+The id rides on every contest write: `x-contest-session` (`CONTEST_SESSION_HEADER`
+in `src/lib/participants/session.ts`) on `/api/draft`, `/api/run`,
+`/api/heartbeat`, and `/api/violation`, and as an argument to
+`submitContestAction`. A request with no id is refused once a tab holds the
+contest, so dropping the header is not a way to look like the first tab; only
+`contestSessionAction` mints.
 
 ### Read-only is server-enforced at every seam
 
@@ -55,42 +64,46 @@ test anyone tries is a second tab.
 with no session yet has nothing to compare against and is allowed; the first
 session to claim it becomes active, so this is not a hole for a displaced one.
 
-The browser session is read from the cookie by the route layer and passed in:
-`runFromContest`, `saveDraft`, `submitContest`, `recordStrike`, `logViolation`,
-and `recordHeartbeat` all refuse a mismatch. Two of them check inside their own
-transaction — autosave takes the participant row lock before the upsert, and
-Submit locks before `finalizeLockout` — so a request already in flight when the
-new session commits cannot write the winner's draft or freeze their work on its
-way out. The others read the freshly loaded row, which is enough for a Run (it
-writes nothing) and for a beat (the next beat catches anything that slips).
+The tab's id is read from the request header (or the action argument) by the
+route layer and passed in: `runFromContest`, `saveDraft`, `submitContest`,
+`recordStrike`, `logViolation`, and `recordHeartbeat` all refuse a mismatch. Two
+of them check inside their own transaction — autosave takes the participant row
+lock before the upsert, and Submit locks before `finalizeLockout` — so a request
+already in flight when the new session commits cannot write the winner's draft
+or freeze their work on its way out. The others read the freshly loaded row,
+which is enough for a Run (it writes nothing) and for a beat (the next beat
+catches anything that slips).
 
 `/api/violation` still accepts only `REPORTABLE_VIOLATION_KINDS`;
-`duplicate_session` remains a server-only kind, recorded by the claim.
+`duplicate_session` remains a server-only kind, recorded by the claim. Every
+refusal carries `code` in the JSON body so a client can tell a takeover
+(`session_superseded`, explained in place) from a lockout (`contest_locked`,
+refreshed into the terminal screen).
 
 ### What each side sees
 
-- The contest page is the authority on the read-only state: it compares the
-  cookie with the loaded participant and renders `SessionTakeover` instead of
-  the workspace. No heartbeat is needed for a reload to land in the right place,
-  and the page never re-claims, so reloading cannot steal the contest back.
-- An already-open older tab learns from its next refused write: the heartbeat
-  answers 409 within five seconds, autosave refreshes on 409, and Run already
-  refreshed on 409. The workspace is replaced by the explanation; the editor is
-  not merely disabled.
+- The gate is the authority on the read-only state: it asks the server before
+  mounting the workspace and renders `SessionTakeover` when the tab is not
+  active. It never re-claims, so reloading cannot steal the contest back, and a
+  refresh of the active tab is silent.
+- A tab that is already open learns from its next refused write: the heartbeat
+  answers `409` within five seconds, and autosave, Run, and Submit all call
+  `onSessionRefused` and swap the workspace for the explanation. The editor is
+  replaced, not merely disabled.
 - Drafts are per Participant, so the winner's `listDrafts` already has the
   latest code. Nothing is copied, merged, or deleted at the handover.
 - The takeover strike goes through `countStrike`, so a duplicate that is the
   third strike writes the Submission from the drafts and locks with reason
-  `eliminated` in the same transaction. Both sessions then hit
-  `contest_locked` (checked before the session check) and the terminal screen.
+  `eliminated` in the same transaction. Every tab then hits `contest_locked`
+  (checked before the session check) and the terminal screen.
 - The health strip counts participant rows, and there is still one row, so the
   displaced tab adds nothing to "solving". A test pins the counts after a
   takeover.
 
-`docs/verify-deploy.md` gained the second-browser walkthrough, the
-`violations` / `active_session_id` SQL check, and five failure rows for the
-symptoms this ticket can produce (two editable windows, "Not saved" instead of
-the screen, a reclaim on reload, a second tab charging a strike, and a duplicate
-costing two).
+`docs/verify-deploy.md` walks the human through two tabs of one browser, the
+takeover explanation in the first, the refresh of the second, the
+`violations` / `active_session_id` SQL check, and the failure rows for the
+symptoms this ticket can produce (both tabs editable, "Not saved" instead of the
+screen, a reclaim on reload, a duplicate costing two).
 
 Merge commit: (recorded by the merge step)

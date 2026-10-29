@@ -1,15 +1,13 @@
 "use server";
 
 import { requireParticipant } from "@/lib/auth/guards";
-import { startContestSession } from "@/lib/contest/session";
+import { openContestSession } from "@/lib/contest/session";
 import { submitContest } from "@/lib/contest/submit";
 import { actionError, isDomainError } from "@/lib/errors";
 import {
   clearContestGate,
-  ensureContestSession,
   grantContestGate,
   readContestGate,
-  readContestSession,
 } from "@/lib/participants/gate";
 import { markSolving } from "@/lib/participants/lockout";
 import { loadParticipantContext } from "@/lib/participants/queries";
@@ -26,10 +24,11 @@ export type EnterContestResult = { error: string } | { href: string };
  * It also marks the participant solving, which Start deliberately does not do on
  * their behalf (ticket 08).
  *
- * And it is where the browser becomes this Participant's session (SPEC §6,
- * ticket 14). The newest session wins: a second browser entering displaces the
- * first, which turns read-only and costs one strike. Opening the same browser
- * again keeps the session it already has, so a refresh is not a duplicate.
+ * It deliberately does not touch the contest session (ticket 14). A session
+ * belongs to one tab, so the id the tab keeps in `sessionStorage` has to be
+ * claimed from the contest page itself: this action is reachable from the lobby,
+ * where a second tab entry would otherwise strike the first one before either
+ * had rendered the contest.
  */
 export async function enterContestAction(
   code: string,
@@ -62,45 +61,102 @@ export async function enterContestAction(
     await grantContestGate(code, target);
   }
 
-  const at = serverNow();
-  const sessionId = await ensureContestSession(code, at);
+  return { href: `/e/${context.event.code}/contest` };
+}
+
+export type ContestSessionResult =
+  | { error: string; code?: string }
+  | { href: string }
+  | {
+      /** The id this tab keeps in `sessionStorage` and writes with. */
+      sessionId: string;
+      /** False when another tab holds the contest: this one is read-only. */
+      active: boolean;
+      strikes: number;
+    };
+
+/**
+ * The contest page's first request (ticket 14). The tab sends the id it kept in
+ * `sessionStorage`, or null when it has none.
+ *
+ * Null mints a session and takes the contest over — the newest tab wins and the
+ * displaced one costs the Participant one `duplicate_session` strike. An id is
+ * only verified, so a displaced tab that reloads cannot claim the contest back,
+ * and a refresh of the active tab is the same session: no strike, no takeover.
+ *
+ * The fullscreen gate is required. This action can be called directly, and a
+ * session must not be minted for a browser that never crossed the gate.
+ */
+export async function contestSessionAction(
+  code: string,
+  sessionId: string | null,
+): Promise<ContestSessionResult> {
+  const user = await requireParticipant();
+  const context = await loadParticipantContext(code, user.id);
+
+  if (!context || !context.participant) {
+    return { error: "Join this event before opening it." };
+  }
+
+  const entered = await readContestGate(code, {
+    eventId: context.event.id,
+    participantId: context.participant.id,
+  });
+  if (!entered) {
+    return { error: "Enter the contest from the lobby first." };
+  }
+
   const lockedHref = `/e/${context.event.code}/locked`;
+  const at = serverNow();
 
   try {
-    const claim = await startContestSession(context, { sessionId }, { now: at });
-    if (claim.status === "locked_out") {
-      await clearContestGate(code);
+    const state = await openContestSession(
+      context,
+      { sessionId },
+      { now: at },
+    );
+
+    if (state.status === "locked_out") {
+      await clearContestGate(context.event.code);
       return { href: lockedHref };
     }
+
+    return {
+      sessionId: state.sessionId,
+      active: state.active,
+      strikes: state.strikes,
+    };
   } catch (error) {
-    // A takeover that was the third strike, or a session that lost a race with
-    // the Deadline: the contest is over for this browser either way.
+    // The takeover that was the third strike, or a session that lost a race
+    // with the Deadline: the contest is over for this tab either way.
     if (isDomainError(error) && error.code === "contest_locked") {
-      await clearContestGate(code);
+      await clearContestGate(context.event.code);
       return { href: lockedHref };
     }
     return actionError(error);
   }
-
-  return { href: `/e/${context.event.code}/contest` };
 }
 
-export type SubmitContestResult = { error: string } | { href: string };
+export type SubmitContestResult =
+  | { error: string; code?: string }
+  | { href: string };
 
 /**
  * The Participant's Submit (SPEC §5.7). The client asks for confirmation first;
- * this action is the write. It clears the fullscreen gate and the session either
- * way, so the terminal screen is not backed by a cookie that still opens the
- * editor.
+ * this action is the write. It clears the fullscreen gate either way, so the
+ * terminal screen is not backed by a cookie that still opens the editor.
  *
  * A participant already locked is sent to the terminal screen instead of
  * seeing an error: the refusal is that no second Submission is written.
  *
  * A displaced session is refused by `submitContest` (ticket 14): the older tab
- * cannot freeze the winner's work on its way out.
+ * cannot freeze the winner's work on its way out. The `code` on the result is
+ * what lets the page show the takeover explanation instead of "Something went
+ * wrong".
  */
 export async function submitContestAction(
   code: string,
+  sessionId: string | null,
 ): Promise<SubmitContestResult> {
   const user = await requireParticipant();
   const context = await loadParticipantContext(code, user.id);
@@ -117,10 +173,7 @@ export async function submitContestAction(
   }
 
   try {
-    await submitContest(context, {
-      now: serverNow(),
-      sessionId: await readContestSession(code),
-    });
+    await submitContest(context, { now: serverNow(), sessionId });
   } catch (error) {
     if (isDomainError(error) && error.code === "contest_locked") {
       await clearContestGate(context.event.code);

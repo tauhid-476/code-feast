@@ -11,6 +11,7 @@ import {
   writeLocalDraft,
 } from "@/lib/drafts/storage";
 import { anchorClock, projectNow, type ClockAnchor } from "@/lib/contest/clock";
+import { CONTEST_SESSION_HEADER } from "@/lib/participants/session";
 
 const SAVE_DEBOUNCE_MS = 900;
 const RETRY_MS = 400;
@@ -47,13 +48,18 @@ export function useContestDrafts({
   participantId,
   problems,
   drafts,
+  sessionId,
   serverNow,
+  onSessionRefused,
 }: {
   code: string;
   participantId: string;
   problems: ContestProblemView[];
   drafts: ContestDraftView[];
+  /** This tab's session; a displaced tab is refused by the server (ticket 14). */
+  sessionId: string;
   serverNow: string;
+  onSessionRefused: () => void;
 }) {
   const clockRef = useRef<ClockAnchor>(anchorClock(serverNow, 0));
   const buffersRef = useRef<Record<string, ContestBuffer>>({});
@@ -155,7 +161,10 @@ export function useContestDrafts({
       try {
         const response = await fetch("/api/draft", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            [CONTEST_SESSION_HEADER]: sessionId,
+          },
           signal: AbortSignal.timeout(15_000),
           body: JSON.stringify({
             joinCode: code,
@@ -166,11 +175,15 @@ export function useContestDrafts({
         });
 
         if (!response.ok) {
-          // A locked contest, or a session a newer one displaced (ticket 14):
-          // this view is no longer the contest. Refresh into the page that
-          // explains it rather than reporting "Not saved" for code the server
-          // will never accept from this window.
-          if (response.status === 409) router.refresh();
+          // A session a newer tab displaced (ticket 14) is explained in place;
+          // a locked contest is a page change. Either way this view is no
+          // longer the contest, so it does not report "Not saved" for code the
+          // server will never accept from this window.
+          const refusal = (await response.json().catch(() => null)) as {
+            code?: string;
+          } | null;
+          if (refusal?.code === "session_superseded") onSessionRefused();
+          else if (response.status === 409) router.refresh();
           throw new Error(`draft save failed: ${response.status}`);
         }
 
@@ -306,7 +319,10 @@ export function useContestDrafts({
         void fetch("/api/draft", {
           method: "POST",
           keepalive: true,
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            [CONTEST_SESSION_HEADER]: sessionId,
+          },
           body: JSON.stringify({
             joinCode: code,
             problemId,
@@ -328,7 +344,7 @@ export function useContestDrafts({
       timers.clear();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [code]);
+  }, [code, sessionId]);
 
   const states = Object.values(saveStates);
   const dirtyCount = Object.values(buffers).filter(

@@ -24,7 +24,7 @@ export type Participant = {
   strikes: number;
   shortlisted: boolean;
   /**
-   * The browser session that may still write (ticket 14). Server-side state:
+   * The tab that may still write (ticket 14). Server-side state:
    * never handed to a client component, only compared against the caller's.
    */
   activeSessionId: string | null;

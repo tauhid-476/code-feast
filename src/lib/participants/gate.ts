@@ -1,6 +1,5 @@
 import "server-only";
 
-import { randomUUID } from "node:crypto";
 import { cookies } from "next/headers";
 import { neonAuthCookieSecret } from "@/lib/env";
 import { now as serverNow } from "@/lib/time";
@@ -12,17 +11,15 @@ import {
 } from "./gate-token";
 
 /**
- * Reading and writing the two per-event cookies a contest browser carries.
+ * Reading and writing the per-event fullscreen gate cookie.
  *
- * - The gate says this browser crossed the fullscreen gate for this event and
- *   participant. The decision itself lives in `gate-token.ts` and `routes.ts`.
- * - The session says which browser holds the contest when the same Participant
- *   opens it somewhere else (ticket 14). It is a random id, minted by the enter
- *   action, that `participants.active_session_id` compares against. Server-minted
- *   and http-only, so a displaced tab cannot rename itself back in.
+ * The gate says this browser crossed the fullscreen gate for this event and
+ * participant. The decision itself lives in `gate-token.ts` and `routes.ts`.
  *
- * Neither is authorization: every read still resolves the participant through
- * `loadParticipantContext`.
+ * It is not the contest session (ticket 14): a session belongs to one tab and
+ * lives in that tab's `sessionStorage`, because a cookie would make two tabs of
+ * one browser the same session. Nor is the gate authorization: every read still
+ * resolves the participant through `loadParticipantContext`.
  */
 
 export type GateTarget = {
@@ -85,38 +82,8 @@ export async function grantContestGate(
   store.set(gateCookieName(code), token, cookieOptions(code, at));
 }
 
-/** One cookie per event, like the gate, so two events never share a session. */
-export function sessionCookieName(code: string): string {
-  return `cf_session_${code.trim().toUpperCase()}`;
-}
-
-/** The session this browser holds for the event, if any. */
-export async function readContestSession(code: string): Promise<string | null> {
-  const store = await cookies();
-  return store.get(sessionCookieName(code))?.value ?? null;
-}
-
-/**
- * The enter action's session: the one this browser already holds, or a fresh
- * one. Minting here rather than in a page render is what makes a second
- * browser's entry a new session and a refresh the same one.
- */
-export async function ensureContestSession(
-  code: string,
-  at: Date = serverNow(),
-): Promise<string> {
-  const store = await cookies();
-  const existing = store.get(sessionCookieName(code))?.value;
-  if (existing) return existing;
-
-  const sessionId = randomUUID();
-  store.set(sessionCookieName(code), sessionId, cookieOptions(code, at));
-  return sessionId;
-}
-
-/** Clears the gate and the session; used when a contest is over for this browser. */
+/** Clears the gate; used when a contest is over for this browser. */
 export async function clearContestGate(code: string): Promise<void> {
   const store = await cookies();
   store.delete(gateCookieName(code));
-  store.delete(sessionCookieName(code));
 }

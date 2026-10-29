@@ -37,7 +37,7 @@ export type RecordStrikeOptions = {
   /** Tests move the clock; the app never passes this. */
   now?: Date;
   /**
-   * The browser session making the report. A displaced session may not earn
+   * The tab making the report. A displaced tab may not earn
    * strikes any more (ticket 14); the check is repeated on the locked row below
    * so a takeover that lands mid-request is still honoured.
    */

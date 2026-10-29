@@ -44,7 +44,7 @@ export function SessionTakeover({
                   data-icon="inline-start"
                   aria-hidden="true"
                 />
-                Newer session
+                Newer tab
               </Badge>
               <span className="text-xs text-muted-foreground">
                 {participantName}
@@ -53,7 +53,7 @@ export function SessionTakeover({
 
             <div className="flex flex-col gap-2">
               <p className="text-sm font-medium">
-                A newer session took over this contest.
+                A newer tab took over this contest.
               </p>
               <p className="text-sm text-muted-foreground">
                 {sessionTakeoverText()}
@@ -63,9 +63,8 @@ export function SessionTakeover({
             <Separator />
 
             <p className="text-xs text-muted-foreground">
-              Keep working in the newer window. Signing out here will not undo
-              the strike, and reloading this page will not take the contest
-              back.
+              Keep working in the newer tab. Signing out here will not undo the
+              strike, and reloading this page will not take the contest back.
             </p>
           </CardContent>
         </Card>
