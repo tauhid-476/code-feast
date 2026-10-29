@@ -38,7 +38,8 @@ Checked against <https://code-feast-chi.vercel.app> with real HTTP requests.
 | Sign-out | `POST /api/auth/sign-out` → `200`; `/` then `307` → `/sign-in`. |
 | Sign-in | `POST /api/auth/sign-in/email` → `200`; `/` then `307` → `/admin/events`. Both stay on the deployed host — there is no absolute callback URL to get wrong. |
 | Auth proxy | `/api/auth/ok` → `200`. |
-| Migrations | `npm run db:migrate` against the production branch: 1 migration recorded in `drizzle.__drizzle_migrations`, 10 tables in `public`. |
+| Migrations | `npm run db:migrate` against the production branch: 2 migrations recorded in `drizzle.__drizzle_migrations`, 10 tables in `public`. The second adds `participants.run_in_flight_at` and `participants.last_run_at` (ticket 10). |
+| Current deployment | Tickets 10–12 (`42311a1`) deployed to <https://code-feast-chi.vercel.app>; anonymous `POST /api/violation` answers `401 {"error":"Sign in first."}`, so the blocked-paste endpoint is live. |
 | No secret in the browser bundle | Covered by `tests/ticket-18-server-only-boundary.test.ts`, plus the `grep` in `docs/deploy.md` §1. |
 
 ### One thing that had to be fixed
