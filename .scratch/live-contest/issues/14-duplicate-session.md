@@ -113,4 +113,5 @@ counting, and the active tab would have been shown the takeover screen for a
 real fullscreen exit. Fixed by forwarding `sessionId`; `tests/ticket-14` now has
 "counts a violating heartbeat from the active tab".
 
-Merge commit: (recorded by the merge step)
+Review fix commit `2ab5a3f`, merge `b45b46b`. The merge gate passed on the
+integration branch: 257 tests in 18 files, typecheck, lint, and build green.
