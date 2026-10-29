@@ -4,7 +4,7 @@ import { events, participants } from "@/lib/db/schema";
 import { now as serverNow } from "@/lib/time";
 import type { EventSummary } from "@/lib/events/queries";
 import {
-  lockAtDeadline,
+  finalizeLockout,
   participantColumns,
   toParticipant,
   type Participant,
@@ -50,14 +50,17 @@ async function reconcileDeadline(
   if (participant.status === "locked_out" || !event.deadlineAt) {
     return participant;
   }
-  if (at.getTime() < event.deadlineAt.getTime()) {
+
+  const deadlineAt = event.deadlineAt;
+  if (at.getTime() < deadlineAt.getTime()) {
     return participant;
   }
 
-  const [locked] = await lockAtDeadline(
-    getDb(),
-    { participantId: participant.id },
-    event.deadlineAt,
+  const locked = await getDb().transaction((tx) =>
+    finalizeLockout(tx, participant.id, {
+      reason: "deadline",
+      lockedAt: deadlineAt,
+    }),
   );
   if (locked) return locked;
 
