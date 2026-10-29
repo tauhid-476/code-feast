@@ -57,7 +57,11 @@ export async function recordHeartbeat(
   };
 
   for (const kind of violatingHeartbeatKinds(report)) {
-    const strike = await recordStrike(context, { kind }, { now: at });
+    const strike = await recordStrike(
+      context,
+      { kind },
+      { now: at, sessionId },
+    );
     if (strike.counted) outcome.counted += 1;
     outcome = {
       strikes: strike.strikes,

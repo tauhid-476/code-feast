@@ -292,6 +292,32 @@ describe("a session per tab", () => {
     ).toHaveLength(1);
   });
 
+  it("counts a violating heartbeat from the active tab", async () => {
+    const { participant } = await contest("DUP010");
+    const tab = await openTab("DUP010", inContest);
+    const at = addMinutes(startsAt, 20);
+
+    const outcome = await recordHeartbeat(
+      await contextAt("DUP010", at),
+      { fullscreen: false, visibilityState: "visible", entered: true },
+      { now: at, sessionId: tab.sessionId },
+    );
+
+    expect(outcome).toMatchObject({
+      counted: 1,
+      strikes: 1,
+      status: "solving",
+      eliminated: false,
+    });
+    const rows = await loggedViolations(participant.id);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({
+      kind: "fullscreen_exit",
+      counted: true,
+      createdAt: at,
+    });
+  });
+
   it("keeps exactly one winner and one strike when two tabs claim together", async () => {
     const { participant } = await contest("DUP008");
     const at = addMinutes(startsAt, 20);

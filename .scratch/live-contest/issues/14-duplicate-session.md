@@ -106,4 +106,11 @@ takeover explanation in the first, the refresh of the second, the
 symptoms this ticket can produce (both tabs editable, "Not saved" instead of the
 screen, a reclaim on reload, a duplicate costing two).
 
+A merge review caught one bug before merging: `recordHeartbeat` called
+`recordStrike` without forwarding the tab's session id, so every violating
+heartbeat from the *active* tab was refused as `session_superseded` instead of
+counting, and the active tab would have been shown the takeover screen for a
+real fullscreen exit. Fixed by forwarding `sessionId`; `tests/ticket-14` now has
+"counts a violating heartbeat from the active tab".
+
 Merge commit: (recorded by the merge step)
