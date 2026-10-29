@@ -56,6 +56,7 @@ export default async function ContestPage({ params }: PageProps<"/e/[code]">) {
         code: draft.code,
         updatedAt: draft.updatedAt.toISOString(),
       }))}
+      strikes={context.participant.strikes}
       serverNow={serverNow().toISOString()}
       deadlineAt={context.event.deadlineAt?.toISOString() ?? null}
     />

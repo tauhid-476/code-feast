@@ -2,13 +2,15 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Play } from "lucide-react";
+import { Maximize2, Play } from "lucide-react";
 import { ContestCountdown } from "@/components/contest-countdown";
 import { ContestEditor } from "@/components/contest-editor";
 import { ContestRunOutcome } from "@/components/contest-run-outcome";
 import { Statement } from "@/components/statement";
+import { StrikeCounter } from "@/components/strike-counter";
 import { SubmitContest } from "@/components/submit-contest";
 import { useContestDrafts } from "@/components/use-contest-drafts";
+import { useContestSupervision } from "@/components/use-contest-supervision";
 import { useContestRun } from "@/components/use-contest-run";
 import type {
   ContestDraftView,
@@ -47,6 +49,10 @@ function languagesFor(problem: ContestProblemView): Language[] {
  * Run executes the current buffer against the Problem's Sample Test Cases and
  * shows the answer under the editor. Submit asks for confirmation, freezes the
  * autosaved work, and sends the participant to the terminal screen.
+ *
+ * Supervision (SPEC §6) lives here rather than in the editor: the strike count
+ * and the heartbeat must keep running while the editor is unmounted, and the
+ * counter is in the header, not the pane.
  */
 export function ContestWorkspace({
   code,
@@ -55,6 +61,7 @@ export function ContestWorkspace({
   participantName,
   problems,
   drafts,
+  strikes,
   serverNow,
   deadlineAt,
 }: {
@@ -64,6 +71,8 @@ export function ContestWorkspace({
   participantName: string;
   problems: ContestProblemView[];
   drafts: ContestDraftView[];
+  /** The permanent count, read through the loader on this page load. */
+  strikes: number;
   serverNow: string;
   deadlineAt: string | null;
 }) {
@@ -86,6 +95,10 @@ export function ContestWorkspace({
   const runState = useContestRun({
     joinCode: code,
     onLocked: () => router.refresh(),
+  });
+  const supervision = useContestSupervision({
+    code,
+    initialStrikes: strikes,
   });
 
   if (problems.length === 0) {
@@ -140,6 +153,7 @@ export function ContestWorkspace({
           <span className="hidden text-xs text-muted-foreground sm:inline">
             {participantName}
           </span>
+          <StrikeCounter strikes={supervision.strikes} />
           <ContestCountdown
             code={code}
             serverNow={serverNow}
@@ -149,6 +163,27 @@ export function ContestWorkspace({
           <SubmitContest code={code} flush={flushAll} disabled={!hydrated} />
         </div>
       </header>
+
+      {supervision.outOfFullscreen ? (
+        <Alert className="rounded-none border-x-0 border-t-0">
+          <Maximize2 aria-hidden="true" />
+          <AlertTitle>Fullscreen ended</AlertTitle>
+          <AlertDescription>
+            The contest runs in fullscreen. Leaving costs a strike, and the
+            heartbeat keeps counting until you return.
+          </AlertDescription>
+          <AlertAction>
+            <Button
+              type="button"
+              size="xs"
+              variant="outline"
+              onClick={supervision.enterFullscreen}
+            >
+              Return fullscreen
+            </Button>
+          </AlertAction>
+        </Alert>
+      ) : null}
 
       {failed ? (
         <Alert
@@ -295,7 +330,6 @@ export function ContestWorkspace({
           <div className="min-h-0 flex-1">
             {hydrated && buffer ? (
               <ContestEditor
-                joinCode={code}
                 problemId={problem.id}
                 language={language}
                 defaultValue={buffer.code}
@@ -303,6 +337,7 @@ export function ContestWorkspace({
                   updateCode(key, next);
                   runState.clear();
                 }}
+                onViolation={supervision.report}
               />
             ) : (
               <div className="flex h-full items-center justify-center gap-2 text-sm text-muted-foreground">
