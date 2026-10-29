@@ -33,7 +33,7 @@ export const COUNTED_VIOLATION_KINDS = [
 export type CountedViolationKind = (typeof COUNTED_VIOLATION_KINDS)[number];
 
 /**
- * What a browser session can report for itself. `duplicate_session` is detected
+ * What a tab can report for itself. `duplicate_session` is detected
  * server-side (ticket 14), so it is never a client-supplied kind.
  */
 export const REPORTABLE_VIOLATION_KINDS = [

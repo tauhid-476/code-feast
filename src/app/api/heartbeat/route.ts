@@ -3,6 +3,7 @@ import { getViewer } from "@/lib/auth/session";
 import { isDomainError } from "@/lib/errors";
 import { readContestGate } from "@/lib/participants/gate";
 import { loadParticipantContext } from "@/lib/participants/queries";
+import { CONTEST_SESSION_HEADER } from "@/lib/participants/session";
 import { now as serverNow } from "@/lib/time";
 import { recordHeartbeat } from "@/lib/violations/heartbeat";
 
@@ -67,6 +68,8 @@ export async function POST(request: Request) {
     at,
   );
 
+  const sessionId = request.headers.get(CONTEST_SESSION_HEADER);
+
   try {
     const outcome = await recordHeartbeat(
       context,
@@ -75,7 +78,7 @@ export async function POST(request: Request) {
         visibilityState: parsed.visibilityState,
         entered,
       },
-      { now: at },
+      { now: at, sessionId },
     );
 
     return Response.json({
@@ -86,7 +89,10 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     if (isDomainError(error)) {
-      return Response.json({ error: error.message }, { status: error.status });
+      return Response.json(
+        { error: error.message, code: error.code },
+        { status: error.status },
+      );
     }
     console.error(error);
     return Response.json(

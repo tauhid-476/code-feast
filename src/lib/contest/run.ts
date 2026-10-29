@@ -3,6 +3,7 @@ import { getDb } from "@/lib/db/client";
 import { participants, problems } from "@/lib/db/schema";
 import { DomainError } from "@/lib/errors";
 import type { ParticipantContext } from "@/lib/participants/queries";
+import { requireActiveSession } from "@/lib/participants/session";
 import {
   runAgainstSamples,
   type RunOptions,
@@ -29,6 +30,14 @@ export type ContestRunInput = {
 
 /** SPEC §7: at most one Run in flight, and at least two seconds between Runs. */
 export const RUN_MIN_INTERVAL_MS = 2_000;
+
+export type ContestRunOptions = RunOptions & {
+  /**
+   * The tab running. A displaced tab may not Run (ticket 14); a Run writes
+   * nothing, so the loaded row is enough here.
+   */
+  sessionId?: string | null;
+};
 
 /**
  * A claim left behind by a request that died (a deploy, a killed function) must
@@ -118,7 +127,7 @@ async function releaseRunSlot(
 export async function runFromContest(
   context: ParticipantContext | null,
   input: ContestRunInput,
-  options: RunOptions = {},
+  options: ContestRunOptions = {},
 ): Promise<RunResult> {
   if (!context?.participant) {
     throw new DomainError(
@@ -141,6 +150,7 @@ export async function runFromContest(
       409,
     );
   }
+  requireActiveSession(context.participant, options.sessionId ?? null);
 
   // A Problem from another event must look like one that does not exist.
   const [problem] = await getDb()

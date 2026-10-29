@@ -11,14 +11,15 @@ import {
 } from "./gate-token";
 
 /**
- * Reading and writing the fullscreen gate cookie. The decision itself lives in
- * `gate-token.ts` and `routes.ts`; this file only moves the value in and out of
- * the response.
+ * Reading and writing the per-event fullscreen gate cookie.
  *
- * The signature reuses the auth cookie secret rather than adding an environment
- * variable. It is not an authorization check — every read still resolves the
- * participant through `loadParticipantContext` — it only stops a token being
- * edited to name another participant or event.
+ * The gate says this browser crossed the fullscreen gate for this event and
+ * participant. The decision itself lives in `gate-token.ts` and `routes.ts`.
+ *
+ * It is not the contest session (ticket 14): a session belongs to one tab and
+ * lives in that tab's `sessionStorage`, because a cookie would make two tabs of
+ * one browser the same session. Nor is the gate authorization: every read still
+ * resolves the participant through `loadParticipantContext`.
  */
 
 export type GateTarget = {
@@ -28,6 +29,17 @@ export type GateTarget = {
 
 function secret(): string {
   return neonAuthCookieSecret();
+}
+
+/** Scoped to the event path so a cookie for one event never opens another. */
+function cookieOptions(code: string, at: Date) {
+  return {
+    httpOnly: true,
+    sameSite: "lax" as const,
+    secure: process.env.NODE_ENV === "production",
+    path: `/e/${code.trim().toUpperCase()}`,
+    expires: new Date(at.getTime() + GATE_TTL_MS),
+  };
 }
 
 /** Whether this request carries a valid gate token for this event + participant. */
@@ -49,8 +61,7 @@ export async function readContestGate(
 
 /**
  * Grants the gate for six hours. Called only by the enter action, after the
- * client reports that `requestFullscreen()` resolved. The cookie is scoped to
- * the event path so entering one event never opens another.
+ * client reports that `requestFullscreen()` resolved.
  */
 export async function grantContestGate(
   code: string,
@@ -68,16 +79,10 @@ export async function grantContestGate(
   );
 
   const store = await cookies();
-  store.set(gateCookieName(code), token, {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    path: `/e/${code.trim().toUpperCase()}`,
-    expires: expiresAt,
-  });
+  store.set(gateCookieName(code), token, cookieOptions(code, at));
 }
 
-/** Clears the gate; used when a participant's contest is over. */
+/** Clears the gate; used when a contest is over for this browser. */
 export async function clearContestGate(code: string): Promise<void> {
   const store = await cookies();
   store.delete(gateCookieName(code));

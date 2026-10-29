@@ -188,13 +188,37 @@ eliminated you. A single alt-tab that is reversed immediately must cost one, not
 two — the heartbeat that was in flight reports the same event inside the
 two-second window.
 
+**A working duplicate session looks like:** keep the first Participant tab
+open, then open the contest as the **same** Participant in a **second tab of the
+same browser** and go through the Lobby gate again. Every tab is its own
+session, so this is a duplicate: the second tab gets the editor, and within five
+seconds the first tab is replaced by a **Read-only** screen headed **Newer tab**
+that says a newer tab took over and why it cost a strike. It offers only
+**Sign out** — no editor, Run, or Submit — and reloading it shows the same
+screen. It cannot take the contest back: a reload only verifies the tab's id, it
+does not re-claim. In the second tab, the editor holds the code the first tab had
+autosaved.
+
+Now reload the **second** (active) tab. It keeps editing, shows no takeover
+screen, and the strike count does not move: the same tab is the same session.
+
+```sql
+select kind, counted, created_at from violations order by created_at desc limit 3;
+select active_session_id, strikes from participants;
+```
+
+There is exactly one `duplicate_session` row with `counted = true`, `strikes` is
+one higher than before, and `active_session_id` changed (it is an opaque id, not
+a name). Opening the contest twice within two seconds is still one strike: the
+window is the same guard alt-tabbing uses.
+
 **A working elimination looks like:** take three strikes (leave fullscreen three
 times, spacing them more than two seconds apart). The screen becomes the
 terminal one with reason **Eliminated**, `participants.status` is `locked_out`,
 `lockout_reason` is `eliminated`, and there is one submission holding the code
 you had autosaved at the third strike. Opening `/e/<CODE>/contest` again, in the
-same browser or another one, returns to the locked screen. The organizer can
-reinstate once ticket 15 lands.
+same tab, another tab, or another browser, returns to the locked screen. The
+organizer can reinstate once ticket 15 lands.
 
 **A working Deadline lockout looks like:** close the tab before the Deadline and
 return after it. The first page load locks you at the Deadline itself — the
@@ -266,6 +290,12 @@ as you go, and set `**Status:** resolved` once all seven are ticked. Append a
 | The counter moves but no `violations` row appears | The counted request failed after the strike was counted. The strike is server-authoritative; check `vercel logs` for `/api/violation` and `/api/heartbeat`. |
 | A refresh puts the contest in "Fullscreen ended" | The refresh dropped fullscreen while the gate cookie survived. That is expected; press **Return fullscreen** before three heartbeats count. If the banner never appears, the deployment is missing the supervision hook. |
 | `POST /api/heartbeat` answers `409 Your contest is locked` | Correct: the participant is locked (eliminated, submitted, or past the Deadline). The page refreshes to the terminal screen. |
+| A second tab enters but both tabs stay editable | The deployment is missing the session check in the write routes, or the tab is sending a stale id. Check that `participants.active_session_id` changes when the second tab opens and that `/api/draft` answers `409` with `code: "session_superseded"` for the first tab. |
+| The older tab shows "Not saved" and keeps the editor | It has not refreshed yet. The next heartbeat (within five seconds) or the next autosave turns it into the read-only screen. If it never does, `POST /api/heartbeat` is not answering `409` — check `vercel logs`. |
+| The older tab reloads the contest and is editable again | It should not be. A reload only verifies the id the tab kept in `sessionStorage`; it never re-claims. If it is editable, `active_session_id` still matches that tab, so the takeover never committed — look for an error from the session action. |
+| Opening a second tab of the same browser does not charge a strike | The tab is reusing the first tab's id, which means `sessionStorage` was shared or copied. Check the deployed `ContestSessionGate`; a new tab must arrive with no id and mint its own. |
+| A refresh of the active tab charges a strike | It must not: a refresh keeps the tab's `sessionStorage` id, and a provided id only verifies. If it strikes, the tab lost its stored id and the server minted a new one — check for a browser that clears `sessionStorage` on reload. |
+| A duplicate session costs two strikes | Check the timestamps: two takeovers more than two seconds apart are two strikes by design. One takeover is always one. |
 | A participant was eliminated after switching apps briefly | Working as specified: the third strike eliminates, and three violating heartbeats are enough. Use reinstate (ticket 15) after the event is reviewed. |
 
 Useful commands:

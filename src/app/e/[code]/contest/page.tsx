@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { ContestWorkspace } from "@/components/contest-workspace";
+import { ContestSessionGate } from "@/components/contest-session-gate";
 import { requireParticipant } from "@/lib/auth/guards";
 import { listDrafts } from "@/lib/drafts/manage";
 import { listContestProblems } from "@/lib/problems/contest";
@@ -16,6 +16,12 @@ export const dynamic = "force-dynamic";
  * action sets: a typed URL without it goes back to the Lobby gate. The gate, the
  * deadline lockout, and the ended-event redirect are all decided by
  * `contestDestination`, so this page cannot drift from the lobby.
+ *
+ * Which tab holds the contest (SPEC §6, ticket 14) cannot be decided here: a
+ * session belongs to one tab and lives in its `sessionStorage`, which a server
+ * render cannot see. So the page renders `ContestSessionGate`, which claims or
+ * verifies this tab's id before the workspace mounts. The refusal itself is
+ * still the server's: every write is checked against `active_session_id`.
  */
 export default async function ContestPage({ params }: PageProps<"/e/[code]">) {
   const { code } = await params;
@@ -42,9 +48,10 @@ export default async function ContestPage({ params }: PageProps<"/e/[code]">) {
     listContestProblems(context),
     listDrafts(context),
   ]);
+  const at = serverNow();
 
   return (
-    <ContestWorkspace
+    <ContestSessionGate
       code={context.event.code}
       eventTitle={context.event.title}
       participantId={context.participant.id}
@@ -56,8 +63,7 @@ export default async function ContestPage({ params }: PageProps<"/e/[code]">) {
         code: draft.code,
         updatedAt: draft.updatedAt.toISOString(),
       }))}
-      strikes={context.participant.strikes}
-      serverNow={serverNow().toISOString()}
+      serverNow={at.toISOString()}
       deadlineAt={context.event.deadlineAt?.toISOString() ?? null}
     />
   );

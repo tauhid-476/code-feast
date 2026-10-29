@@ -26,13 +26,19 @@ import { Spinner } from "@/components/ui/spinner";
  */
 export function SubmitContest({
   code,
+  sessionId,
   flush,
   disabled = false,
+  onSessionRefused,
 }: {
   code: string;
+  /** This tab's session: Submit is refused for a displaced tab (ticket 14). */
+  sessionId: string;
   /** Saves whatever is still pending; false means the work is not on the server. */
   flush: () => Promise<boolean>;
   disabled?: boolean;
+  /** The Submit was refused because another tab took over: explain it in place. */
+  onSessionRefused: () => void;
 }) {
   const router = useRouter();
   const [confirming, setConfirming] = useState(false);
@@ -53,9 +59,16 @@ export function SubmitContest({
       return;
     }
 
-    const result = await submitContestAction(code);
+    const result = await submitContestAction(code, sessionId);
     if ("error" in result) {
       setPending(false);
+      // A takeover is not a Submit failure: the dialog is replaced by the
+      // explanation of what happened to this tab.
+      if (result.code === "session_superseded") {
+        setConfirming(false);
+        onSessionRefused();
+        return;
+      }
       setError(result.error);
       return;
     }

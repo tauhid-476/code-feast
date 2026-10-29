@@ -61,9 +61,11 @@ export function ContestWorkspace({
   participantName,
   problems,
   drafts,
+  sessionId,
   strikes,
   serverNow,
   deadlineAt,
+  onSessionRefused,
 }: {
   code: string;
   eventTitle: string;
@@ -71,10 +73,14 @@ export function ContestWorkspace({
   participantName: string;
   problems: ContestProblemView[];
   drafts: ContestDraftView[];
+  /** This tab's session: every contest write carries it (ticket 14). */
+  sessionId: string;
   /** The permanent count, read through the loader on this page load. */
   strikes: number;
   serverNow: string;
   deadlineAt: string | null;
+  /** A write refused because another tab took over: show the explanation. */
+  onSessionRefused: () => void;
 }) {
   const [selectedProblemId, setSelectedProblemId] = useState(
     problems[0]?.id ?? "",
@@ -89,16 +95,22 @@ export function ContestWorkspace({
       participantId,
       problems,
       drafts,
+      sessionId,
       serverNow,
+      onSessionRefused,
     });
   const router = useRouter();
   const runState = useContestRun({
     joinCode: code,
+    sessionId,
     onLocked: () => router.refresh(),
+    onSessionRefused,
   });
   const supervision = useContestSupervision({
     code,
+    sessionId,
     initialStrikes: strikes,
+    onSessionRefused,
   });
 
   if (problems.length === 0) {
@@ -160,7 +172,13 @@ export function ContestWorkspace({
             deadlineAt={deadlineAt}
           />
           {/* Ticket 11 owns Submit: confirmation, lockout, terminal screen. */}
-          <SubmitContest code={code} flush={flushAll} disabled={!hydrated} />
+          <SubmitContest
+            code={code}
+            sessionId={sessionId}
+            flush={flushAll}
+            disabled={!hydrated}
+            onSessionRefused={onSessionRefused}
+          />
         </div>
       </header>
 

@@ -23,6 +23,11 @@ export type Participant = {
   lockoutReason: LockoutReason | null;
   strikes: number;
   shortlisted: boolean;
+  /**
+   * The tab that may still write (ticket 14). Server-side state:
+   * never handed to a client component, only compared against the caller's.
+   */
+  activeSessionId: string | null;
 };
 
 export const participantColumns = {
@@ -37,6 +42,7 @@ export const participantColumns = {
   lockoutReason: participants.lockoutReason,
   strikes: participants.strikes,
   shortlisted: participants.shortlisted,
+  activeSessionId: participants.activeSessionId,
 };
 
 export type ParticipantRow = {
@@ -51,6 +57,7 @@ export type ParticipantRow = {
   lockoutReason: string | null;
   strikes: number;
   shortlisted: boolean;
+  activeSessionId: string | null;
 };
 
 /** The check constraints are the source of truth; the casts narrow to them. */
