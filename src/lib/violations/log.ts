@@ -1,6 +1,7 @@
 import { getDb } from "@/lib/db/client";
 import { violations } from "@/lib/db/schema";
 import type { ParticipantContext } from "@/lib/participants/queries";
+import { requireActiveSession } from "@/lib/participants/session";
 import { now as serverNow } from "@/lib/time";
 import { requireRecordingParticipant } from "./guard";
 import { isUncountedViolationKind, type ViolationKind } from "./kinds";
@@ -27,6 +28,8 @@ export type LogViolationInput = {
 export type LogViolationOptions = {
   /** Tests move the clock; the app never passes this. */
   now?: Date;
+  /** The browser session reporting; a displaced one is refused (ticket 14). */
+  sessionId?: string | null;
 };
 
 export type LoggedViolation = {
@@ -49,6 +52,7 @@ export async function logViolation(
   }
 
   const { participant } = requireRecordingParticipant(context);
+  requireActiveSession(participant, options.sessionId ?? null);
   const createdAt = options.now ?? serverNow();
 
   const [row] = await getDb()

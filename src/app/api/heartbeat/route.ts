@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { getViewer } from "@/lib/auth/session";
 import { isDomainError } from "@/lib/errors";
-import { readContestGate } from "@/lib/participants/gate";
+import { readContestGate, readContestSession } from "@/lib/participants/gate";
 import { loadParticipantContext } from "@/lib/participants/queries";
 import { now as serverNow } from "@/lib/time";
 import { recordHeartbeat } from "@/lib/violations/heartbeat";
@@ -67,6 +67,8 @@ export async function POST(request: Request) {
     at,
   );
 
+  const sessionId = await readContestSession(parsed.joinCode);
+
   try {
     const outcome = await recordHeartbeat(
       context,
@@ -75,7 +77,7 @@ export async function POST(request: Request) {
         visibilityState: parsed.visibilityState,
         entered,
       },
-      { now: at },
+      { now: at, sessionId },
     );
 
     return Response.json({

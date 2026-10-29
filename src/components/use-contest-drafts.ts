@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import type { Language } from "@/lib/languages";
 import type { ContestDraftView, ContestProblemView } from "./contest-types";
 import { chooseDraft, draftKey, type DraftSnapshot } from "@/lib/drafts/merge";
@@ -59,6 +60,7 @@ export function useContestDrafts({
   const timersRef = useRef(new Map<string, ReturnType<typeof setTimeout>>());
   const inFlightRef = useRef(new Map<string, Promise<void>>());
   const hydratedRef = useRef(false);
+  const router = useRouter();
 
   const [buffers, setBuffersState] = useState<Record<string, ContestBuffer>>({});
   const [saveStates, setSaveStates] = useState<Record<string, SaveState>>({});
@@ -163,7 +165,14 @@ export function useContestDrafts({
           }),
         });
 
-        if (!response.ok) throw new Error(`draft save failed: ${response.status}`);
+        if (!response.ok) {
+          // A locked contest, or a session a newer one displaced (ticket 14):
+          // this view is no longer the contest. Refresh into the page that
+          // explains it rather than reporting "Not saved" for code the server
+          // will never accept from this window.
+          if (response.status === 409) router.refresh();
+          throw new Error(`draft save failed: ${response.status}`);
+        }
 
         const body = (await response.json()) as { updatedAt: string };
         const updatedAt = Date.parse(body.updatedAt);

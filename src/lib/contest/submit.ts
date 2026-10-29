@@ -1,7 +1,16 @@
+import { eq } from "drizzle-orm";
 import { getDb } from "@/lib/db/client";
+import { participants } from "@/lib/db/schema";
 import { DomainError } from "@/lib/errors";
-import { finalizeLockout, type Participant } from "@/lib/participants/lockout";
+import {
+  finalizeLockout,
+  participantColumns,
+  toParticipant,
+  type Participant,
+  type ParticipantRow,
+} from "@/lib/participants/lockout";
 import type { ParticipantContext } from "@/lib/participants/queries";
+import { requireActiveSession } from "@/lib/participants/session";
 import { now as serverNow } from "@/lib/time";
 
 /**
@@ -11,12 +20,16 @@ import { now as serverNow } from "@/lib/time";
  * The context comes from the loader, so the Deadline has already been
  * reconciled on the way in. The lock itself is conditional on the participant
  * not being locked, so a double click, a stale tab, or a retried request cannot
- * write a second Submission.
+ * write a second Submission. A displaced session cannot submit either: the
+ * check is repeated on the locked row so a tab that lost the contest a moment
+ * ago cannot freeze the winner's work on its way out (ticket 14).
  */
 
 export type SubmitOptions = {
   /** Tests move the clock; the app never passes this. */
   now?: Date;
+  /** The browser session submitting. */
+  sessionId?: string | null;
 };
 
 export async function submitContest(
@@ -48,33 +61,55 @@ export async function submitContest(
 
   const at = options.now ?? serverNow();
   const deadlineAt = context.event.deadlineAt;
+  const sessionId = options.sessionId ?? null;
 
-  // The Deadline wins over a Submit that lands on or after it: the participant
-  // is locked at the Deadline, with the deadline reason, like any other read.
-  if (deadlineAt && at.getTime() >= deadlineAt.getTime()) {
-    const lockedByDeadline = await getDb().transaction((tx) =>
-      finalizeLockout(tx, participant.id, {
+  return getDb().transaction(async (tx) => {
+    const [row] = await tx
+      .select(participantColumns)
+      .from(participants)
+      .where(eq(participants.id, participant.id))
+      .for("update");
+
+    if (!row) {
+      throw new DomainError(
+        "not_joined",
+        "Join this event before submitting.",
+        403,
+      );
+    }
+    const current = toParticipant(row as ParticipantRow);
+    if (current.status === "locked_out") {
+      throw new DomainError(
+        "contest_locked",
+        "Your contest is already locked. A submission is final.",
+        409,
+      );
+    }
+    requireActiveSession(current, sessionId);
+
+    // The Deadline wins over a Submit that lands on or after it: the participant
+    // is locked at the Deadline, with the deadline reason, like any other read.
+    if (deadlineAt && at.getTime() >= deadlineAt.getTime()) {
+      const lockedByDeadline = await finalizeLockout(tx, current.id, {
         reason: "deadline",
         lockedAt: deadlineAt,
-      }),
-    );
-    if (lockedByDeadline) return lockedByDeadline;
-  }
+      });
+      if (lockedByDeadline) return lockedByDeadline;
+    }
 
-  const locked = await getDb().transaction((tx) =>
-    finalizeLockout(tx, participant.id, {
+    const locked = await finalizeLockout(tx, current.id, {
       reason: "submitted",
       lockedAt: at,
-    }),
-  );
+    });
 
-  if (!locked) {
-    throw new DomainError(
-      "contest_locked",
-      "Your contest is already locked. A submission is final.",
-      409,
-    );
-  }
+    if (!locked) {
+      throw new DomainError(
+        "contest_locked",
+        "Your contest is already locked. A submission is final.",
+        409,
+      );
+    }
 
-  return locked;
+    return locked;
+  });
 }

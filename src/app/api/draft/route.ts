@@ -3,6 +3,7 @@ import { getViewer } from "@/lib/auth/session";
 import { saveDraft } from "@/lib/drafts/manage";
 import { isDomainError } from "@/lib/errors";
 import { LANGUAGES } from "@/lib/languages";
+import { readContestSession } from "@/lib/participants/gate";
 import { loadParticipantContext } from "@/lib/participants/queries";
 
 export const dynamic = "force-dynamic";
@@ -45,13 +46,20 @@ export async function POST(request: Request) {
   }
 
   const context = await loadParticipantContext(parsed.joinCode, viewer.user.id);
+  // The browser session saving, from its cookie. A displaced tab is refused
+  // below; the body never names a session (ticket 14).
+  const sessionId = await readContestSession(parsed.joinCode);
 
   try {
-    const draft = await saveDraft(context, {
-      problemId: parsed.problemId,
-      language: parsed.language,
-      code: parsed.code,
-    });
+    const draft = await saveDraft(
+      context,
+      {
+        problemId: parsed.problemId,
+        language: parsed.language,
+        code: parsed.code,
+      },
+      { sessionId },
+    );
     return Response.json({ updatedAt: draft.updatedAt.toISOString() });
   } catch (error) {
     if (isDomainError(error)) {

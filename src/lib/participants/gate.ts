@@ -1,5 +1,6 @@
 import "server-only";
 
+import { randomUUID } from "node:crypto";
 import { cookies } from "next/headers";
 import { neonAuthCookieSecret } from "@/lib/env";
 import { now as serverNow } from "@/lib/time";
@@ -11,14 +12,17 @@ import {
 } from "./gate-token";
 
 /**
- * Reading and writing the fullscreen gate cookie. The decision itself lives in
- * `gate-token.ts` and `routes.ts`; this file only moves the value in and out of
- * the response.
+ * Reading and writing the two per-event cookies a contest browser carries.
  *
- * The signature reuses the auth cookie secret rather than adding an environment
- * variable. It is not an authorization check — every read still resolves the
- * participant through `loadParticipantContext` — it only stops a token being
- * edited to name another participant or event.
+ * - The gate says this browser crossed the fullscreen gate for this event and
+ *   participant. The decision itself lives in `gate-token.ts` and `routes.ts`.
+ * - The session says which browser holds the contest when the same Participant
+ *   opens it somewhere else (ticket 14). It is a random id, minted by the enter
+ *   action, that `participants.active_session_id` compares against. Server-minted
+ *   and http-only, so a displaced tab cannot rename itself back in.
+ *
+ * Neither is authorization: every read still resolves the participant through
+ * `loadParticipantContext`.
  */
 
 export type GateTarget = {
@@ -28,6 +32,17 @@ export type GateTarget = {
 
 function secret(): string {
   return neonAuthCookieSecret();
+}
+
+/** Scoped to the event path so a cookie for one event never opens another. */
+function cookieOptions(code: string, at: Date) {
+  return {
+    httpOnly: true,
+    sameSite: "lax" as const,
+    secure: process.env.NODE_ENV === "production",
+    path: `/e/${code.trim().toUpperCase()}`,
+    expires: new Date(at.getTime() + GATE_TTL_MS),
+  };
 }
 
 /** Whether this request carries a valid gate token for this event + participant. */
@@ -49,8 +64,7 @@ export async function readContestGate(
 
 /**
  * Grants the gate for six hours. Called only by the enter action, after the
- * client reports that `requestFullscreen()` resolved. The cookie is scoped to
- * the event path so entering one event never opens another.
+ * client reports that `requestFullscreen()` resolved.
  */
 export async function grantContestGate(
   code: string,
@@ -68,17 +82,41 @@ export async function grantContestGate(
   );
 
   const store = await cookies();
-  store.set(gateCookieName(code), token, {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    path: `/e/${code.trim().toUpperCase()}`,
-    expires: expiresAt,
-  });
+  store.set(gateCookieName(code), token, cookieOptions(code, at));
 }
 
-/** Clears the gate; used when a participant's contest is over. */
+/** One cookie per event, like the gate, so two events never share a session. */
+export function sessionCookieName(code: string): string {
+  return `cf_session_${code.trim().toUpperCase()}`;
+}
+
+/** The session this browser holds for the event, if any. */
+export async function readContestSession(code: string): Promise<string | null> {
+  const store = await cookies();
+  return store.get(sessionCookieName(code))?.value ?? null;
+}
+
+/**
+ * The enter action's session: the one this browser already holds, or a fresh
+ * one. Minting here rather than in a page render is what makes a second
+ * browser's entry a new session and a refresh the same one.
+ */
+export async function ensureContestSession(
+  code: string,
+  at: Date = serverNow(),
+): Promise<string> {
+  const store = await cookies();
+  const existing = store.get(sessionCookieName(code))?.value;
+  if (existing) return existing;
+
+  const sessionId = randomUUID();
+  store.set(sessionCookieName(code), sessionId, cookieOptions(code, at));
+  return sessionId;
+}
+
+/** Clears the gate and the session; used when a contest is over for this browser. */
 export async function clearContestGate(code: string): Promise<void> {
   const store = await cookies();
   store.delete(gateCookieName(code));
+  store.delete(sessionCookieName(code));
 }

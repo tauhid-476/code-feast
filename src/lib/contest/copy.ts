@@ -15,3 +15,20 @@ export function submitConfirmationText(): string {
 export function strikeMessage(strikes: number, limit: number): string {
   return `Strike ${strikes} of ${limit}. Leaving fullscreen or losing focus costs a strike.`;
 }
+
+/**
+ * The refusal a write from a displaced session returns. It names what happened,
+ * because "try again" would invite exactly the retry that cannot work.
+ */
+export function sessionSupersededMessage(): string {
+  return "A newer session took over. This window is read-only.";
+}
+
+/**
+ * The whole explanation the older session shows (SPEC §10: "Newest session
+ * wins; older goes read-only and is logged"). It is one string so the terminal
+ * state and the toast cannot drift.
+ */
+export function sessionTakeoverText(): string {
+  return "You opened the contest in another place, so that session is now the live one. This window is read-only: Run, Submit, and autosave are closed. Your latest code is still saved and is waiting in the newer session. Holding the event open twice costs one strike.";
+}

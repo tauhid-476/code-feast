@@ -1,12 +1,15 @@
 import { redirect } from "next/navigation";
 import { ContestWorkspace } from "@/components/contest-workspace";
+import { SessionTakeover } from "@/components/session-takeover";
+import { SignOutButton } from "@/components/sign-out-button";
 import { requireParticipant } from "@/lib/auth/guards";
 import { listDrafts } from "@/lib/drafts/manage";
 import { listContestProblems } from "@/lib/problems/contest";
-import { readContestGate } from "@/lib/participants/gate";
+import { readContestGate, readContestSession } from "@/lib/participants/gate";
 import { markSolving } from "@/lib/participants/lockout";
 import { loadParticipantContext } from "@/lib/participants/queries";
 import { contestDestination } from "@/lib/participants/routes";
+import { isActiveSession } from "@/lib/participants/session";
 import { now as serverNow } from "@/lib/time";
 
 export const dynamic = "force-dynamic";
@@ -16,6 +19,11 @@ export const dynamic = "force-dynamic";
  * action sets: a typed URL without it goes back to the Lobby gate. The gate, the
  * deadline lockout, and the ended-event redirect are all decided by
  * `contestDestination`, so this page cannot drift from the lobby.
+ *
+ * The browser session decides which of two open windows gets the editor (SPEC
+ * §6, ticket 14). This render is the authority: the session that no longer
+ * matches `participants.active_session_id` is shown the explanation instead of
+ * the workspace, without waiting for a heartbeat to discover it.
  */
 export default async function ContestPage({ params }: PageProps<"/e/[code]">) {
   const { code } = await params;
@@ -30,6 +38,17 @@ export default async function ContestPage({ params }: PageProps<"/e/[code]">) {
   });
   const destination = contestDestination(context, { entered: gate });
   if (destination) redirect(destination);
+
+  const sessionId = await readContestSession(code);
+  if (!isActiveSession(context.participant, sessionId)) {
+    return (
+      <SessionTakeover
+        eventTitle={context.event.title}
+        participantName={context.participant.displayName}
+        action={<SignOutButton />}
+      />
+    );
+  }
 
   // Entering is what makes a participant "solving" (ticket 08 leaves Start
   // alone). The enter action writes this; repeating it here heals a lost write

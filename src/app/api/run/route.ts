@@ -4,6 +4,7 @@ import { getViewer } from "@/lib/auth/session";
 import { runFromContest } from "@/lib/contest/run";
 import { isDomainError } from "@/lib/errors";
 import { LANGUAGES } from "@/lib/languages";
+import { readContestSession } from "@/lib/participants/gate";
 import { loadParticipantContext } from "@/lib/participants/queries";
 import { scheduleReplenish } from "@/lib/runner/pool";
 
@@ -48,13 +49,19 @@ export async function POST(request: Request) {
   }
 
   const context = await loadParticipantContext(parsed.joinCode, viewer.user.id);
+  // The browser session running, from its cookie; a displaced tab is refused.
+  const sessionId = await readContestSession(parsed.joinCode);
 
   try {
-    const result = await runFromContest(context, {
-      problemId: parsed.problemId,
-      language: parsed.language,
-      code: parsed.code,
-    });
+    const result = await runFromContest(
+      context,
+      {
+        problemId: parsed.problemId,
+        language: parsed.language,
+        code: parsed.code,
+      },
+      { sessionId },
+    );
     return Response.json({ result });
   } catch (error) {
     if (isDomainError(error)) {

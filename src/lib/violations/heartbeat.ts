@@ -4,6 +4,7 @@ import {
 } from "@/lib/contest/heartbeat";
 import type { ParticipantStatus } from "@/lib/participants/lockout";
 import type { ParticipantContext } from "@/lib/participants/queries";
+import { requireActiveSession } from "@/lib/participants/session";
 import { now as serverNow } from "@/lib/time";
 import { requireRecordingParticipant } from "./guard";
 import { recordStrike } from "./strikes";
@@ -15,11 +16,17 @@ import { recordStrike } from "./strikes";
  * two-second window and costs nothing.
  *
  * A clean beat writes nothing at all — it is a report, not a record.
+ *
+ * A beat from a displaced session is refused (409) rather than counted: the
+ * older tab must learn it is read-only, and it must not keep earning strikes
+ * for the Participant from a contest it no longer holds (ticket 14).
  */
 
 export type RecordHeartbeatOptions = {
   /** Tests move the clock; the app never passes this. */
   now?: Date;
+  /** The browser session beating; the takeover check is above. */
+  sessionId?: string | null;
 };
 
 export type HeartbeatOutcome = {
@@ -38,6 +45,8 @@ export async function recordHeartbeat(
   // Refuse a beat from a non-participant or a locked contest before looking at
   // its contents: the answer is the same whether the beat is clean or not.
   const { participant } = requireRecordingParticipant(context);
+  const sessionId = options.sessionId ?? null;
+  requireActiveSession(participant, sessionId);
   const at = options.now ?? serverNow();
 
   let outcome: HeartbeatOutcome = {

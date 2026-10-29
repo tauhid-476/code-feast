@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { getViewer } from "@/lib/auth/session";
 import { isDomainError } from "@/lib/errors";
+import { readContestSession } from "@/lib/participants/gate";
 import { loadParticipantContext } from "@/lib/participants/queries";
 import { now as serverNow } from "@/lib/time";
 import { logViolation } from "@/lib/violations/log";
@@ -55,13 +56,14 @@ export async function POST(request: Request) {
   const context = await loadParticipantContext(parsed.joinCode, viewer.user.id, {
     now: at,
   });
+  const sessionId = await readContestSession(parsed.joinCode);
 
   try {
     if (isCountedViolationKind(parsed.kind)) {
       const outcome = await recordStrike(
         context,
         { kind: parsed.kind },
-        { now: at },
+        { now: at, sessionId },
       );
       return Response.json(
         {
@@ -74,7 +76,7 @@ export async function POST(request: Request) {
       );
     }
 
-    await logViolation(context, { kind: parsed.kind }, { now: at });
+    await logViolation(context, { kind: parsed.kind }, { now: at, sessionId });
     return Response.json(
       {
         counted: false,

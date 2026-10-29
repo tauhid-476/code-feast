@@ -188,6 +188,29 @@ eliminated you. A single alt-tab that is reversed immediately must cost one, not
 two — the heartbeat that was in flight reports the same event inside the
 two-second window.
 
+**A working duplicate session looks like:** keep the first Participant window
+open, then open the contest as the **same** Participant in a **second browser**
+(or a private window) and go through the Lobby gate again. A second tab in the
+same browser is deliberately the same session: the session lives in the
+browser's cookie, one per browser.
+
+The second browser gets the editor; within five seconds the first window is
+replaced by a **Read-only** screen headed **Newer session** that says a newer
+session took over and why it cost a strike. It offers only **Sign out** — no
+editor, Run, or Submit. Reloading it shows the same screen; it cannot take the
+contest back. In the second browser, the editor holds the code the first window
+had autosaved.
+
+```sql
+select kind, counted, created_at from violations order by created_at desc limit 3;
+select active_session_id, strikes from participants;
+```
+
+There is exactly one `duplicate_session` row with `counted = true`, `strikes` is
+one higher than before, and `active_session_id` changed (it is an opaque id, not
+a name). Opening the contest twice within two seconds is still one strike: the
+window is the same guard alt-tabbing uses.
+
 **A working elimination looks like:** take three strikes (leave fullscreen three
 times, spacing them more than two seconds apart). The screen becomes the
 terminal one with reason **Eliminated**, `participants.status` is `locked_out`,
@@ -266,6 +289,11 @@ as you go, and set `**Status:** resolved` once all seven are ticked. Append a
 | The counter moves but no `violations` row appears | The counted request failed after the strike was counted. The strike is server-authoritative; check `vercel logs` for `/api/violation` and `/api/heartbeat`. |
 | A refresh puts the contest in "Fullscreen ended" | The refresh dropped fullscreen while the gate cookie survived. That is expected; press **Return fullscreen** before three heartbeats count. If the banner never appears, the deployment is missing the supervision hook. |
 | `POST /api/heartbeat` answers `409 Your contest is locked` | Correct: the participant is locked (eliminated, submitted, or past the Deadline). The page refreshes to the terminal screen. |
+| A second browser enters but both windows stay editable | The two windows are the same browser session (same profile), or the deployment is missing the session claim in the enter action. Use a second browser or a private window, and check that `participants.active_session_id` changes on entry. |
+| The older window shows "Not saved" and keeps the editor | It has not refreshed yet. The next heartbeat (within five seconds) or the next autosave turns it into the read-only screen. If it never does, `POST /api/heartbeat` is not answering `409` — check `vercel logs`. |
+| The older window reloads the contest and is editable again | It should not be. `participants.active_session_id` still matches that window's session, so the takeover never committed; look for an error from the enter action. A displaced session is only re-admitted by entering again, which costs another strike. |
+| Opening a second tab of the same browser charges a strike | It does not, and should not: a tab shares the browser's session cookie. Only another browser or a private window is a second session. |
+| A duplicate session costs two strikes | Check the timestamps: two takeovers more than two seconds apart are two strikes by design. One takeover is always one. |
 | A participant was eliminated after switching apps briefly | Working as specified: the third strike eliminates, and three violating heartbeats are enough. Use reinstate (ticket 15) after the event is reviewed. |
 
 Useful commands:

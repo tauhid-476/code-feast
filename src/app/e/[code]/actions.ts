@@ -1,12 +1,15 @@
 "use server";
 
 import { requireParticipant } from "@/lib/auth/guards";
+import { startContestSession } from "@/lib/contest/session";
 import { submitContest } from "@/lib/contest/submit";
 import { actionError, isDomainError } from "@/lib/errors";
 import {
   clearContestGate,
+  ensureContestSession,
   grantContestGate,
   readContestGate,
+  readContestSession,
 } from "@/lib/participants/gate";
 import { markSolving } from "@/lib/participants/lockout";
 import { loadParticipantContext } from "@/lib/participants/queries";
@@ -22,6 +25,11 @@ export type EnterContestResult = { error: string } | { href: string };
  *
  * It also marks the participant solving, which Start deliberately does not do on
  * their behalf (ticket 08).
+ *
+ * And it is where the browser becomes this Participant's session (SPEC §6,
+ * ticket 14). The newest session wins: a second browser entering displaces the
+ * first, which turns read-only and costs one strike. Opening the same browser
+ * again keeps the session it already has, so a refresh is not a duplicate.
  */
 export async function enterContestAction(
   code: string,
@@ -54,6 +62,26 @@ export async function enterContestAction(
     await grantContestGate(code, target);
   }
 
+  const at = serverNow();
+  const sessionId = await ensureContestSession(code, at);
+  const lockedHref = `/e/${context.event.code}/locked`;
+
+  try {
+    const claim = await startContestSession(context, { sessionId }, { now: at });
+    if (claim.status === "locked_out") {
+      await clearContestGate(code);
+      return { href: lockedHref };
+    }
+  } catch (error) {
+    // A takeover that was the third strike, or a session that lost a race with
+    // the Deadline: the contest is over for this browser either way.
+    if (isDomainError(error) && error.code === "contest_locked") {
+      await clearContestGate(code);
+      return { href: lockedHref };
+    }
+    return actionError(error);
+  }
+
   return { href: `/e/${context.event.code}/contest` };
 }
 
@@ -61,11 +89,15 @@ export type SubmitContestResult = { error: string } | { href: string };
 
 /**
  * The Participant's Submit (SPEC §5.7). The client asks for confirmation first;
- * this action is the write. It clears the fullscreen gate either way, so the
- * terminal screen is not backed by a cookie that still opens the editor.
+ * this action is the write. It clears the fullscreen gate and the session either
+ * way, so the terminal screen is not backed by a cookie that still opens the
+ * editor.
  *
  * A participant already locked is sent to the terminal screen instead of
  * seeing an error: the refusal is that no second Submission is written.
+ *
+ * A displaced session is refused by `submitContest` (ticket 14): the older tab
+ * cannot freeze the winner's work on its way out.
  */
 export async function submitContestAction(
   code: string,
@@ -85,7 +117,10 @@ export async function submitContestAction(
   }
 
   try {
-    await submitContest(context, { now: serverNow() });
+    await submitContest(context, {
+      now: serverNow(),
+      sessionId: await readContestSession(code),
+    });
   } catch (error) {
     if (isDomainError(error) && error.code === "contest_locked") {
       await clearContestGate(context.event.code);
