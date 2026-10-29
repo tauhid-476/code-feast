@@ -162,3 +162,13 @@ Still open:
 Gates on this branch: `npx next typegen`, `npm test` (13 files, 178 tests),
 `npm run typecheck`, `npm run lint`, `npm run build` — all green.
 
+
+### Deploy 2 — cold-pool fix live (2026-10-29)
+
+The human's first walkthrough found the Problem test panel failing with
+`runner_busy` on every attempt. Cause and fix are written up in ticket 05
+("Cold-pool deadlock"); commit `fe05036` ships it.
+
+Deployed `code-feast-e5hb5zepz` to https://code-feast-chi.vercel.app
+(`vercel deploy --prod`, same tree, no git remote). Verified over HTTP:
+`/` → 307 `/sign-in`, `/api/auth/ok` → 200, no Deployment Protection gate.
