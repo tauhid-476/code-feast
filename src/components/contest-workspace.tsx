@@ -1,11 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Play, Send } from "lucide-react";
 import { ContestCountdown } from "@/components/contest-countdown";
 import { ContestEditor } from "@/components/contest-editor";
+import { ContestRunOutcome } from "@/components/contest-run-outcome";
 import { Statement } from "@/components/statement";
 import { useContestDrafts } from "@/components/use-contest-drafts";
+import { useContestRun } from "@/components/use-contest-run";
 import type {
   ContestDraftView,
   ContestProblemView,
@@ -40,8 +43,9 @@ function languagesFor(problem: ContestProblemView): Language[] {
  * statement. Right: language selector, editor, Run, and the global Submit in
  * the top right.
  *
- * Run and Submit are deliberately disabled placeholders: ticket 10 wires Run
- * and ticket 11 wires Submit. Nothing here pretends they work.
+ * Run executes the current buffer against the Problem's Sample Test Cases and
+ * shows the answer under the editor. Submit is ticket 11's, and is still a
+ * disabled placeholder rather than a button that lies.
  */
 export function ContestWorkspace({
   code,
@@ -77,6 +81,11 @@ export function ContestWorkspace({
       drafts,
       serverNow,
     });
+  const router = useRouter();
+  const runState = useContestRun({
+    joinCode: code,
+    onLocked: () => router.refresh(),
+  });
 
   if (problems.length === 0) {
     return (
@@ -102,6 +111,8 @@ export function ContestWorkspace({
 
   function selectProblem(id: string) {
     setSelectedProblemId(id);
+    // What was run belongs to the Problem and language that produced it.
+    runState.clear();
     const next = problems.find((candidate) => candidate.id === id);
     if (!next) return;
     const languages = languagesFor(next);
@@ -239,7 +250,10 @@ export function ContestWorkspace({
               <Select
                 value={language}
                 onValueChange={(value) => {
-                  if (isLanguage(value)) setLanguage(value);
+                  if (!isLanguage(value)) return;
+                  setLanguage(value);
+                  // The verdict belongs to the language that was run.
+                  runState.clear();
                 }}
               >
                 <SelectTrigger size="sm" aria-label="Language">
@@ -257,10 +271,26 @@ export function ContestWorkspace({
               <span className="text-xs text-muted-foreground">{saveText}</span>
             </div>
 
-            {/* Ticket 10 owns Run: sandbox, samples, per-case feedback. */}
-            <Button type="button" size="sm" variant="outline" disabled>
-              <Play data-icon="inline-start" />
-              Run
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              disabled={runState.running || !buffer}
+              onClick={() => {
+                if (!buffer) return;
+                void runState.run({
+                  problemId: problem.id,
+                  language,
+                  code: buffer.code,
+                });
+              }}
+            >
+              {runState.running ? (
+                <Spinner data-icon="inline-start" />
+              ) : (
+                <Play data-icon="inline-start" />
+              )}
+              {runState.running ? "Running" : "Run"}
             </Button>
           </div>
 
@@ -270,7 +300,10 @@ export function ContestWorkspace({
                 problemId={problem.id}
                 language={language}
                 defaultValue={buffer.code}
-                onChange={(next) => updateCode(key, next)}
+                onChange={(next) => {
+                  updateCode(key, next);
+                  runState.clear();
+                }}
               />
             ) : (
               <div className="flex h-full items-center justify-center gap-2 text-sm text-muted-foreground">
@@ -280,12 +313,21 @@ export function ContestWorkspace({
             )}
           </div>
 
+          {runState.error || runState.result ? (
+            <div className="max-h-80 shrink-0 overflow-y-auto border-t border-border p-3">
+              <ContestRunOutcome
+                error={runState.error}
+                result={runState.result}
+              />
+            </div>
+          ) : null}
+
           <div className="flex h-9 shrink-0 items-center justify-between border-t border-border px-3">
             <span className="text-xs text-muted-foreground">
               {LANGUAGE_LABELS[language]}
             </span>
             <span className="text-xs text-muted-foreground">
-              Run and Submit arrive with tickets 10 and 11.
+              One Run at a time · two seconds between Runs
             </span>
           </div>
         </section>
