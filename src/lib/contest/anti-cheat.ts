@@ -1,4 +1,8 @@
-import type { UncountedViolationKind, ViolationKind } from "@/lib/violations/kinds";
+import {
+  STRIKE_DEDUPE_MS,
+  type UncountedViolationKind,
+  type ViolationKind,
+} from "@/lib/violations/kinds";
 
 /**
  * The gestures SPEC §6 blocks. One mapper answers "is this a blocked attempt,
@@ -58,4 +62,18 @@ export function shouldReportAttempt(
   windowMs = 250,
 ): boolean {
   return previousAt === undefined || now - previousAt >= windowMs;
+}
+
+/**
+ * The counted half of the same idea: any counted strike inside two seconds is
+ * one strike, whichever kind it was. The browser uses this to keep an alt-tab
+ * from sending two reports; the server uses it as the authority, so a client
+ * that sends both anyway still costs one.
+ */
+export function shouldCountStrike(
+  previousAt: number | undefined,
+  now: number,
+  windowMs = STRIKE_DEDUPE_MS,
+): boolean {
+  return shouldReportAttempt(previousAt, now, windowMs);
 }

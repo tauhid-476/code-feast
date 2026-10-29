@@ -167,6 +167,35 @@ select kind, counted, created_at from violations order by created_at desc;
 The rows read `paste_blocked` or `context_menu_blocked` with `counted = false`,
 and `participants.strikes` is still `0` after a refresh.
 
+**A working strike counter looks like:** the contest header always shows
+`Strikes 0 of 3`. Press `Esc` to leave fullscreen (or switch to another window).
+The counter moves to `1 of 3`, and a toast names the strike. Switching away and
+back within two seconds is still one strike: the two events of one alt-tab are
+deduplicated. The header now also offers **Return fullscreen** — press it to
+continue without another strike. Check the rows:
+
+```sql
+select kind, counted, created_at from violations order by created_at desc;
+```
+
+They read `fullscreen_exit` or `focus_lost` with `counted = true`, and
+`participants.strikes` matches the badge after a refresh.
+
+**A working heartbeat looks like:** leave fullscreen and stay out. Every five
+seconds the page reports its state, and the counter keeps moving (about one
+strike per beat) until **Return fullscreen** is pressed or three beats have
+eliminated you. A single alt-tab that is reversed immediately must cost one, not
+two — the heartbeat that was in flight reports the same event inside the
+two-second window.
+
+**A working elimination looks like:** take three strikes (leave fullscreen three
+times, spacing them more than two seconds apart). The screen becomes the
+terminal one with reason **Eliminated**, `participants.status` is `locked_out`,
+`lockout_reason` is `eliminated`, and there is one submission holding the code
+you had autosaved at the third strike. Opening `/e/<CODE>/contest` again, in the
+same browser or another one, returns to the locked screen. The organizer can
+reinstate once ticket 15 lands.
+
 **A working Deadline lockout looks like:** close the tab before the Deadline and
 return after it. The first page load locks you at the Deadline itself — the
 locked screen says **Deadline**, and the recorded submission is the last
@@ -233,6 +262,11 @@ as you go, and set `**Status:** resolved` once all seven are ticked. Append a
 | Pasting works in the editor | The guards did not mount — check the browser console for a Monaco error. The deployment must include both the editor changes and `/api/violation`. |
 | A paste is blocked but no `violations` row appears | The `POST /api/violation` request failed. Check `vercel logs`; a closed tab before the request landed is the usual cause, and the attempt is still blocked. |
 | `/api/run` 500s | The participants table is missing `run_in_flight_at` / `last_run_at`: apply migrations (§4 of `docs/deploy.md`) before deploying the code. |
+| The strike counter never moves | The page is not running the deployed code, or the browser blocked `fullscreenchange`/`blur`/`visibilitychange`. Check that `POST /api/violation` returns a `strikes` number, then `vercel logs`. |
+| The counter moves but no `violations` row appears | The counted request failed after the strike was counted. The strike is server-authoritative; check `vercel logs` for `/api/violation` and `/api/heartbeat`. |
+| A refresh puts the contest in "Fullscreen ended" | The refresh dropped fullscreen while the gate cookie survived. That is expected; press **Return fullscreen** before three heartbeats count. If the banner never appears, the deployment is missing the supervision hook. |
+| `POST /api/heartbeat` answers `409 Your contest is locked` | Correct: the participant is locked (eliminated, submitted, or past the Deadline). The page refreshes to the terminal screen. |
+| A participant was eliminated after switching apps briefly | Working as specified: the third strike eliminates, and three violating heartbeats are enough. Use reinstate (ticket 15) after the event is reviewed. |
 
 Useful commands:
 

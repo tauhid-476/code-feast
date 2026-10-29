@@ -2,23 +2,31 @@ import { z } from "zod";
 import { getViewer } from "@/lib/auth/session";
 import { isDomainError } from "@/lib/errors";
 import { loadParticipantContext } from "@/lib/participants/queries";
+import { now as serverNow } from "@/lib/time";
 import { logViolation } from "@/lib/violations/log";
-import { UNCOUNTED_VIOLATION_KINDS } from "@/lib/violations/kinds";
+import { recordStrike } from "@/lib/violations/strikes";
+import {
+  isCountedViolationKind,
+  REPORTABLE_VIOLATION_KINDS,
+} from "@/lib/violations/kinds";
 
 export const dynamic = "force-dynamic";
 
 /**
- * The endpoint the editor guards call for a blocked gesture (SPEC §6). Only the
- * uncounted kinds are accepted here: ticket 13 owns counted strikes and the
- * heartbeat, and a blocked attempt must never cost a strike.
+ * The endpoint the contest page reports a violation to (SPEC §6). A blocked
+ * attempt is logged and costs nothing; leaving fullscreen or losing focus is
+ * counted, deduplicated, and — on the third — eliminates.
  *
- * The participant is resolved through the loader, so an attempt after the
- * deadline is refused rather than recorded against a locked contest.
+ * Only kinds the browser can observe are accepted. `duplicate_session` is
+ * detected server-side (ticket 14) and is never a client-supplied kind.
+ *
+ * The participant is resolved through the loader, so the Deadline is
+ * reconciled before anything is written, and a violation after it is refused.
  */
 
 const bodySchema = z.object({
   joinCode: z.string().trim().min(1).max(16),
-  kind: z.enum(UNCOUNTED_VIOLATION_KINDS),
+  kind: z.enum(REPORTABLE_VIOLATION_KINDS),
 });
 
 export async function POST(request: Request) {
@@ -43,15 +51,37 @@ export async function POST(request: Request) {
     );
   }
 
-  const context = await loadParticipantContext(parsed.joinCode, viewer.user.id);
+  const at = serverNow();
+  const context = await loadParticipantContext(parsed.joinCode, viewer.user.id, {
+    now: at,
+  });
 
   try {
-    const violation = await logViolation(context, {
-      kind: parsed.kind,
-      counted: false,
-    });
+    if (isCountedViolationKind(parsed.kind)) {
+      const outcome = await recordStrike(
+        context,
+        { kind: parsed.kind },
+        { now: at },
+      );
+      return Response.json(
+        {
+          counted: outcome.counted,
+          strikes: outcome.strikes,
+          eliminated: outcome.eliminated,
+          participantStatus: outcome.status,
+        },
+        { status: 201 },
+      );
+    }
+
+    await logViolation(context, { kind: parsed.kind }, { now: at });
     return Response.json(
-      { createdAt: violation.createdAt.toISOString() },
+      {
+        counted: false,
+        strikes: context?.participant?.strikes ?? 0,
+        eliminated: false,
+        participantStatus: context?.participant?.status,
+      },
       { status: 201 },
     );
   } catch (error) {

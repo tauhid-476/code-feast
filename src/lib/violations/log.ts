@@ -1,17 +1,21 @@
 import { getDb } from "@/lib/db/client";
 import { violations } from "@/lib/db/schema";
-import { DomainError } from "@/lib/errors";
 import type { ParticipantContext } from "@/lib/participants/queries";
 import { now as serverNow } from "@/lib/time";
+import { requireRecordingParticipant } from "./guard";
 import { isUncountedViolationKind, type ViolationKind } from "./kinds";
 
 /**
- * Record one Anti-cheat event against the Participant, server-side, so a
+ * Record one prevented attempt against the Participant, server-side, so a
  * refresh or a wiped tab cannot erase it.
  *
+ * This is the uncounted half of SPEC §6: a blocked paste or a suppressed
+ * context menu is logged for the Organizer and costs nothing. A counted kind is
+ * a programmer error here — strikes go through `recordStrike`, which owns the
+ * dedupe, the counter, and the elimination.
+ *
  * The context comes from the loader, so the Deadline was already reconciled on
- * the way in. Counted kinds (ticket 13) will add the strike and the elimination
- * here; a blocked attempt only writes its row and costs nothing.
+ * the way in, and a signal after it is refused rather than recorded.
  */
 
 export type LogViolationInput = {
@@ -38,28 +42,13 @@ export async function logViolation(
   input: LogViolationInput,
   options: LogViolationOptions = {},
 ): Promise<LoggedViolation> {
-  const participant = context?.participant;
-  if (!participant) {
-    throw new DomainError("not_joined", "Join this event first.", 403);
-  }
-  if (participant.status === "locked_out") {
-    throw new DomainError(
-      "contest_locked",
-      "Your contest is locked, so nothing more is recorded.",
-      409,
-    );
-  }
-  if (context.event.status !== "live") {
-    throw new DomainError(
-      "contest_not_open",
-      "This event is not live, so nothing is recorded.",
-      409,
+  if (!isUncountedViolationKind(input.kind)) {
+    throw new Error(
+      `logViolation records prevented attempts only; ${input.kind} is a counted strike.`,
     );
   }
 
-  const counted = isUncountedViolationKind(input.kind)
-    ? false
-    : (input.counted ?? true);
+  const { participant } = requireRecordingParticipant(context);
   const createdAt = options.now ?? serverNow();
 
   const [row] = await getDb()
@@ -67,7 +56,7 @@ export async function logViolation(
     .values({
       participantId: participant.id,
       kind: input.kind,
-      counted,
+      counted: false,
       createdAt,
     })
     .returning({

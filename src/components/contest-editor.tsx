@@ -4,8 +4,8 @@ import { useEffect, useRef } from "react";
 import dynamic from "next/dynamic";
 import type { OnMount } from "@monaco-editor/react";
 import { installEditorGuards } from "@/components/editor-guards";
-import { useAntiCheat } from "@/components/use-anti-cheat";
 import type { Language } from "@/lib/languages";
+import type { ViolationKind } from "@/lib/violations/kinds";
 import { Spinner } from "@/components/ui/spinner";
 
 /**
@@ -44,19 +44,19 @@ const EXTENSIONS: Record<Language, string> = {
 };
 
 export function ContestEditor({
-  joinCode,
   problemId,
   language,
   defaultValue,
   onChange,
+  onViolation,
 }: {
-  joinCode: string;
   problemId: string;
   language: Language;
   defaultValue: string;
   onChange: (code: string) => void;
+  /** The workspace's supervision report, so a paste is one counter, not two. */
+  onViolation: (kind: ViolationKind) => void;
 }) {
-  const report = useAntiCheat({ code: joinCode });
   const guardsRef = useRef<(() => void) | null>(null);
 
   useEffect(
@@ -72,7 +72,7 @@ export function ContestEditor({
     guardsRef.current = installEditorGuards({
       editor,
       keybinding: monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyV,
-      report,
+      report: onViolation,
     });
     editor.focus();
   };
