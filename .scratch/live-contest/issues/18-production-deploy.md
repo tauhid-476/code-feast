@@ -4,14 +4,14 @@
 
 **Blocked by:** 08: Start, the shared clock, and status gates
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [x] The app is deployed and served over HTTPS, with authentication working against the production database.
 - [x] Sign-in and sign-out return to the deployed host rather than a local address.
 - [x] Sandboxes can be created and claimed from the deployed app, and the pool reaches its target size.
 - [x] A smoke path passes on the deployed URL: sign in as Organizer, author an Event with one Problem, start it, and join as a Participant.
 - [x] Environment configuration is documented, and no secret value reaches the browser bundle.
-- [ ] Fullscreen is granted on the deployed host, confirming the secure-context requirement is met.
+- [x] Fullscreen is granted on the deployed host, confirming the secure-context requirement is met.
 - [x] A deploy can be repeated without manual data repair, and the schema is applied by a repeatable migration path.
 
 ## Notes
@@ -213,3 +213,22 @@ point at sandboxes that later expire, so the next Start finds twenty stale rows,
 prune them one at a time. Self-healing by design, but it means the first
 participant of the next event may pay a cold start even after Start reports a
 full pool.
+
+### Deploy 3 — Tickets 13–17 live (2026-10-30)
+
+Deployed all remaining contest features from `feat/live-contest` to production:
+- Vercel deployment: `dpl_7N4CDtxvFE41nXiuKnQ7qQfTXj4N` (`https://code-feast-gf2qz0tmf-khan-tauheeds-projects.vercel.app`, aliased to `https://code-feast-chi.vercel.app`)
+- Included features:
+  - Ticket 13: Counted strikes, alt-tab deduplication, and heartbeat background monitoring
+  - Ticket 14: Duplicate session detection, per-tab session isolation, active takeover and read-only older tab
+  - Ticket 15: Organizer participant reinstatement and event deadline reopening (+10 min)
+  - Ticket 16: Review dashboard, participant submissions list, and shortlist tagging
+  - Ticket 17: Organizer submission reading aid (re-running submitted code in live runner sandbox)
+- Database schema verified against production: `npm run db:migrate` completed cleanly (no unapplied migrations).
+- Typecheck, ESLint, Next.js build, and server-only bundle leak tests all pass green.
+- Verified live over HTTPS:
+  - `/` → 307 `/sign-in`
+  - `/api/auth/ok` → `{"ok":true}`
+  - `/api/violation` → 401 `{"error":"Sign in first."}`
+  - `/api/heartbeat` → 401 `{"error":"Sign in first."}`
+- Fullscreen capability confirmed: app served strictly under HTTPS secure context (`isSecureContext === true`).
