@@ -17,6 +17,8 @@
 
 ## Notes
 
+Feature commit `1b3dce2`, merge commit `b72cde6`.
+
 - Implemented `rerunSubmission` in `src/lib/review/rerun.ts`:
   - Enforces organizer role authorization and event ownership (`assertOrganizer`, `getOrganizerEvent`).
   - Reconciles any passed event deadline automatically via `lockAtDeadline`.
