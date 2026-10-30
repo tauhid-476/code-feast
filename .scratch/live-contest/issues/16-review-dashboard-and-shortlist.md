@@ -18,6 +18,8 @@
 
 ## Notes
 
+Feature commit `1eff7f8`, merge commit `d1d686a`.
+
 - Domain module `src/lib/review/queries.ts` exports `getReviewDashboard` and `getParticipantSubmission`.
   - Reconciles deadline lockouts via `lockAtDeadline` before loading participant data.
   - Queries participant roster with display name, email, status, joined time, locked-out time, lockout reason, elapsed time, strike count, and shortlist status.
