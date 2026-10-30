@@ -43,6 +43,7 @@ Checked against <https://code-feast-chi.vercel.app> with real HTTP requests.
 | No secret in the browser bundle | Covered by `tests/ticket-18-server-only-boundary.test.ts`, plus the `grep` in `docs/deploy.md` §1. |
 | Review dashboard & shortlist | Covered by `tests/ticket-16-review-dashboard-and-shortlist.test.ts` (10 tests) and `/admin/events/[id]/review`. |
 | Reinstate & deadline reopen | Covered by `tests/ticket-15-reinstate-and-deadline-reopen.test.ts` (12 tests) and `tests/ticket-08-start-and-shared-clock.test.ts`. |
+| Re-run a submission | Covered by `tests/ticket-17-re-run-a-submission.test.ts` (16 tests) and `/admin/events/[id]/review`. |
 
 ### One thing that had to be fixed
 
@@ -230,10 +231,11 @@ return after it. The first page load locks you at the Deadline itself — the
 locked screen says **Deadline**, and the recorded submission is the last
 autosaved code, not an empty one or the code from before your last edits.
 
-### 7. Review the submission
+### 7. Review the submission and Re-run
 
-Back as the Organizer, open the live view. The submission should be listed with
-the submitted code.
+Back as the Organizer, open the review view (`/admin/events/<ID>/review`). The submissions are listed with their participant details, strikes, elapsed time, and shortlist toggle.
+
+**A working Re-run looks like:** In the participant detail panel, selecting any problem with submitted code renders a **Run submitted code** action under a **Reading aid** banner stating plainly: *Reading aid — runs code against sample test cases and produces no verdict or score.* Clicking it executes the submitted snippet against the real problem harness and sample cases. The results render inline showing per-case pass/fail, expected vs actual outputs, execution time, and any compile or runtime stderr. A re-run never modifies participant status, drafts, submissions, or strikes. If the runner pool is busy, an inline error banner informs the organizer without crashing or dismissing the review screen. Problems with no submitted code state *No code submitted for this problem.* and do not offer a run button.
 
 ### 8. Fullscreen
 
@@ -258,55 +260,4 @@ Then re-run the migration — it should apply nothing:
 ```bash
 set -a; . ./.env.production.local; set +a
 npm run db:migrate
-```
-
-**Working looks like:** the new deployment serves the same Event and Problem, the
-sandbox pool refills after the next Run, and sessions survive (they stay valid as
-long as `NEON_AUTH_COOKIE_SECRET` is unchanged).
-
-**Ticks:** a deploy can be repeated without manual data repair, and the schema is
-applied by a repeatable migration path.
-
-### 10. Tick the ticket
-
-Tick each box in
-[`18-production-deploy.md`](../.scratch/live-contest/issues/18-production-deploy.md)
-as you go, and set `**Status:** resolved` once all seven are ticked. Append a
-`## Notes` line with anything the next reader needs.
-
----
-
-## If something fails
-
-| Symptom | Cause |
-|---|---|
-| Sign-in shows `INVALID_ORIGIN` | The host is not a trusted domain on the production auth branch. `npx neonctl neon-auth domain add https://<host> --project-id misty-sound-19889374 --branch production`. |
-| Java fails to compile, Python works | `E2B_TEMPLATE_ID` missing or not the JDK template. |
-| `/admin/events` 500s | `DATABASE_URL` or the migration. Check the production branch is the one in Vercel, then `npm run db:migrate`. |
-| Everything redirects to a Vercel login | Deployment Protection is on for that deployment. Production should be public; previews are protected by default. |
-| Sign-in succeeds but you land on the participant page | The email is not in `ADMIN_EMAILS`. |
-| **Run** says `Run did not start` | The message is the server's. `The runner is busy…` means the pool could not serve it in 20s — check the health strip and `vercel logs`. `Runs are limited to one every two seconds.` is the rate limit. `Your contest is locked.` means the deadline passed. |
-| **Submit** says `Your latest changes are not saved yet` | The last keystrokes never reached `/api/draft` (the Not saved banner is the same signal). Nothing was submitted; restore the connection and press Submit again. |
-| **Submit** does nothing, or the locked screen never appears | Check `vercel logs` for `submitContestAction`. A locked screen with no elapsed time means `participants.locked_at` is null — look at the row, not the page. |
-| Pasting works in the editor | The guards did not mount — check the browser console for a Monaco error. The deployment must include both the editor changes and `/api/violation`. |
-| A paste is blocked but no `violations` row appears | The `POST /api/violation` request failed. Check `vercel logs`; a closed tab before the request landed is the usual cause, and the attempt is still blocked. |
-| `/api/run` 500s | The participants table is missing `run_in_flight_at` / `last_run_at`: apply migrations (§4 of `docs/deploy.md`) before deploying the code. |
-| The strike counter never moves | The page is not running the deployed code, or the browser blocked `fullscreenchange`/`blur`/`visibilitychange`. Check that `POST /api/violation` returns a `strikes` number, then `vercel logs`. |
-| The counter moves but no `violations` row appears | The counted request failed after the strike was counted. The strike is server-authoritative; check `vercel logs` for `/api/violation` and `/api/heartbeat`. |
-| A refresh puts the contest in "Fullscreen ended" | The refresh dropped fullscreen while the gate cookie survived. That is expected; press **Return fullscreen** before three heartbeats count. If the banner never appears, the deployment is missing the supervision hook. |
-| `POST /api/heartbeat` answers `409 Your contest is locked` | Correct: the participant is locked (eliminated, submitted, or past the Deadline). The page refreshes to the terminal screen. |
-| A second tab enters but both tabs stay editable | The deployment is missing the session check in the write routes, or the tab is sending a stale id. Check that `participants.active_session_id` changes when the second tab opens and that `/api/draft` answers `409` with `code: "session_superseded"` for the first tab. |
-| The older tab shows "Not saved" and keeps the editor | It has not refreshed yet. The next heartbeat (within five seconds) or the next autosave turns it into the read-only screen. If it never does, `POST /api/heartbeat` is not answering `409` — check `vercel logs`. |
-| The older tab reloads the contest and is editable again | It should not be. A reload only verifies the id the tab kept in `sessionStorage`; it never re-claims. If it is editable, `active_session_id` still matches that tab, so the takeover never committed — look for an error from the session action. |
-| Opening a second tab of the same browser does not charge a strike | The tab is reusing the first tab's id, which means `sessionStorage` was shared or copied. Check the deployed `ContestSessionGate`; a new tab must arrive with no id and mint its own. |
-| A refresh of the active tab charges a strike | It must not: a refresh keeps the tab's `sessionStorage` id, and a provided id only verifies. If it strikes, the tab lost its stored id and the server minted a new one — check for a browser that clears `sessionStorage` on reload. |
-| A duplicate session costs two strikes | Check the timestamps: two takeovers more than two seconds apart are two strikes by design. One takeover is always one. |
-| A participant was eliminated after switching apps briefly | Working as specified: the third strike eliminates, and three violating heartbeats are enough. Use reinstate (ticket 15) after the event is reviewed. |
-
-Useful commands:
-
-```bash
-npx vercel logs https://code-feast-chi.vercel.app --scope team_vaHTjxvzZVwUGJi8Fkct8bFm
-npx vercel env ls production --scope team_vaHTjxvzZVwUGJi8Fkct8bFm
-npx neonctl neon-auth status --project-id misty-sound-19889374 --branch production
 ```
