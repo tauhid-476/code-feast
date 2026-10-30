@@ -41,6 +41,7 @@ Checked against <https://code-feast-chi.vercel.app> with real HTTP requests.
 | Migrations | `npm run db:migrate` against the production branch: 2 migrations recorded in `drizzle.__drizzle_migrations`, 10 tables in `public`. The second adds `participants.run_in_flight_at` and `participants.last_run_at` (ticket 10). |
 | Current deployment | Tickets 10–12 (`42311a1`) deployed to <https://code-feast-chi.vercel.app>; anonymous `POST /api/violation` answers `401 {"error":"Sign in first."}`, so the blocked-paste endpoint is live. |
 | No secret in the browser bundle | Covered by `tests/ticket-18-server-only-boundary.test.ts`, plus the `grep` in `docs/deploy.md` §1. |
+| Review dashboard & shortlist | Covered by `tests/ticket-16-review-dashboard-and-shortlist.test.ts` (10 tests) and `/admin/events/[id]/review`. |
 | Reinstate & deadline reopen | Covered by `tests/ticket-15-reinstate-and-deadline-reopen.test.ts` (12 tests) and `tests/ticket-08-start-and-shared-clock.test.ts`. |
 
 ### One thing that had to be fixed
