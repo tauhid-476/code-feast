@@ -27,17 +27,26 @@ export function AuthForm({ mode }: { mode: Mode }) {
     event.preventDefault();
     setError(null);
 
-    const result =
-      mode === "sign-up"
-        ? await authClient.signUp.email({
-            email,
-            password,
-            name: email.split("@")[0],
-          })
-        : await authClient.signIn.email({ email, password });
+    try {
+      const result =
+        mode === "sign-up"
+          ? await authClient.signUp.email({
+              email,
+              password,
+              name: email.split("@")[0],
+            })
+          : await authClient.signIn.email({ email, password });
 
-    if (result.error) {
-      setError(result.error.message ?? "That did not work. Check your details.");
+      if (result?.error) {
+        setError(result.error.message ?? "That did not work. Check your details.");
+        return;
+      }
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : "Invalid email or password. If you do not have an account yet, please sign up first.";
+      setError(message);
       return;
     }
 
