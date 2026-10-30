@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Timer } from "lucide-react";
+import { ArrowLeft, FileCode, Timer } from "lucide-react";
 import { EventStatusBadge } from "@/components/event-status-badge";
 import { ProblemSet } from "@/components/problem-set";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -43,15 +43,24 @@ export default async function AdminEventPage({
             {event.title}
           </h1>
           <EventStatusBadge status={event.status} />
-          <Button
-            variant="outline"
-            size="sm"
-            className="ml-auto"
-            render={<Link href={`/admin/events/${event.id}/live`} />}
-          >
-            <Timer data-icon="inline-start" />
-            Live controls
-          </Button>
+          <div className="ml-auto flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              render={<Link href={`/admin/events/${event.id}/live`} />}
+            >
+              <Timer data-icon="inline-start" />
+              Live controls
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              render={<Link href={`/admin/events/${event.id}/review`} />}
+            >
+              <FileCode data-icon="inline-start" />
+              Review
+            </Button>
+          </div>
         </div>
 
         <dl className="mt-3 flex flex-wrap items-baseline gap-x-6 gap-y-2">
