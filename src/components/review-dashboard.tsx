@@ -8,6 +8,8 @@ import {
   BookmarkCheck,
   Clock,
   Code2,
+  Loader2,
+  Play,
   Search,
   ShieldAlert,
   X,
@@ -16,8 +18,10 @@ import { toast } from "sonner";
 import {
   toggleShortlistAction,
   loadParticipantSubmissionAction,
+  rerunSubmissionAction,
 } from "@/app/admin/events/[id]/review/actions";
 import { ReviewCodeEditor } from "@/components/review-code-editor";
+import { RunResultView } from "@/components/run-result";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -43,6 +47,7 @@ import type {
   ParticipantSubmissionDetail,
   ReviewParticipant,
 } from "@/lib/review/queries";
+import type { RunResult } from "@/lib/runner/run";
 import { formatDuration } from "@/lib/time";
 import type { ViolationKind } from "@/lib/violations/kinds";
 
@@ -462,6 +467,7 @@ export function ReviewDashboard({
         ) : selectedDetail ? (
           <ParticipantReviewPanel
             detail={selectedDetail}
+            eventId={eventId}
             onClose={() => setSelectedDetail(null)}
             onToggleShortlist={() =>
               handleToggleShortlist(selectedDetail.participant.id)
@@ -473,18 +479,51 @@ export function ReviewDashboard({
   );
 }
 
-function ParticipantReviewPanel({
+type RerunState = {
+  isRunning?: boolean;
+  result?: RunResult;
+  error?: string;
+};
+
+export function ParticipantReviewPanel({
   detail,
+  eventId,
   onClose,
   onToggleShortlist,
 }: {
   detail: ParticipantSubmissionDetail;
+  eventId: string;
   onClose: () => void;
   onToggleShortlist: () => void;
 }) {
   const { participant, snippets, violations } = detail;
   const isLocked = participant.status === "locked_out";
   const defaultTab = snippets[0]?.problemId ?? "";
+
+  const [rerunStates, setRerunStates] = useState<Record<string, RerunState>>({});
+
+  async function handleRerun(problemId: string) {
+    setRerunStates((prev) => ({
+      ...prev,
+      [problemId]: { isRunning: true, result: undefined, error: undefined },
+    }));
+
+    const res = await rerunSubmissionAction(eventId, participant.id, problemId);
+
+    if ("error" in res) {
+      setRerunStates((prev) => ({
+        ...prev,
+        [problemId]: { isRunning: false, error: res.error },
+      }));
+      toast.error(res.error);
+    } else {
+      setRerunStates((prev) => ({
+        ...prev,
+        [problemId]: { isRunning: false, result: res.result },
+      }));
+      toast.success("Ran submitted code against sample test cases");
+    }
+  }
 
   return (
     <Card className="border-border">
@@ -626,39 +665,101 @@ function ParticipantReviewPanel({
                 ))}
               </TabsList>
 
-              {snippets.map((snip) => (
-                <TabsContent
-                  key={snip.problemId}
-                  value={snip.problemId}
-                  className="mt-3 flex flex-col gap-2"
-                >
-                  <div className="flex items-center justify-between text-xs text-muted-foreground">
-                    <div className="flex items-center gap-2">
-                      <span className="label">Language:</span>
-                      <span className="font-medium text-foreground uppercase mono">
-                        {snip.language ?? "None"}
-                      </span>
-                    </div>
-                    {snip.code ? (
-                      <span className="mono tabular">
-                        {snip.code.split("\n").length} lines
-                      </span>
-                    ) : null}
-                  </div>
+              {snippets.map((snip) => {
+                const state = rerunStates[snip.problemId] ?? {};
+                const hasCode = Boolean(snip.code && snip.language);
 
-                  {snip.code ? (
-                    <ReviewCodeEditor
-                      code={snip.code}
-                      language={snip.language ?? "python"}
-                      problemId={snip.problemId}
-                    />
-                  ) : (
-                    <div className="flex h-36 items-center justify-center rounded-md border border-dashed border-border bg-muted/20 text-sm text-muted-foreground">
-                      No code submitted for this problem.
+                return (
+                  <TabsContent
+                    key={snip.problemId}
+                    value={snip.problemId}
+                    className="mt-3 flex flex-col gap-4"
+                  >
+                    <div className="flex items-center justify-between text-xs text-muted-foreground">
+                      <div className="flex items-center gap-2">
+                        <span className="label">Language:</span>
+                        <span className="font-medium text-foreground uppercase mono">
+                          {snip.language ?? "None"}
+                        </span>
+                      </div>
+                      {snip.code ? (
+                        <span className="mono tabular">
+                          {snip.code.split("\n").length} lines
+                        </span>
+                      ) : null}
                     </div>
-                  )}
-                </TabsContent>
-              ))}
+
+                    {hasCode ? (
+                      <>
+                        <ReviewCodeEditor
+                          code={snip.code!}
+                          language={snip.language ?? "python"}
+                          problemId={snip.problemId}
+                        />
+
+                        {/* Re-run section */}
+                        <div className="flex flex-col gap-3 rounded-lg border border-border bg-card/60 p-4">
+                          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                            <div className="flex flex-col gap-0.5">
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm font-semibold tracking-tight text-foreground">
+                                  Re-run against sample test cases
+                                </span>
+                                <Badge variant="outline" className="text-[10px] text-muted-foreground uppercase">
+                                  Reading aid
+                                </Badge>
+                              </div>
+                              <p className="text-xs text-muted-foreground">
+                                Reading aid &mdash; runs code against sample test cases and produces no verdict or score.
+                              </p>
+                            </div>
+                            <Button
+                              type="button"
+                              variant="secondary"
+                              size="sm"
+                              disabled={state.isRunning}
+                              onClick={() => handleRerun(snip.problemId)}
+                              className="transition-transform duration-150 ease-out active:scale-[0.98]"
+                            >
+                              {state.isRunning ? (
+                                <>
+                                  <Loader2 data-icon="inline-start" className="size-3.5 animate-spin" />
+                                  Running...
+                                </>
+                              ) : (
+                                <>
+                                  <Play data-icon="inline-start" className="size-3.5" />
+                                  Run submitted code
+                                </>
+                              )}
+                            </Button>
+                          </div>
+
+                          {state.error ? (
+                            <Alert variant="destructive">
+                              <AlertTriangle className="size-4" />
+                              <AlertTitle>Run failed</AlertTitle>
+                              <AlertDescription className="text-xs break-words">
+                                {state.error}
+                              </AlertDescription>
+                            </Alert>
+                          ) : null}
+
+                          {state.result ? (
+                            <div className="mt-2 border-t border-border/40 pt-3">
+                              <RunResultView result={state.result} />
+                            </div>
+                          ) : null}
+                        </div>
+                      </>
+                    ) : (
+                      <div className="flex h-36 items-center justify-center rounded-md border border-dashed border-border bg-muted/20 text-sm text-muted-foreground">
+                        No code submitted for this problem.
+                      </div>
+                    )}
+                  </TabsContent>
+                );
+              })}
             </Tabs>
           )}
         </div>
