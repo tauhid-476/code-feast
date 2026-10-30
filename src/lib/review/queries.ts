@@ -69,7 +69,7 @@ export async function getReviewDashboard(
   eventId: string,
   options: ReviewOptions = {},
 ): Promise<ReviewDashboardView> {
-  assertOrganizer(actor, "view review dashboard");
+  await assertOrganizer(actor, "view review dashboard");
   const event = await getOrganizerEvent(actor.id, eventId);
   if (!event) {
     throw new DomainError("event_not_found", "Event not found.", 404);
@@ -115,7 +115,7 @@ export async function getParticipantSubmission(
   participantId: string,
   options: ReviewOptions = {},
 ): Promise<ParticipantSubmissionDetail> {
-  assertOrganizer(actor, "view participant submission");
+  await assertOrganizer(actor, "view participant submission");
   const event = await getOrganizerEvent(actor.id, eventId);
   if (!event) {
     throw new DomainError("event_not_found", "Event not found.", 404);

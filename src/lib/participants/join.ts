@@ -2,7 +2,7 @@ import { and, eq } from "drizzle-orm";
 import { getDb } from "@/lib/db/client";
 import { participants } from "@/lib/db/schema";
 import { DomainError } from "@/lib/errors";
-import { isOrganizerEmail } from "@/lib/env";
+import { isApprovedOrganizer } from "@/lib/organizers/whitelist";
 import { findEndedEventByJoinCode, findEventByJoinCode } from "@/lib/events/queries";
 
 export type JoinEventStatus = "draft" | "live";
@@ -25,7 +25,7 @@ export type JoinInput = {
  * the code returns the row they already have, it never creates a second one.
  */
 export async function joinEventByCode(input: JoinInput): Promise<JoinResult> {
-  if (isOrganizerEmail(input.email)) {
+  if (await isApprovedOrganizer(input.email)) {
     throw new DomainError(
       "organizer_cannot_join",
       "Organizers cannot join an event, including one they created. Sign in with a participant account to compete.",
@@ -48,30 +48,21 @@ export async function joinEventByCode(input: JoinInput): Promise<JoinResult> {
       throw new DomainError(
         "join_code_ended",
         "This event has already ended. Ask your organizer for a new code.",
-        410,
+        409,
       );
     }
     throw new DomainError(
-      "join_code_unknown",
-      "That code does not match an open event. Check it with your organizer.",
+      "join_code_invalid",
+      "That code does not match any open event. Double check the code.",
       404,
     );
   }
 
-  const displayName = input.displayName.trim() || input.email.split("@")[0];
-  const email = input.email.trim();
-
-  // `on conflict do nothing` makes the unique (event_id, user_id) index the
-  // arbiter of "one entry per event", even when two tabs submit at once.
-  await getDb()
-    .insert(participants)
-    .values({ eventId: event.id, userId: input.userId, displayName, email })
-    .onConflictDoNothing({
-      target: [participants.eventId, participants.userId],
-    });
-
-  const [row] = await getDb()
-    .select({ id: participants.id })
+  const [existing] = await getDb()
+    .select({
+      id: participants.id,
+      status: participants.status,
+    })
     .from(participants)
     .where(
       and(
@@ -81,17 +72,33 @@ export async function joinEventByCode(input: JoinInput): Promise<JoinResult> {
     )
     .limit(1);
 
-  if (!row) {
-    throw new DomainError(
-      "join_failed",
-      "Could not enter the event. Try again.",
-      500,
-    );
+  if (existing) {
+    return {
+      eventCode: event.code,
+      eventStatus: event.status as JoinEventStatus,
+      participantId: existing.id,
+    };
   }
+
+  const displayName = input.displayName.trim();
+  if (!displayName) {
+    throw new DomainError("display_name_required", "Enter your name.");
+  }
+
+  const [row] = await getDb()
+    .insert(participants)
+    .values({
+      eventId: event.id,
+      userId: input.userId,
+      displayName,
+      email: input.email.trim().toLowerCase(),
+      status: "joined",
+    })
+    .returning({ id: participants.id });
 
   return {
     eventCode: event.code,
-    eventStatus: event.status === "live" ? "live" : "draft",
+    eventStatus: event.status as JoinEventStatus,
     participantId: row.id,
   };
 }

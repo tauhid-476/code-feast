@@ -2,7 +2,7 @@ import { and, eq } from "drizzle-orm";
 import { getDb } from "@/lib/db/client";
 import { events, problems } from "@/lib/db/schema";
 import { DomainError } from "@/lib/errors";
-import { isOrganizerEmail } from "@/lib/env";
+import { isApprovedOrganizer } from "@/lib/organizers/whitelist";
 import type { ProblemActor } from "@/lib/problems/manage";
 import {
   runAgainstSamples,
@@ -32,7 +32,7 @@ export async function testProblem(
   input: TestProblemInput,
   options: RunOptions = {},
 ): Promise<RunResult> {
-  if (!isOrganizerEmail(actor.email)) {
+  if (!(await isApprovedOrganizer(actor.email))) {
     throw new DomainError(
       "not_organizer",
       "Only an organizer can test a problem.",
@@ -61,6 +61,6 @@ export async function testProblem(
 
   return runAgainstSamples(
     { problemId: problem.id, language: input.language, code: input.code },
-    options,
+    { ...options, eventId: input.eventId },
   );
 }

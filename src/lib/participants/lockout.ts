@@ -255,7 +255,7 @@ export async function reinstateParticipant(
   participantId: string,
   options: { now?: Date } = {},
 ): Promise<Participant> {
-  assertOrganizer(actor, "reinstate a participant");
+  await assertOrganizer(actor, "reinstate a participant");
   const now = options.now ?? serverNow();
 
   return getDb().transaction(async (tx) => {

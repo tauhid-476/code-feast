@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { SignOutButton } from "@/components/sign-out-button";
 import { requireOrganizer } from "@/lib/auth/guards";
+import { isSuperAdminEmail } from "@/lib/env";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 
@@ -8,6 +9,7 @@ export const dynamic = "force-dynamic";
 
 export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
   const organizer = await requireOrganizer();
+  const isSuperAdmin = isSuperAdminEmail(organizer.email);
 
   return (
     <div className="flex flex-1 flex-col">
@@ -22,6 +24,15 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
             <Button variant="ghost" size="sm" render={<Link href="/admin/events" />}>
               Events
             </Button>
+            {isSuperAdmin ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                render={<Link href="/admin/organizers" />}
+              >
+                Organizers
+              </Button>
+            ) : null}
           </nav>
           <div className="ml-auto flex items-center gap-3">
             <span className="hidden text-xs text-muted-foreground sm:inline">

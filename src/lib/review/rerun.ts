@@ -9,11 +9,7 @@ import {
 import { DomainError } from "@/lib/errors";
 import { assertOrganizer, type EventActor } from "@/lib/events/manage";
 import { getOrganizerEvent } from "@/lib/events/queries";
-import {
-  lockAtDeadline,
-  participantColumns,
-  toParticipant,
-} from "@/lib/participants/lockout";
+import { lockAtDeadline, toParticipant } from "@/lib/participants/lockout";
 import {
   runAgainstSamples,
   type RunOptions,
@@ -37,7 +33,7 @@ export async function rerunSubmission(
   input: RerunSubmissionInput,
   options: RunOptions = {},
 ): Promise<RunResult> {
-  assertOrganizer(actor, "rerun submission");
+  await assertOrganizer(actor, "rerun submission");
 
   const event = await getOrganizerEvent(actor.id, input.eventId);
   if (!event) {
@@ -48,15 +44,29 @@ export async function rerunSubmission(
 
   // If the deadline has passed, reconcile any overdue participants so their
   // status and submission are frozen before we read.
-  if (event.deadlineAt && at.getTime() >= event.deadlineAt.getTime()) {
-    await getDb().transaction((tx) =>
-      lockAtDeadline(tx, { eventId: event.id }, event.deadlineAt!),
-    );
+  if (event.deadlineAt && event.deadlineAt.getTime() <= at.getTime()) {
+    await getDb().transaction(async (tx) => {
+      await lockAtDeadline(tx, { eventId: input.eventId }, at);
+    });
   }
 
   // Verify participant belongs to this event
   const [pRow] = await getDb()
-    .select(participantColumns)
+    .select({
+      id: participants.id,
+      eventId: participants.eventId,
+      userId: participants.userId,
+      displayName: participants.displayName,
+      email: participants.email,
+      status: participants.status,
+      joinedAt: participants.joinedAt,
+      lockedAt: participants.lockedAt,
+      lockoutReason: participants.lockoutReason,
+      strikes: participants.strikes,
+      shortlisted: participants.shortlisted,
+      activeSessionId: participants.activeSessionId,
+      lastSeenAt: participants.lastSeenAt,
+    })
     .from(participants)
     .where(
       and(
@@ -146,6 +156,6 @@ export async function rerunSubmission(
       language: snippet.language,
       code: snippet.code,
     },
-    options,
+    { ...options, eventId: input.eventId },
   );
 }

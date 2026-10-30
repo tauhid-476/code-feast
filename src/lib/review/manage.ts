@@ -20,7 +20,7 @@ export async function setParticipantShortlist(
   participantId: string,
   shortlisted: boolean,
 ): Promise<ShortlistResult> {
-  assertOrganizer(actor, "manage shortlist");
+  await assertOrganizer(actor, "manage shortlist");
   const event = await getOrganizerEvent(actor.id, eventId);
   if (!event) {
     throw new DomainError("event_not_found", "Event not found.", 404);
@@ -56,7 +56,7 @@ export async function toggleParticipantShortlist(
   eventId: string,
   participantId: string,
 ): Promise<ShortlistResult> {
-  assertOrganizer(actor, "manage shortlist");
+  await assertOrganizer(actor, "manage shortlist");
   const event = await getOrganizerEvent(actor.id, eventId);
   if (!event) {
     throw new DomainError("event_not_found", "Event not found.", 404);

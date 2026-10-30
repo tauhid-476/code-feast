@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, FileCode, Timer } from "lucide-react";
+import { EventSettingsDialog } from "@/components/event-settings-dialog";
 import { EventStatusBadge } from "@/components/event-status-badge";
 import { ProblemSet } from "@/components/problem-set";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -44,6 +45,14 @@ export default async function AdminEventPage({
           </h1>
           <EventStatusBadge status={event.status} />
           <div className="ml-auto flex items-center gap-2">
+            {editable ? (
+              <EventSettingsDialog
+                eventId={event.id}
+                currentTitle={event.title}
+                currentDurationMinutes={event.durationMinutes}
+                hasCustomE2bKey={Boolean(event.e2bApiKey)}
+              />
+            ) : null}
             <Button
               variant="outline"
               size="sm"

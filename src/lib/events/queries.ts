@@ -11,6 +11,7 @@ export type EventSummary = {
   startsAt: Date | null;
   deadlineAt: Date | null;
   endedAt: Date | null;
+  e2bApiKey?: string | null;
 };
 
 /**
@@ -30,6 +31,7 @@ export async function listOrganizerEvents(
       startsAt: events.startsAt,
       deadlineAt: events.deadlineAt,
       endedAt: events.endedAt,
+      e2bApiKey: events.e2bApiKey,
     })
     .from(events)
     .where(eq(events.createdBy, organizerId))
@@ -51,6 +53,7 @@ export async function getOrganizerEvent(
       startsAt: events.startsAt,
       deadlineAt: events.deadlineAt,
       endedAt: events.endedAt,
+      e2bApiKey: events.e2bApiKey,
     })
     .from(events)
     .where(and(eq(events.id, eventId), eq(events.createdBy, organizerId)))
@@ -79,6 +82,7 @@ export async function findEventByJoinCode(
       startsAt: events.startsAt,
       deadlineAt: events.deadlineAt,
       endedAt: events.endedAt,
+      e2bApiKey: events.e2bApiKey,
     })
     .from(events)
     .where(and(eq(events.code, normalized), ne(events.status, "ended")))
@@ -107,6 +111,7 @@ export async function findEndedEventByJoinCode(
       startsAt: events.startsAt,
       deadlineAt: events.deadlineAt,
       endedAt: events.endedAt,
+      e2bApiKey: events.e2bApiKey,
     })
     .from(events)
     .where(and(eq(events.code, normalized), eq(events.status, "ended")))

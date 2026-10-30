@@ -7,7 +7,7 @@ import {
   testCases,
 } from "@/lib/db/schema";
 import { DomainError } from "@/lib/errors";
-import { isOrganizerEmail } from "@/lib/env";
+import { isApprovedOrganizer } from "@/lib/organizers/whitelist";
 import { LANGUAGE_LABELS, isLanguage, type Language } from "@/lib/languages";
 import {
   getProblem,
@@ -67,8 +67,8 @@ async function lockDraftEvent(
   }
 }
 
-function assertOrganizer(actor: ProblemActor, action: string): void {
-  if (!isOrganizerEmail(actor.email)) {
+async function assertOrganizer(actor: ProblemActor, action: string): Promise<void> {
+  if (!(await isApprovedOrganizer(actor.email))) {
     throw new DomainError(
       "not_organizer",
       `Only an organizer can ${action}.`,
@@ -151,8 +151,8 @@ function validateSampleCases(
       typeof sampleCase.expectedOutput !== "string"
     ) {
       throw new DomainError(
-        "sample_case_invalid",
-        "Each sample test case needs input text and expected output text.",
+        "sample_cases_malformed",
+        "Sample test cases must specify input and expected output.",
       );
     }
   }
@@ -161,38 +161,43 @@ function validateSampleCases(
 
 function validatedProblem(input: ProblemInput) {
   return {
-    title: validateTitle(input.title),
-    difficulty: validateDifficulty(input.difficulty),
-    statementMd: validateStatement(input.statementMd),
-    sampleCases: validateSampleCases(input.sampleCases),
+    title: validateTitle(input?.title),
+    difficulty: validateDifficulty(input?.difficulty),
+    statementMd: validateStatement(input?.statementMd),
+    sampleCases: validateSampleCases(input?.sampleCases),
   };
 }
 
-/** Appends a problem to the end of a draft event's problem set. */
+/**
+ * Creates a problem at the end of the event's sequence with both of its Sample
+ * Test Cases. The sequence uses a contiguous 1-based index (SPEC §4.1).
+ */
 export async function createProblem(
   actor: ProblemActor,
   eventId: string,
   input: ProblemInput,
 ): Promise<ProblemSummary> {
-  assertOrganizer(actor, "author a problem");
+  await assertOrganizer(actor, "author a problem");
   await requireDraftEvent(actor, eventId);
   const problem = validatedProblem(input);
 
   const problemId = await getDb().transaction(async (tx) => {
     await lockDraftEvent(tx, eventId);
 
-    const [next] = await tx
+    const [aggregate] = await tx
       .select({
-        position: sql<number>`coalesce(max(${problems.position}), 0)`,
+        maxPosition: sql<number>`coalesce(max(${problems.position}), 0)`,
       })
       .from(problems)
       .where(eq(problems.eventId, eventId));
+
+    const nextPosition = (aggregate?.maxPosition ?? 0) + 1;
 
     const [row] = await tx
       .insert(problems)
       .values({
         eventId,
-        position: Number(next?.position ?? 0) + 1,
+        position: nextPosition,
         title: problem.title,
         difficulty: problem.difficulty,
         statementMd: problem.statementMd,
@@ -257,7 +262,7 @@ export async function updateProblem(
   problemId: string,
   input: ProblemInput,
 ): Promise<ProblemSummary> {
-  assertOrganizer(actor, "edit a problem");
+  await assertOrganizer(actor, "edit a problem");
   const { eventId } = await requireDraftProblem(actor, problemId);
   const problem = validatedProblem(input);
 
@@ -332,7 +337,7 @@ export async function saveProblemStarter(
   language: string,
   input: StarterPairInput,
 ): Promise<ProblemSummary> {
-  assertOrganizer(actor, "edit a problem");
+  await assertOrganizer(actor, "edit a problem");
   const { eventId } = await requireDraftProblem(actor, problemId);
 
   if (!isLanguage(language)) {
@@ -380,7 +385,7 @@ export async function moveProblem(
   problemId: string,
   direction: MoveDirection,
 ): Promise<ProblemSummary[]> {
-  assertOrganizer(actor, "reorder problems");
+  await assertOrganizer(actor, "reorder problems");
   if (direction !== "up" && direction !== "down") {
     throw new DomainError(
       "direction_invalid",
