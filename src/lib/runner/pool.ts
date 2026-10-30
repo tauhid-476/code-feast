@@ -1,9 +1,10 @@
-import { and, eq, ne, sql } from "drizzle-orm";
+import { and, eq, isNull, ne, sql } from "drizzle-orm";
 import { getDb, getPool } from "@/lib/db/client";
-import { runnerPool } from "@/lib/db/schema";
+import { events, runnerPool } from "@/lib/db/schema";
 import { DomainError } from "@/lib/errors";
 import { now } from "@/lib/time";
 import {
+  createE2BSandboxProvider,
   e2bSandboxProvider,
   type SandboxHandle,
   type SandboxProvider,
@@ -28,22 +29,59 @@ const REPLENISH_LOCK_KEY = 0x52554e4e; // "RUNN"
 export type ReplenishOptions = {
   provider?: SandboxProvider;
   target?: number;
+  eventId?: string;
 };
 
-async function countActiveSandboxes(): Promise<number> {
+/**
+ * Resolves the sandbox provider for an event. If the event has a configured
+ * BYOK `e2bApiKey`, creates a provider with that key. Otherwise falls back to
+ * the platform default `e2bSandboxProvider` (which reads `E2B_API_KEY`).
+ */
+export async function resolveProviderForEvent(
+  eventId?: string,
+): Promise<SandboxProvider> {
+  if (eventId) {
+    const [eventRow] = await getDb()
+      .select({ e2bApiKey: events.e2bApiKey })
+      .from(events)
+      .where(eq(events.id, eventId))
+      .limit(1);
+
+    if (eventRow?.e2bApiKey?.trim()) {
+      return createE2BSandboxProvider({ apiKey: eventRow.e2bApiKey.trim() });
+    }
+  }
+  return e2bSandboxProvider;
+}
+
+async function countActiveSandboxes(eventId?: string): Promise<number> {
+  const conditions = [
+    ne(runnerPool.state, "dead"),
+    sql`${runnerPool.createdAt} > now() - interval '55 minutes'`,
+  ];
+
+  if (eventId) {
+    conditions.push(eq(runnerPool.eventId, eventId));
+  } else {
+    conditions.push(isNull(runnerPool.eventId));
+  }
+
   const [row] = await getDb()
     .select({ count: sql<number>`count(*)::int` })
     .from(runnerPool)
-    .where(ne(runnerPool.state, "dead"));
+    .where(and(...conditions));
   return row?.count ?? 0;
 }
 
-async function createPoolRow(provider: SandboxProvider) {
+async function createPoolRow(provider: SandboxProvider, eventId?: string) {
   const handle = await provider.create();
   try {
     const [row] = await getDb()
       .insert(runnerPool)
-      .values({ sandboxId: handle.id })
+      .values({
+        sandboxId: handle.id,
+        eventId: eventId ?? null,
+      })
       .returning();
     return row;
   } catch (error) {
@@ -55,35 +93,48 @@ async function createPoolRow(provider: SandboxProvider) {
 }
 
 /**
- * Tops the pool up to `target` (ready + claimed, excluding dead rows). Returns
- * how many sandboxes it created. Safe to call from several requests at once:
+ * Tops the pool up to `target` (ready + claimed, excluding dead and stale >55m rows).
+ * Returns how many sandboxes it created. Safe to call from several requests at once:
  * an advisory lock makes one caller do the work while the others return 0.
  */
 export async function replenishPool({
-  provider = e2bSandboxProvider,
+  provider,
   target = POOL_TARGET,
+  eventId,
 }: ReplenishOptions = {}): Promise<number> {
   const client = await getPool().connect();
   let created = 0;
 
   try {
-    const lock = await client.query<{ locked: boolean }>(
-      "select pg_try_advisory_lock($1) as locked",
-      [REPLENISH_LOCK_KEY],
-    );
+    const lock = eventId
+      ? await client.query<{ locked: boolean }>(
+          "select pg_try_advisory_lock($1, hashtext($2)) as locked",
+          [REPLENISH_LOCK_KEY, eventId],
+        )
+      : await client.query<{ locked: boolean }>(
+          "select pg_try_advisory_lock($1) as locked",
+          [REPLENISH_LOCK_KEY],
+        );
+
     if (!lock.rows[0]?.locked) return 0;
 
     try {
-      let active = await countActiveSandboxes();
+      const activeProvider = provider ?? (await resolveProviderForEvent(eventId));
+      let active = await countActiveSandboxes(eventId);
       while (active < target) {
-        await createPoolRow(provider);
+        await createPoolRow(activeProvider, eventId);
         active += 1;
         created += 1;
       }
     } finally {
-      await client.query("select pg_advisory_unlock($1)", [
-        REPLENISH_LOCK_KEY,
-      ]);
+      if (eventId) {
+        await client.query("select pg_advisory_unlock($1, hashtext($2))", [
+          REPLENISH_LOCK_KEY,
+          eventId,
+        ]);
+      } else {
+        await client.query("select pg_advisory_unlock($1)", [REPLENISH_LOCK_KEY]);
+      }
     }
   } finally {
     client.release();
@@ -92,12 +143,34 @@ export async function replenishPool({
   return created;
 }
 
-/** Live ready count for the organizer health strip. */
-export async function getReadyCount(): Promise<number> {
+/** Live ready count for the organizer health strip. Excludes stale sandboxes >55m. */
+export async function getReadyCount(eventId?: string): Promise<number> {
+  const baseConditions = [
+    eq(runnerPool.state, "ready"),
+    sql`${runnerPool.createdAt} > now() - interval '55 minutes'`,
+  ];
+
+  if (eventId) {
+    const [eventRow] = await getDb()
+      .select({ count: sql<number>`count(*)::int` })
+      .from(runnerPool)
+      .where(and(...baseConditions, eq(runnerPool.eventId, eventId)));
+
+    if (eventRow && eventRow.count > 0) {
+      return eventRow.count;
+    }
+
+    const [globalRow] = await getDb()
+      .select({ count: sql<number>`count(*)::int` })
+      .from(runnerPool)
+      .where(and(...baseConditions, isNull(runnerPool.eventId)));
+    return globalRow?.count ?? 0;
+  }
+
   const [row] = await getDb()
     .select({ count: sql<number>`count(*)::int` })
     .from(runnerPool)
-    .where(eq(runnerPool.state, "ready"));
+    .where(and(...baseConditions, isNull(runnerPool.eventId)));
   return row?.count ?? 0;
 }
 
@@ -111,6 +184,7 @@ export type SandboxClaim = {
 export type ClaimOptions = {
   provider?: SandboxProvider;
   timeoutMs?: number;
+  eventId?: string;
 };
 
 type ClaimedRow = {
@@ -136,14 +210,35 @@ function runnerBusy(): DomainError {
  * One row per winner. `SKIP LOCKED` makes a concurrent claim step over the row
  * the other transaction is already claiming, so two Runs never share a
  * sandbox. Raw SQL because Drizzle has no `FOR UPDATE SKIP LOCKED` builder.
+ * Filters out stale sandboxes older than 55 minutes.
  */
-async function claimReadyRow(): Promise<ClaimedRow | null> {
+async function claimReadyRow(eventId?: string): Promise<ClaimedRow | null> {
+  if (eventId) {
+    const scopedResult = await getDb().execute<ClaimedRow>(sql`
+      update runner_pool
+      set state = 'claimed', claimed_at = now()
+      where id = (
+        select id from runner_pool
+        where state = 'ready'
+          and event_id = ${eventId}::uuid
+          and created_at > now() - interval '55 minutes'
+        order by created_at
+        limit 1
+        for update skip locked
+      )
+      returning id, sandbox_id
+    `);
+    if (scopedResult.rows[0]) return scopedResult.rows[0];
+  }
+
   const result = await getDb().execute<ClaimedRow>(sql`
     update runner_pool
     set state = 'claimed', claimed_at = now()
     where id = (
       select id from runner_pool
       where state = 'ready'
+        and event_id is null
+        and created_at > now() - interval '55 minutes'
       order by created_at
       limit 1
       for update skip locked
@@ -175,19 +270,22 @@ async function markDead(poolId: string): Promise<void> {
  * Throws a 503 `DomainError` on timeout.
  */
 export async function claimSandbox({
-  provider = e2bSandboxProvider,
+  provider,
   timeoutMs = CLAIM_TIMEOUT_MS,
+  eventId,
 }: ClaimOptions = {}): Promise<SandboxClaim> {
   const deadline = Date.now() + timeoutMs;
   let replacedDeadSandbox = false;
   let requestedReplenish = false;
 
+  const activeProvider = provider ?? (await resolveProviderForEvent(eventId));
+
   while (true) {
-    const row = await claimReadyRow();
+    const row = await claimReadyRow(eventId);
     if (row) {
       let handle: SandboxHandle;
       try {
-        handle = await provider.connect(row.sandbox_id);
+        handle = await activeProvider.connect(row.sandbox_id);
         if (!(await handle.isAlive())) {
           throw new Error(`Sandbox ${row.sandbox_id} is not alive.`);
         }
@@ -197,7 +295,7 @@ export async function claimSandbox({
 
         replacedDeadSandbox = true;
         try {
-          await createPoolRow(provider);
+          await createPoolRow(activeProvider, eventId);
         } catch {
           throw runnerBusy();
         }
@@ -214,11 +312,13 @@ export async function claimSandbox({
     // Not awaited: the loop below keeps polling while the sandbox is created.
     if (!requestedReplenish) {
       requestedReplenish = true;
-      void replenishPool({ provider, target: COLD_START_TARGET }).catch(
-        (error) => {
-          console.error("[runner] cold-start replenish failed", error);
-        },
-      );
+      void replenishPool({
+        provider: activeProvider,
+        target: COLD_START_TARGET,
+        eventId,
+      }).catch((error) => {
+        console.error("[runner] cold-start replenish failed", error);
+      });
     }
 
     const remaining = deadline - Date.now();
@@ -273,4 +373,46 @@ export function scheduleReplenish(
       console.error("[runner] pool replenish failed", error);
     }
   };
+}
+
+/**
+ * Kills all active E2B sandboxes for an event and marks their `runner_pool` rows
+ * as `dead`. Triggered when an event ends so organizers are not billed for lingering
+ * sandboxes.
+ */
+export async function teardownEventSandboxes(
+  eventId: string,
+  options: { provider?: SandboxProvider } = {},
+): Promise<number> {
+  const activeProvider =
+    options.provider ?? (await resolveProviderForEvent(eventId));
+
+  const rows = await getDb()
+    .select({ id: runnerPool.id, sandboxId: runnerPool.sandboxId })
+    .from(runnerPool)
+    .where(
+      and(eq(runnerPool.eventId, eventId), ne(runnerPool.state, "dead")),
+    );
+
+  if (rows.length === 0) return 0;
+
+  await getDb()
+    .update(runnerPool)
+    .set({ state: "dead" })
+    .where(
+      and(eq(runnerPool.eventId, eventId), ne(runnerPool.state, "dead")),
+    );
+
+  await Promise.allSettled(
+    rows.map(async (row) => {
+      try {
+        const handle = await activeProvider.connect(row.sandboxId);
+        await handle.kill();
+      } catch {
+        // Ignored if sandbox was already terminated
+      }
+    }),
+  );
+
+  return rows.length;
 }

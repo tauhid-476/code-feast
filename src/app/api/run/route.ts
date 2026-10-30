@@ -79,6 +79,6 @@ export async function POST(request: Request) {
   } finally {
     // SPEC §7: a request that finds the pool short tops it up off the response.
     // Safe on every outcome — replenish is a no-op when the pool is already full.
-    after(scheduleReplenish());
+    after(scheduleReplenish({ eventId: context?.event.id }));
   }
 }

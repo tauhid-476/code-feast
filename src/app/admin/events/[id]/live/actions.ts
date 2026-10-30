@@ -6,7 +6,7 @@ import { requireOrganizer } from "@/lib/auth/guards";
 import { actionError } from "@/lib/errors";
 import { endEvent, extendDeadline, startEvent } from "@/lib/events/clock";
 import { reinstateParticipant } from "@/lib/participants/lockout";
-import { scheduleReplenish } from "@/lib/runner/pool";
+import { scheduleReplenish, teardownEventSandboxes } from "@/lib/runner/pool";
 
 export type ClockActionState =
   | { error: string }
@@ -36,7 +36,7 @@ export async function startEventAction(
     // POOL_TARGET so the first participant's Run does not pay for the cold
     // start (SPEC §7). `after()` outlives the response, which is what the
     // twenty creations at E2B's one-per-second pace need.
-    after(scheduleReplenish());
+    after(scheduleReplenish({ eventId }));
     revalidateEvent(eventId);
     return { ok: true, changed };
   } catch (error) {
@@ -81,6 +81,14 @@ export async function endEventAction(
       { id: organizer.id, email: organizer.email },
       eventId,
     );
+    // Clean teardown: kill active sandboxes and mark dead so organizer is not billed.
+    after(async () => {
+      try {
+        await teardownEventSandboxes(eventId);
+      } catch (error) {
+        console.error("[runner] teardownEventSandboxes failed", error);
+      }
+    });
     revalidateEvent(eventId);
     return { ok: true, changed };
   } catch (error) {

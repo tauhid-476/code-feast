@@ -183,7 +183,7 @@ export async function runFromContest(
         language: input.language,
         code: input.code,
       },
-      options,
+      { ...options, eventId: context.event.id },
     );
   } finally {
     try {

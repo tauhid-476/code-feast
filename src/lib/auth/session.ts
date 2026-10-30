@@ -1,7 +1,7 @@
 import "server-only";
 
 import { auth } from "./server";
-import { isOrganizerEmail } from "@/lib/env";
+import { isApprovedOrganizer } from "@/lib/organizers/whitelist";
 import type { SessionUser, Viewer } from "./roles";
 
 export { landingFor } from "./roles";
@@ -24,7 +24,7 @@ export async function getSessionUser(): Promise<SessionUser | null> {
 export async function getViewer(): Promise<Viewer> {
   const user = await getSessionUser();
   if (!user) return { kind: "anonymous" };
-  return isOrganizerEmail(user.email)
+  return (await isApprovedOrganizer(user.email))
     ? { kind: "organizer", user }
     : { kind: "participant", user };
 }

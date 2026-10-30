@@ -3,7 +3,7 @@ import { and, eq } from "drizzle-orm";
 import { getDb } from "@/lib/db/client";
 import { events } from "@/lib/db/schema";
 import { DomainError } from "@/lib/errors";
-import { isOrganizerEmail } from "@/lib/env";
+import { isApprovedOrganizer } from "@/lib/organizers/whitelist";
 import type { EventSummary } from "./queries";
 
 /** The acting account. Domain modules never read the session themselves. */
@@ -15,6 +15,13 @@ export type EventActor = {
 export type CreateEventInput = {
   title: string;
   durationMinutes: number;
+  e2bApiKey?: string | null;
+};
+
+export type UpdateEventSettingsInput = {
+  title?: string;
+  durationMinutes?: number;
+  e2bApiKey?: string | null;
 };
 
 /** Tests inject a deterministic generator to force a collision. */
@@ -34,8 +41,11 @@ export function generateJoinCode(): string {
   return code;
 }
 
-export function assertOrganizer(actor: EventActor, action: string): void {
-  if (!isOrganizerEmail(actor.email)) {
+export async function assertOrganizer(
+  actor: EventActor,
+  action: string,
+): Promise<void> {
+  if (!(await isApprovedOrganizer(actor.email))) {
     throw new DomainError(
       "not_organizer",
       `Only an organizer can ${action}.`,
@@ -106,9 +116,10 @@ export async function createEvent(
   input: CreateEventInput,
   options: JoinCodeOptions = {},
 ): Promise<EventSummary> {
-  assertOrganizer(actor, "create an event");
+  await assertOrganizer(actor, "create an event");
   const title = validateTitle(input.title);
   const durationMinutes = validateDuration(input.durationMinutes);
+  const e2bApiKey = input.e2bApiKey?.trim() || null;
   const generateCode = options.generateCode ?? generateJoinCode;
 
   return withFreshJoinCode(generateCode, async (code) => {
@@ -120,6 +131,7 @@ export async function createEvent(
         status: "draft",
         durationMinutes,
         createdBy: actor.id,
+        e2bApiKey,
       })
       .returning({
         id: events.id,
@@ -130,21 +142,84 @@ export async function createEvent(
         startsAt: events.startsAt,
         deadlineAt: events.deadlineAt,
         endedAt: events.endedAt,
+        e2bApiKey: events.e2bApiKey,
       });
     return row;
   });
 }
 
 /**
+ * Updates event settings (title, duration, e2bApiKey) while in draft.
+ */
+export async function updateEventSettings(
+  actor: EventActor,
+  eventId: string,
+  input: UpdateEventSettingsInput,
+): Promise<EventSummary> {
+  await assertOrganizer(actor, "edit event settings");
+
+  const [current] = await getDb()
+    .select()
+    .from(events)
+    .where(and(eq(events.id, eventId), eq(events.createdBy, actor.id)))
+    .limit(1);
+
+  if (!current) {
+    throw new DomainError("event_not_found", "Event not found.", 404);
+  }
+  if (current.status !== "draft") {
+    throw new DomainError(
+      "event_not_draft",
+      "Event settings can only be edited while the event is a draft.",
+    );
+  }
+
+  const updates: Partial<typeof events.$inferInsert> = {};
+  if (input.title !== undefined) {
+    updates.title = validateTitle(input.title);
+  }
+  if (input.durationMinutes !== undefined) {
+    updates.durationMinutes = validateDuration(input.durationMinutes);
+  }
+  if (input.e2bApiKey !== undefined) {
+    updates.e2bApiKey = input.e2bApiKey?.trim() || null;
+  }
+
+  const [row] = await getDb()
+    .update(events)
+    .set(updates)
+    .where(
+      and(
+        eq(events.id, eventId),
+        eq(events.createdBy, actor.id),
+        eq(events.status, "draft"),
+      ),
+    )
+    .returning({
+      id: events.id,
+      title: events.title,
+      status: events.status,
+      durationMinutes: events.durationMinutes,
+      code: events.code,
+      startsAt: events.startsAt,
+      deadlineAt: events.deadlineAt,
+      endedAt: events.endedAt,
+      e2bApiKey: events.e2bApiKey,
+    });
+
+  return row;
+}
+
+/**
  * Replaces the join code of a draft event. The old code stops resolving as soon
- * as the row is updated; live and ended events keep the code they were given.
+ * as the row is updated; live and ended events keep the code they were given.\
  */
 export async function regenerateJoinCode(
   actor: EventActor,
   eventId: string,
   options: JoinCodeOptions = {},
 ): Promise<EventSummary> {
-  assertOrganizer(actor, "change a join code");
+  await assertOrganizer(actor, "change a join code");
 
   const [current] = await getDb()
     .select({ id: events.id, code: events.code, status: events.status })
@@ -186,6 +261,7 @@ export async function regenerateJoinCode(
           startsAt: events.startsAt,
           deadlineAt: events.deadlineAt,
           endedAt: events.endedAt,
+          e2bApiKey: events.e2bApiKey,
         });
 
       if (!row) {

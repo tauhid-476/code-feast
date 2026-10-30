@@ -71,7 +71,7 @@ export async function getEventHealth(
     };
   });
 
-  const readySandboxes = await getReadyCount();
+  const readySandboxes = await getReadyCount(event.id);
 
   return {
     event,

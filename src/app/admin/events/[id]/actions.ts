@@ -121,7 +121,7 @@ export async function testProblemAction(
   // A Run is a request that can notice the pool is short; top it up after the
   // response rather than making the organizer wait (SPEC §7). Registered before
   // the Run so a busy or failed Run still leaves the pool filling.
-  after(scheduleReplenish());
+  after(scheduleReplenish({ eventId }));
 
   try {
     const result = await testProblem(

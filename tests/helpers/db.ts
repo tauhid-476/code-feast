@@ -15,6 +15,7 @@ const TABLES = [
   "problems",
   "runner_pool",
   "events",
+  "approved_organizers",
 ] as const;
 
 export async function resetDatabase(): Promise<void> {

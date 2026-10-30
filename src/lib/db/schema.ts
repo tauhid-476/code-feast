@@ -30,6 +30,7 @@ export const events = pgTable(
     deadlineAt: timestamp("deadline_at", { withTimezone: true }),
     endedAt: timestamp("ended_at", { withTimezone: true }),
     createdBy: text("created_by").notNull(),
+    e2bApiKey: text("e2b_api_key"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -249,6 +250,7 @@ export const runnerPool = pgTable(
   "runner_pool",
   {
     id: uuid("id").primaryKey().defaultRandom(),
+    eventId: uuid("event_id").references(() => events.id, { onDelete: "cascade" }),
     sandboxId: text("sandbox_id").notNull(),
     state: text("state").notNull().default("ready"),
     claimedAt: timestamp("claimed_at", { withTimezone: true }),
@@ -260,10 +262,27 @@ export const runnerPool = pgTable(
   (t) => [
     uniqueIndex("runner_pool_sandbox_unique").on(t.sandboxId),
     index("runner_pool_state_idx").on(t.state),
+    index("runner_pool_event_idx").on(t.eventId),
     check(
       "runner_pool_state_check",
       sql`${t.state} in ('ready', 'claimed', 'dead')`,
     ),
+  ],
+);
+
+export const approvedOrganizers = pgTable(
+  "approved_organizers",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    email: text("email").notNull(),
+    note: text("note"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("approved_organizers_email_unique").on(t.email),
+    index("approved_organizers_email_lower_idx").on(sql`lower(${t.email})`),
   ],
 );
 
@@ -278,4 +297,5 @@ export const schema = {
   submissionSnippets,
   violations,
   runnerPool,
+  approvedOrganizers,
 };

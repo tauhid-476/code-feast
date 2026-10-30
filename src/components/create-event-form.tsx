@@ -7,6 +7,7 @@ import {
   createEventAction,
   type CreateEventState,
 } from "@/app/admin/events/actions";
+import { E2BApiKeyGuide } from "@/components/e2b-api-key-guide";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
@@ -87,6 +88,27 @@ export function CreateEventForm() {
                 <Plus data-icon="inline-start" />
                 {pending ? "Creating…" : "Create event"}
               </Button>
+            </div>
+
+            <div className="mt-2 space-y-3 rounded-lg border border-border/80 bg-muted/20 p-4">
+              <Field>
+                <FieldLabel htmlFor="e2bApiKey">
+                  E2B API Key (BYOK - Optional)
+                </FieldLabel>
+                <Input
+                  id="e2bApiKey"
+                  name="e2bApiKey"
+                  type="password"
+                  placeholder="e2b_... (leaves blank to use platform default)"
+                  autoComplete="off"
+                />
+                <span className="text-xs text-muted-foreground">
+                  If left blank, code runs fall back to the platform environment
+                  variable <code>E2B_API_KEY</code>.
+                </span>
+              </Field>
+
+              <E2BApiKeyGuide />
             </div>
 
             {state && "error" in state ? (

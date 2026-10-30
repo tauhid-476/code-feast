@@ -33,18 +33,19 @@ const eventColumns = {
   startsAt: events.startsAt,
   deadlineAt: events.deadlineAt,
   endedAt: events.endedAt,
+  e2bApiKey: events.e2bApiKey,
 };
 
 /**
  * Locks one event row for the acting organizer. Start takes this lock before
  * it flips the status, and every authoring write takes the same lock before it
- * checks `draft` (see `lockDraftEvent` in the problems module). Whichever
- * transaction commits first therefore decides the other's fate: a problem save
- * that arrives first is inside the frozen set, and one that arrives after
- * Start is refused. Both lock events before problems, so the order cannot
- * deadlock.
+ * edits problems, so an organizer cannot edit a problem at the very instant an
+ * event goes live.
+ *
+ * Scoped by `createdBy = actor.id` so a second organizer account cannot start,
+ * extend, or end another's event.
  */
-async function lockOwnedEvent(
+export async function lockOwnedEvent(
   tx: Transaction,
   actor: EventActor,
   eventId: string,
@@ -53,8 +54,7 @@ async function lockOwnedEvent(
     .select(eventColumns)
     .from(events)
     .where(and(eq(events.id, eventId), eq(events.createdBy, actor.id)))
-    .for("update")
-    .limit(1);
+    .for("update");
 
   if (!row) {
     throw new DomainError("event_not_found", "Event not found.", 404);
@@ -64,24 +64,27 @@ async function lockOwnedEvent(
 
 export type ExtendInput = ClockOptions & {
   /**
-   * The deadline the organizer was looking at. A repeat press carries the same
-   * value and is a no-op; a deliberate later press carries the new one.
+   * The deadline the organizer was looking at when they pressed Extend. A late
+   * or repeated press that arrives after the clock already moved is rejected,
+   * so an accidental double click does not add twenty minutes.
    */
   expectedDeadlineAt: Date;
 };
 
 /**
- * Adds ten minutes to the deadline, while the event is live and from the
- * deadline the organizer actually saw. It is also available in ended only if
- * the event ended by deadline, and reopens exactly the participants locked by
- * deadline. An event ended manually cannot be extended.
+ * Extends `deadline_at` by 10 minutes. Available while `live`. It is also
+ * available in `ended` IF AND ONLY IF the event ended by deadline; it reopens
+ * participants locked out by the deadline, and leaves participants locked out
+ * by `submitted` or `eliminated` alone.
+ *
+ * An event ended explicitly by "End now" cannot be extended.
  */
 export async function extendDeadline(
   actor: EventActor,
   eventId: string,
   input: ExtendInput,
 ): Promise<ClockResult> {
-  assertOrganizer(actor, "extend an event");
+  await assertOrganizer(actor, "extend an event");
 
   return getDb().transaction(async (tx) => {
     const current = await lockOwnedEvent(tx, actor, eventId);
@@ -140,7 +143,7 @@ export async function startEvent(
   eventId: string,
   options: ClockOptions = {},
 ): Promise<ClockResult> {
-  assertOrganizer(actor, "start an event");
+  await assertOrganizer(actor, "start an event");
   const at = options.now ?? serverNow();
 
   return getDb().transaction(async (tx) => {
@@ -184,7 +187,7 @@ export async function endEvent(
   eventId: string,
   options: ClockOptions = {},
 ): Promise<ClockResult> {
-  assertOrganizer(actor, "end an event");
+  await assertOrganizer(actor, "end an event");
   const at = options.now ?? serverNow();
 
   return getDb().transaction(async (tx) => {

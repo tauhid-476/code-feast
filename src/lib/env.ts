@@ -32,9 +32,38 @@ export function organizerEmails(): string[] {
     .filter(Boolean);
 }
 
+/**
+ * `SUPER_ADMIN_EMAILS` defaults to `ADMIN_EMAILS` or tauheedxd90@gmail.com.
+ * Only users in this list can access super-admin actions like whitelisting organizers.
+ */
+export function superAdminEmails(): string[] {
+  if (process.env.SUPER_ADMIN_EMAILS !== undefined) {
+    return process.env.SUPER_ADMIN_EMAILS
+      .split(",")
+      .map((email) => email.trim().toLowerCase())
+      .filter(Boolean);
+  }
+  if (process.env.ADMIN_EMAILS !== undefined) {
+    return process.env.ADMIN_EMAILS
+      .split(",")
+      .map((email) => email.trim().toLowerCase())
+      .filter(Boolean);
+  }
+  return ["tauheedxd90@gmail.com"];
+}
+
+export function isSuperAdminEmail(email: string | null | undefined): boolean {
+  if (!email) return false;
+  return superAdminEmails().includes(email.trim().toLowerCase());
+}
+
 export function isOrganizerEmail(email: string | null | undefined): boolean {
   if (!email) return false;
-  return organizerEmails().includes(email.trim().toLowerCase());
+  const normalized = email.trim().toLowerCase();
+  return (
+    organizerEmails().includes(normalized) ||
+    superAdminEmails().includes(normalized)
+  );
 }
 
 /**

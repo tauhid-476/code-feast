@@ -61,6 +61,8 @@ export type RunOptions = {
    * fixes it at 20s; tests shorten it so the bound is exercised, not slept.
    */
   claimTimeoutMs?: number;
+  /** Scopes sandbox claim to the event's warm pool / BYOK key. */
+  eventId?: string;
 };
 
 /** Python/C++ get 3s per case; Java gets 6s because the JVM must start. */
@@ -268,7 +270,11 @@ export async function runAgainstSamples(
   const startedAt = options.now ?? serverNow();
 
   return withClaimedSandbox(
-    { provider: options.provider, timeoutMs: options.claimTimeoutMs },
+    {
+      provider: options.provider,
+      timeoutMs: options.claimTimeoutMs,
+      eventId: options.eventId,
+    },
     async ({ handle }) => {
       const result = emptyResult();
       // The sandbox is reused by every Run, so this Run owns one directory:
