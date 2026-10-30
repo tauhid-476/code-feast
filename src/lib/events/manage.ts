@@ -129,6 +129,7 @@ export async function createEvent(
         code: events.code,
         startsAt: events.startsAt,
         deadlineAt: events.deadlineAt,
+        endedAt: events.endedAt,
       });
     return row;
   });
@@ -184,6 +185,7 @@ export async function regenerateJoinCode(
           code: events.code,
           startsAt: events.startsAt,
           deadlineAt: events.deadlineAt,
+          endedAt: events.endedAt,
         });
 
       if (!row) {

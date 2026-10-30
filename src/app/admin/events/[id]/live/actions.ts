@@ -5,11 +5,16 @@ import { after } from "next/server";
 import { requireOrganizer } from "@/lib/auth/guards";
 import { actionError } from "@/lib/errors";
 import { endEvent, extendDeadline, startEvent } from "@/lib/events/clock";
+import { reinstateParticipant } from "@/lib/participants/lockout";
 import { scheduleReplenish } from "@/lib/runner/pool";
 
 export type ClockActionState =
   | { error: string }
   | { ok: true; changed: boolean };
+
+export type ReinstateActionState =
+  | { error: string; code?: string }
+  | { ok: true };
 
 function revalidateEvent(eventId: string): void {
   revalidatePath(`/admin/events/${eventId}/live`);
@@ -78,6 +83,25 @@ export async function endEventAction(
     );
     revalidateEvent(eventId);
     return { ok: true, changed };
+  } catch (error) {
+    return actionError(error);
+  }
+}
+
+export async function reinstateParticipantAction(
+  eventId: string,
+  participantId: string,
+): Promise<ReinstateActionState> {
+  const organizer = await requireOrganizer();
+
+  try {
+    await reinstateParticipant(
+      { id: organizer.id, email: organizer.email },
+      eventId,
+      participantId,
+    );
+    revalidateEvent(eventId);
+    return { ok: true };
   } catch (error) {
     return actionError(error);
   }

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
+import { EliminatedParticipantsCard } from "@/components/eliminated-participants";
 import { EventClockControls } from "@/components/event-clock-controls";
 import { EventHealthStrip } from "@/components/event-health-strip";
 import { EventStatusBadge } from "@/components/event-status-badge";
@@ -20,9 +21,12 @@ export default async function AdminEventLivePage({
   const view = await getEventHealth(organizer.id, id);
   if (!view) notFound();
 
-  const { event, health } = view;
+  const { event, health, eliminated } = view;
   const deadlineReached =
     event.status === "live" && health.secondsRemaining === 0;
+  const eventEnded =
+    event.status === "ended" ||
+    (event.deadlineAt != null && health.secondsRemaining === 0);
 
   return (
     <div className="flex flex-col gap-8">
@@ -73,7 +77,8 @@ export default async function AdminEventLivePage({
           <AlertTitle>The deadline has passed</AlertTitle>
           <AlertDescription>
             Participants are locked at the deadline as they read the event. End
-            the event when the room is done.
+            the event when the room is done, or extend the deadline by 10
+            minutes.
           </AlertDescription>
         </Alert>
       ) : null}
@@ -82,7 +87,9 @@ export default async function AdminEventLivePage({
         <Alert>
           <AlertTitle>This event has ended</AlertTitle>
           <AlertDescription>
-            Every participant is locked out and the problem set is read-only.
+            {event.endedAt
+              ? "This event was ended manually by the organizer. The problem set is read-only."
+              : "The deadline was reached. You can extend by 10 minutes to reopen deadline-locked participants."}
           </AlertDescription>
         </Alert>
       ) : null}
@@ -93,6 +100,14 @@ export default async function AdminEventLivePage({
         participants={health.participants}
         durationMinutes={event.durationMinutes}
         deadlineAt={event.deadlineAt?.toISOString() ?? null}
+        endedAt={event.endedAt?.toISOString() ?? null}
+        deadlineReached={deadlineReached}
+      />
+
+      <EliminatedParticipantsCard
+        eventId={event.id}
+        eliminated={eliminated}
+        eventEnded={eventEnded}
       />
     </div>
   );

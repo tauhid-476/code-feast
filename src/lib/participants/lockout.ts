@@ -2,10 +2,14 @@ import { and, desc, eq, ne, sql } from "drizzle-orm";
 import { getDb, type Executor } from "@/lib/db/client";
 import {
   drafts,
+  events,
   participants,
   submissionSnippets,
   submissions,
 } from "@/lib/db/schema";
+import { DomainError } from "@/lib/errors";
+import { assertOrganizer, type EventActor } from "@/lib/events/manage";
+import { now as serverNow } from "@/lib/time";
 
 /** The Participant vocabulary lives here so every read and write agrees. */
 export type ParticipantStatus = "joined" | "solving" | "locked_out";
@@ -210,6 +214,123 @@ export async function lockAtDeadline(
   }
 
   return rows.map(toParticipant);
+}
+
+/**
+ * SPEC §3: Extending an event that ended by reaching its deadline reopens
+ * exactly the participants whose lockout reason was "deadline".
+ * Participants locked by "submitted" or "eliminated" stay locked.
+ */
+export async function reopenDeadlineLockouts(
+  executor: Executor,
+  eventId: string,
+): Promise<Participant[]> {
+  const rows = await executor
+    .update(participants)
+    .set({
+      status: "solving",
+      lockoutReason: null,
+      lockedAt: null,
+    })
+    .where(
+      and(
+        eq(participants.eventId, eventId),
+        eq(participants.status, "locked_out"),
+        eq(participants.lockoutReason, "deadline"),
+      ),
+    )
+    .returning(participantColumns);
+
+  return rows.map(toParticipant);
+}
+
+/**
+ * SPEC §6: Reinstate clears strikes, returns the participant to "solving", and
+ * keeps their original deadline. No time refund.
+ * Disabled once the event has ended.
+ */
+export async function reinstateParticipant(
+  actor: EventActor,
+  eventId: string,
+  participantId: string,
+  options: { now?: Date } = {},
+): Promise<Participant> {
+  assertOrganizer(actor, "reinstate a participant");
+  const now = options.now ?? serverNow();
+
+  return getDb().transaction(async (tx) => {
+    const [event] = await tx
+      .select({
+        id: events.id,
+        status: events.status,
+        deadlineAt: events.deadlineAt,
+        createdBy: events.createdBy,
+      })
+      .from(events)
+      .where(and(eq(events.id, eventId), eq(events.createdBy, actor.id)))
+      .for("update")
+      .limit(1);
+
+    if (!event) {
+      throw new DomainError("event_not_found", "Event not found.", 404);
+    }
+
+    if (
+      event.status === "ended" ||
+      (event.deadlineAt && now.getTime() >= event.deadlineAt.getTime())
+    ) {
+      throw new DomainError(
+        "event_ended",
+        "Reinstatement is unavailable once the event has ended.",
+        409,
+      );
+    }
+
+    const [participant] = await tx
+      .select(participantColumns)
+      .from(participants)
+      .where(
+        and(
+          eq(participants.id, participantId),
+          eq(participants.eventId, eventId),
+        ),
+      )
+      .for("update")
+      .limit(1);
+
+    if (!participant) {
+      throw new DomainError(
+        "participant_not_found",
+        "Participant not found.",
+        404,
+      );
+    }
+
+    if (
+      participant.status !== "locked_out" ||
+      participant.lockoutReason !== "eliminated"
+    ) {
+      throw new DomainError(
+        "participant_not_eliminated",
+        "Only eliminated participants can be reinstated.",
+        400,
+      );
+    }
+
+    const [updated] = await tx
+      .update(participants)
+      .set({
+        strikes: 0,
+        status: "solving",
+        lockoutReason: null,
+        lockedAt: null,
+        activeSessionId: null,
+      })
+      .where(eq(participants.id, participantId))
+      .returning(participantColumns);
+
+    return toParticipant(updated);
+  });
 }
 
 /**

@@ -276,6 +276,7 @@ describe("extend", () => {
       status: "ended",
       startsAt,
       deadlineAt: new Date("2026-10-28T19:30:00.000Z"),
+      endedAt: new Date("2026-10-28T19:30:00.000Z"),
     });
     await expect(
       extendDeadline(actor, ended.id, {

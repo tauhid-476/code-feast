@@ -35,6 +35,7 @@ const eventColumns = {
   code: events.code,
   startsAt: events.startsAt,
   deadlineAt: events.deadlineAt,
+  endedAt: events.endedAt,
 };
 
 /**

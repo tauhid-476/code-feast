@@ -41,6 +41,7 @@ Checked against <https://code-feast-chi.vercel.app> with real HTTP requests.
 | Migrations | `npm run db:migrate` against the production branch: 2 migrations recorded in `drizzle.__drizzle_migrations`, 10 tables in `public`. The second adds `participants.run_in_flight_at` and `participants.last_run_at` (ticket 10). |
 | Current deployment | Tickets 10–12 (`42311a1`) deployed to <https://code-feast-chi.vercel.app>; anonymous `POST /api/violation` answers `401 {"error":"Sign in first."}`, so the blocked-paste endpoint is live. |
 | No secret in the browser bundle | Covered by `tests/ticket-18-server-only-boundary.test.ts`, plus the `grep` in `docs/deploy.md` §1. |
+| Reinstate & deadline reopen | Covered by `tests/ticket-15-reinstate-and-deadline-reopen.test.ts` (12 tests) and `tests/ticket-08-start-and-shared-clock.test.ts`. |
 
 ### One thing that had to be fixed
 
@@ -217,8 +218,11 @@ times, spacing them more than two seconds apart). The screen becomes the
 terminal one with reason **Eliminated**, `participants.status` is `locked_out`,
 `lockout_reason` is `eliminated`, and there is one submission holding the code
 you had autosaved at the third strike. Opening `/e/<CODE>/contest` again, in the
-same tab, another tab, or another browser, returns to the locked screen. The
-organizer can reinstate once ticket 15 lands.
+same tab, another tab, or another browser, returns to the locked screen. The organizer can reinstate from the live view (ticket 15).
+
+**A working reinstatement looks like:** In the live view (`/admin/events/<ID>/live`), an eliminated participant appears in the **Eliminated Participants** table with their strikes count and elimination timestamp. Clicking **Reinstate** clears their strikes to 0, resets status back to `solving`, clears the lockout, and retains their original deadline without refunding time. Existing drafts and the frozen submission remain intact. The participant can pass the fullscreen gate again and resume solving with their autosaved code intact. When the event ends, the button is disabled and explains that reinstatement is unavailable once the event has ended.
+
+**A working deadline reopen looks like:** When an event ends naturally by reaching its deadline, the live clock controls offer **Extend +10 (Reopen deadline lockouts)**. Extending adds ten minutes, sets status back to `live`, and reopens exactly the participants locked by reason `deadline`. Participants locked by `submitted` or `eliminated` stay locked. An event ended manually by the organizer clicking **End now** cannot be extended.
 
 **A working Deadline lockout looks like:** close the tab before the Deadline and
 return after it. The first page load locks you at the Deadline itself — the

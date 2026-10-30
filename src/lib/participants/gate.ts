@@ -85,5 +85,8 @@ export async function grantContestGate(
 /** Clears the gate; used when a contest is over for this browser. */
 export async function clearContestGate(code: string): Promise<void> {
   const store = await cookies();
-  store.delete(gateCookieName(code));
+  store.delete({
+    name: gateCookieName(code),
+    path: `/e/${code.trim().toUpperCase()}`,
+  });
 }
