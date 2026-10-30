@@ -3,7 +3,7 @@ import { getDb, type Transaction } from "@/lib/db/client";
 import { events } from "@/lib/db/schema";
 import { DomainError } from "@/lib/errors";
 import { now as serverNow, addMinutes } from "@/lib/time";
-import { lockAtDeadline } from "@/lib/participants/lockout";
+import { lockAtDeadline, reopenDeadlineLockouts } from "@/lib/participants/lockout";
 import { assertOrganizer, type EventActor } from "./manage";
 import type { EventSummary } from "./queries";
 
@@ -32,6 +32,7 @@ const eventColumns = {
   code: events.code,
   startsAt: events.startsAt,
   deadlineAt: events.deadlineAt,
+  endedAt: events.endedAt,
 };
 
 /**
@@ -71,9 +72,9 @@ export type ExtendInput = ClockOptions & {
 
 /**
  * Adds ten minutes to the deadline, while the event is live and from the
- * deadline the organizer actually saw. The event row is locked first, so two
- * presses of the same button serialize: the second sees a deadline it did not
- * expect and changes nothing.
+ * deadline the organizer actually saw. It is also available in ended only if
+ * the event ended by deadline, and reopens exactly the participants locked by
+ * deadline. An event ended manually cannot be extended.
  */
 export async function extendDeadline(
   actor: EventActor,
@@ -85,10 +86,19 @@ export async function extendDeadline(
   return getDb().transaction(async (tx) => {
     const current = await lockOwnedEvent(tx, actor, eventId);
 
-    if (current.status !== "live" || !current.deadlineAt) {
+    if (current.endedAt !== null) {
+      throw new DomainError(
+        "event_not_live",
+        "An event ended by the organizer cannot be extended.",
+        409,
+      );
+    }
+
+    if (current.status === "draft" || !current.deadlineAt) {
       throw new DomainError(
         "event_not_live",
         "Extend is only available while the event is live.",
+        400,
       );
     }
 
@@ -96,17 +106,25 @@ export async function extendDeadline(
       return { event: current, changed: false };
     }
 
+    const newDeadline = addMinutes(current.deadlineAt, 10);
+
     const [row] = await tx
       .update(events)
-      .set({ deadlineAt: addMinutes(current.deadlineAt, 10) })
+      .set({
+        status: "live",
+        deadlineAt: newDeadline,
+      })
       .where(
         and(
           eq(events.id, eventId),
-          eq(events.status, "live"),
           eq(events.deadlineAt, current.deadlineAt),
         ),
       )
       .returning(eventColumns);
+
+    if (row) {
+      await reopenDeadlineLockouts(tx, eventId);
+    }
 
     return { event: row ?? current, changed: Boolean(row) };
   });

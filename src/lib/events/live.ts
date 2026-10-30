@@ -1,7 +1,12 @@
+import { and, desc, eq } from "drizzle-orm";
 import { getDb } from "@/lib/db/client";
+import { participants } from "@/lib/db/schema";
 import {
   countParticipants,
   lockAtDeadline,
+  participantColumns,
+  toParticipant,
+  type Participant,
   type ParticipantCounts,
 } from "@/lib/participants/lockout";
 import { getReadyCount } from "@/lib/runner/pool";
@@ -18,6 +23,7 @@ export type EventHealth = ParticipantCounts & {
 export type LiveView = {
   event: EventSummary;
   health: EventHealth;
+  eliminated: Participant[];
 };
 
 export type LiveOptions = {
@@ -42,11 +48,27 @@ export async function getEventHealth(
 
   const at = options.now ?? serverNow();
 
-  const counts = await getDb().transaction(async (tx) => {
+  const { counts, eliminated } = await getDb().transaction(async (tx) => {
     if (event.deadlineAt && at.getTime() >= event.deadlineAt.getTime()) {
       await lockAtDeadline(tx, { eventId: event.id }, event.deadlineAt);
     }
-    return countParticipants(event.id, tx);
+    const counts = await countParticipants(event.id, tx);
+    const eliminatedRows = await tx
+      .select(participantColumns)
+      .from(participants)
+      .where(
+        and(
+          eq(participants.eventId, event.id),
+          eq(participants.status, "locked_out"),
+          eq(participants.lockoutReason, "eliminated"),
+        ),
+      )
+      .orderBy(desc(participants.lockedAt));
+
+    return {
+      counts,
+      eliminated: eliminatedRows.map(toParticipant),
+    };
   });
 
   const readySandboxes = await getReadyCount();
@@ -60,5 +82,6 @@ export async function getEventHealth(
         ? secondsBetween(at, event.deadlineAt)
         : null,
     },
+    eliminated,
   };
 }

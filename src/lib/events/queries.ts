@@ -10,6 +10,7 @@ export type EventSummary = {
   code: string;
   startsAt: Date | null;
   deadlineAt: Date | null;
+  endedAt: Date | null;
 };
 
 /**
@@ -28,6 +29,7 @@ export async function listOrganizerEvents(
       code: events.code,
       startsAt: events.startsAt,
       deadlineAt: events.deadlineAt,
+      endedAt: events.endedAt,
     })
     .from(events)
     .where(eq(events.createdBy, organizerId))
@@ -48,6 +50,7 @@ export async function getOrganizerEvent(
       code: events.code,
       startsAt: events.startsAt,
       deadlineAt: events.deadlineAt,
+      endedAt: events.endedAt,
     })
     .from(events)
     .where(and(eq(events.id, eventId), eq(events.createdBy, organizerId)))
@@ -75,6 +78,7 @@ export async function findEventByJoinCode(
       code: events.code,
       startsAt: events.startsAt,
       deadlineAt: events.deadlineAt,
+      endedAt: events.endedAt,
     })
     .from(events)
     .where(and(eq(events.code, normalized), ne(events.status, "ended")))
@@ -102,6 +106,7 @@ export async function findEndedEventByJoinCode(
       code: events.code,
       startsAt: events.startsAt,
       deadlineAt: events.deadlineAt,
+      endedAt: events.endedAt,
     })
     .from(events)
     .where(and(eq(events.code, normalized), eq(events.status, "ended")))

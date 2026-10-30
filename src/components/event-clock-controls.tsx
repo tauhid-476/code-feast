@@ -33,6 +33,8 @@ import { endConfirmationText, startConfirmationText } from "@/lib/events/copy";
 /**
  * The three clock actions from SPEC §4.4. Start and End now confirm; Extend is
  * repeatable and sends the deadline it rendered so a double press is a no-op.
+ * Extending an ended event is available only if it ended at deadline, and reopens
+ * participants locked by deadline.
  */
 export function EventClockControls({
   eventId,
@@ -40,12 +42,16 @@ export function EventClockControls({
   participants,
   durationMinutes,
   deadlineAt,
+  endedAt,
+  deadlineReached,
 }: {
   eventId: string;
   status: string;
   participants: number;
   durationMinutes: number;
   deadlineAt: string | null;
+  endedAt?: string | null;
+  deadlineReached?: boolean;
 }) {
   const [pending, startTransition] = useTransition();
   const [starting, setStarting] = useState(false);
@@ -118,7 +124,9 @@ export function EventClockControls({
         {status === "live" ? (
           <div className="flex flex-wrap items-center justify-between gap-3">
             <p className="text-sm text-muted-foreground">
-              Extend adds ten minutes to the shared deadline.
+              {deadlineReached
+                ? "The deadline was reached. Extending adds ten minutes and reopens participants locked by deadline."
+                : "Extend adds ten minutes to the shared deadline."}
             </p>
             <div className="flex items-center gap-2">
               <Button
@@ -142,9 +150,27 @@ export function EventClockControls({
         ) : null}
 
         {status === "ended" ? (
-          <p className="text-sm text-muted-foreground">
-            The clock has stopped. The problem set is read-only.
-          </p>
+          endedAt ? (
+            <p className="text-sm text-muted-foreground">
+              This event was ended manually by the organizer. It cannot be
+              extended.
+            </p>
+          ) : (
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <p className="text-sm text-muted-foreground">
+                The event reached its deadline. Extending adds ten minutes and
+                reopens participants locked by deadline.
+              </p>
+              <Button
+                variant="outline"
+                onClick={extend}
+                disabled={pending || !deadlineAt}
+              >
+                <Timer data-icon="inline-start" />
+                Extend +10
+              </Button>
+            </div>
+          )
         ) : null}
       </CardContent>
 
