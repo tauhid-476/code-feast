@@ -18,7 +18,7 @@
 
 ## Notes
 
-Feature commit `2ca3824`.
+Feature commit `ec39653`, merge commit `e47f62f`.
 
 - Implemented `reinstateParticipant` in `src/lib/participants/lockout.ts`: resets strikes to 0, resets status to `solving`, clears `lockoutReason` and `lockedAt`, resets `activeSessionId` to null, and retains existing drafts and frozen submissions. Reinstatement requires the organizer role and is rejected with `DomainError("event_ended", ..., 409)` if the event ended (by status `ended` or deadline passed).
 - Implemented `reopenDeadlineLockouts` in `src/lib/participants/lockout.ts`: atomically resets status to `solving` and clears `lockoutReason` and `lockedAt` for participants whose lockout reason is `deadline`. Participants locked by `submitted` or `eliminated` are unchanged.
