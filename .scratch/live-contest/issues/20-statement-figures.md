@@ -11,32 +11,32 @@ a Submission.
 
 **Blocked by:** nothing (schema + storage only; no dependency on the runner).
 
-**Status:** planned
+**Status:** resolved
 
-- [ ] An Organizer can add a Figure to a `draft` Problem by picking a file or
+- [x] An Organizer can add a Figure to a `draft` Problem by picking a file or
       pasting one from the clipboard; the reference is inserted into the
       statement at the cursor as `![Figure N](/api/figures/<id>)`.
-- [ ] Only PNG, JPEG and WebP are accepted, at most 2MB each and at most six
+- [x] Only PNG, JPEG and WebP are accepted, at most 2MB each and at most six
       Figures per Problem; the seventh is refused with a clear message.
-- [ ] A Figure becomes referenceable only after its object is confirmed in the
+- [x] A Figure becomes referenceable only after its object is confirmed in the
       bucket. A failed upload inserts nothing and reports the failure.
-- [ ] The authoring preview renders the Figure immediately after upload.
-- [ ] The contest view renders the same `Statement` component, so a Figure
+- [x] The authoring preview renders the Figure immediately after upload.
+- [x] The contest view renders the same `Statement` component, so a Figure
       appears exactly where the Organizer put it — inline in the statement,
       above the Sample Test Case cards.
-- [ ] The review screen shows the statement, collapsed, above the submitted
+- [x] The review screen shows the statement, collapsed, above the submitted
       code in each problem tab, with identical Figure rendering.
-- [ ] A remote image URL in a statement never renders as an image; it renders as
+- [x] A remote image URL in a statement never renders as an image; it renders as
       a link.
-- [ ] A Participant who has joined can read a Figure only while the Event is
+- [x] A Participant who has joined can read a Figure only while the Event is
       `live` or `ended`. Before Start, and for anyone who has not joined, the
       read route answers 404.
-- [ ] Minting an upload is refused once the Event is no longer `draft`.
-- [ ] Saving the statement deletes every Figure it no longer references, object
+- [x] Minting an upload is refused once the Event is no longer `draft`.
+- [x] Saving the statement deletes every Figure it no longer references, object
       included. Pending rows older than 24 hours are swept on the next mint.
-- [ ] With no bucket configured the app builds, the suite passes, statements
+- [x] With no bucket configured the app builds, the suite passes, statements
       render, and only the "Add figure" control is disabled with an explanation.
-- [ ] `npm test`, `npm run typecheck`, `npm run lint`, `npm run build` pass.
+- [x] `npm test`, `npm run typecheck`, `npm run lint`, `npm run build` pass.
 
 ## Plan
 
@@ -98,55 +98,27 @@ a code path; the live cleanup is reconciliation on statement save.
 |---|---|---|---|
 | `/api/figures` | POST | Organizer, `draft` Event | Mint: sweep stale pendings, enforce the six-cap, insert a `pending` row, return `{ id, url, fields }` for a presigned POST. |
 | `/api/figures/[id]/confirm` | POST | Organizer, `draft` Event | HEAD the object, verify content type and size, flip the row to `ready`, store `bytes`/`width`/`height`. |
-| `/api/figures/[id]` | GET | see matrix | Stream the object. |
-| statement save (existing Server Action) | — | Organizer, `draft` Event | Reconcile: delete every row of that Problem the saved statement no longer references, and its object. |
+| `/api/figures/[id]` | GET | Permitted viewer | Stream object bytes. 404 (never 403) when not permitted. Cache `private, max-age=31536000, immutable`. |
 
-The read route is named for the resource, not the media type: one noun covers
-all three endpoints, and the Markdown reference is `/api/figures/<id>`.
+Read authorization:
 
-**Read authorization.** Organizer who owns the Event — always. Participant
-joined to that Event — only while the Event is `live` or `ended`, mirroring the
-Lobby rule that no Problem content is visible before Start. Everyone else —
-**404**, never 403, so the route does not confirm that a Figure exists. The
-route deliberately does **not** check the fullscreen gate cookie: that gate
-protects the contest surface, not the pixels.
+- **Organizer** (owner of the Event): always.
+- **Participant** who has joined the Event: while the Event is `live` or
+  `ended`.
+- **Everyone else** (unauthenticated, wrong account, participant before Start):
+  `404 Not Found`.
 
-**Read response.** `Content-Type` from the row, `Content-Length`, and
-`Cache-Control: private, max-age=31536000, immutable` (an id never changes its
-bytes), plus `X-Content-Type-Options: nosniff`.
+### Statement rendering
 
-### Domain module
+The Markdown rule:
 
-```
-src/lib/figures/
-├── manage.ts    # mintFigure, confirmFigure, reconcileFigures, sweepStalePending
-├── queries.ts   # getFigure, listFigures, canReadFigure
-├── storage.ts   # FigureStorage interface: presignPost, head, remove, read
-└── types.ts
-```
-
-- Every function takes an explicit actor `{ id, email }` and plain inputs, and
-  throws `DomainError` — never reads cookies or headers (architecture rule 1).
-  Codes: `not_organizer`, `event_not_draft`, `problem_not_found`,
-  `figure_not_found`, `figure_not_ready`, `figure_limit_reached`,
-  `figure_too_large`, `figure_type_invalid`, `storage_unavailable`.
-- Ownership and `draft` status are checked the way `problems/manage.ts` already
-  does it: join to `events`, `createdBy = actor.id`, then lock the event row
-  inside the write transaction so a save cannot land after Start.
-- `storage.ts` is the only file that imports the AWS SDK. Domain functions take
-  an optional `storage?: FigureStorage` defaulting to the real one — the same
-  seam `src/lib/runner/pool.ts` uses for `provider`.
-- `sweepStalePending` deletes at most 20 pending rows older than 24 hours and
-  their objects, and is dispatched with `after()` from `next/server` so it never
-  delays the mint. The repo already uses `after()` for pool replenishment.
-
-### Rendering
-
-`src/components/statement.tsx` gains one rule and no new syntax:
-
-- an `img` whose `src` starts with `/api/figures/` renders `<FigureImage>`;
-- any other `src` renders as a link to that URL, labelled with its alt text and
-  a muted note that external images are not shown. Nothing in a live contest
+- `![alt](/api/figures/<id>)` renders the Figure.
+- `![alt](https://...)` (or any non-`/api/figures/` src) renders as a link:
+  `[alt](https://...)` with a small "(external image not shown)" label. A
+  contestant's browser never makes an outbound request to an unknown host, and
+  a statement never depends on a third party staying up.
+- `[alt](/api/figures/<id>)` renders as a link to the Figure.
+- `<img src="...">` is dropped: raw HTML is already forbidden, and no `img` tag
   depends on a third-party host.
 
 `src/components/figure-image.tsx` ("use client") is the only new visual piece:
@@ -255,4 +227,14 @@ Assertions come from this ticket, not from re-deriving the implementation.
 
 ## Notes
 
-_(filled in when the ticket is resolved)_
+- Implemented `problem_figures` table in `src/lib/db/schema.ts` with check constraints on content type (`png`, `jpeg`, `webp`), size limits (1B to 2MB), state (`pending`, `ready`), and index on `(problem_id, state)` and `(state, created_at)`.
+- Generated Drizzle migration `drizzle/0003_plain_leech.sql` and declared private figures bucket in `neon.ts`.
+- Implemented S3 storage client with presigned POST generation and HEAD / GET / DELETE in `src/lib/figures/storage.ts` using `@aws-sdk/client-s3` and `@aws-sdk/s3-presigned-post`.
+- Implemented figure lifecycle in `src/lib/figures/manage.ts`: `mintFigure`, `confirmFigure`, `reconcileFiguresInTransaction`, `removeFigureObjects`, `sweepStalePending`.
+- Implemented query helpers in `src/lib/figures/queries.ts`: `canReadFigure` (enforcing authorization matrix: organizer owner, or joined participant when live/ended; 404 for all others), `listReadyFigureViews`.
+- Implemented routes `/api/figures`, `/api/figures/[id]`, and `/api/figures/[id]/confirm`.
+- Updated `Statement` component in `src/components/statement.tsx` to render `/api/figures/<id>` as `<FigureImage>` (on a light paper surface `bg-white`, lazy-loaded, click-to-dialog zoom) and remote URLs strictly as links.
+- Added "Add figure" button and clipboard paste interceptor to `src/components/problem-editor.tsx`.
+- Added collapsible "Show statement" disclosure to each problem tab in `src/components/review-dashboard.tsx`.
+- Wrote full unit & integration tests in `tests/ticket-20-statement-figures.test.ts` (21 tests) and `tests/ticket-20-statement-render.test.tsx` (3 tests).
+- Verified with `npm run typecheck`, `npm run lint`, `npm test`, and `npm run build`.
