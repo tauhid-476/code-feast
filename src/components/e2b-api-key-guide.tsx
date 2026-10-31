@@ -188,12 +188,12 @@ export function E2BApiKeyGuide() {
             if (e.target === e.currentTarget) handleClose();
           }}
         >
-          <div className="relative flex w-full max-w-3xl flex-col overflow-hidden rounded-xl border border-border bg-zinc-950 text-zinc-100 shadow-2xl animate-in zoom-in-95 duration-150">
+          <div className="relative flex w-full max-w-3xl flex-col overflow-hidden rounded-xl border border-border bg-card text-card-foreground shadow-2xl animate-in zoom-in-95 duration-150">
             {/* Modal Header */}
-            <div className="flex items-center justify-between border-b border-zinc-800/80 px-4 py-3 bg-zinc-900/50">
+            <div className="flex items-center justify-between border-b border-border px-4 py-3 bg-muted/40">
               <div className="flex items-center gap-2">
                 <span className="flex h-2 w-2 rounded-full bg-emerald-500" />
-                <h3 className="text-sm font-semibold text-zinc-100">
+                <h3 className="text-sm font-semibold text-foreground">
                   How to get your free E2B API key
                 </h3>
               </div>
@@ -202,7 +202,7 @@ export function E2BApiKeyGuide() {
                   href="https://e2b.dev/dashboard?tab=keys"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="hidden sm:inline-flex items-center gap-1 text-xs text-zinc-400 hover:text-zinc-100 hover:underline mr-2"
+                  className="hidden sm:inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground hover:underline mr-2"
                 >
                   <span>e2b.dev dashboard</span>
                   <ExternalLink className="h-3 w-3" />
@@ -210,7 +210,7 @@ export function E2BApiKeyGuide() {
                 <button
                   type="button"
                   onClick={handleClose}
-                  className="rounded-md p-1.5 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100 transition-colors"
+                  className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors cursor-pointer"
                   aria-label="Close modal"
                 >
                   <X className="h-4 w-4" />
@@ -252,19 +252,19 @@ export function E2BApiKeyGuide() {
                     <button
                       type="button"
                       onClick={togglePlay}
-                      className="absolute inset-0 flex items-center justify-center bg-black/30 transition-opacity hover:bg-black/40"
+                      className="absolute inset-0 flex items-center justify-center bg-black/30 transition-opacity hover:bg-black/40 cursor-pointer"
                       aria-label="Play video"
                     >
-                      <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/90 text-primary-foreground shadow-lg backdrop-blur-xs hover:scale-105 transition-transform">
+                      <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg backdrop-blur-xs hover:scale-105 transition-transform">
                         <Play className="h-6 w-6 fill-current ml-0.5" />
                       </div>
                     </button>
                   )}
                 </>
               ) : (
-                <div className="flex flex-col items-center justify-center p-6 text-center text-zinc-300">
-                  <p className="text-sm font-medium">Video could not be loaded.</p>
-                  <p className="mt-1 text-xs text-zinc-400">
+                <div className="flex flex-col items-center justify-center p-6 text-center text-muted-foreground">
+                  <p className="text-sm font-medium text-foreground">Video could not be loaded.</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
                     You can still get your free key directly from the E2B dashboard.
                   </p>
                   <a
@@ -282,7 +282,7 @@ export function E2BApiKeyGuide() {
 
             {/* Custom Controls Bar */}
             {!hasError && (
-              <div className="border-t border-zinc-800 bg-zinc-900/90 px-4 py-3 space-y-2">
+              <div className="border-t border-border bg-card px-4 py-3 space-y-2">
                 {/* Scrubber / Progress Bar */}
                 <div
                   ref={progressRef}
@@ -295,7 +295,7 @@ export function E2BApiKeyGuide() {
                   aria-valuenow={currentTime}
                 >
                   {/* Background Track */}
-                  <div className="relative h-1.5 w-full rounded-full bg-zinc-800 transition-all group-hover:h-2 overflow-hidden">
+                  <div className="relative h-1.5 w-full rounded-full bg-muted transition-all group-hover:h-2 overflow-hidden">
                     {/* Covered/Played Fill */}
                     <div
                       className="h-full rounded-full bg-primary transition-[width] duration-75"
@@ -305,19 +305,19 @@ export function E2BApiKeyGuide() {
 
                   {/* Scrubber Dot / Thumb */}
                   <div
-                    className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 h-3.5 w-3.5 rounded-full bg-white shadow-md ring-2 ring-primary transition-transform group-hover:scale-125 pointer-events-none"
+                    className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 h-3.5 w-3.5 rounded-full bg-background shadow-md ring-2 ring-primary transition-transform group-hover:scale-125 pointer-events-none"
                     style={{ left: `${progressPercentage}%` }}
                   />
                 </div>
 
                 {/* Control buttons & time display */}
-                <div className="flex items-center justify-between text-xs text-zinc-300">
+                <div className="flex items-center justify-between text-xs text-foreground">
                   <div className="flex items-center gap-2">
                     {/* Backward 10s */}
                     <button
                       type="button"
                       onClick={() => skip(-10)}
-                      className="flex items-center gap-1 rounded-md px-2 py-1 text-zinc-300 hover:bg-zinc-800 hover:text-white transition-colors"
+                      className="flex items-center gap-1 rounded-md px-2 py-1 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors cursor-pointer"
                       title="Rewind 10s (Left Arrow)"
                       aria-label="Rewind 10 seconds"
                     >
@@ -329,7 +329,7 @@ export function E2BApiKeyGuide() {
                     <button
                       type="button"
                       onClick={togglePlay}
-                      className="flex h-7 w-7 items-center justify-center rounded-md bg-zinc-800 text-white hover:bg-zinc-700 transition-colors"
+                      className="flex h-7 w-7 items-center justify-center rounded-md bg-muted text-foreground hover:bg-muted/80 transition-colors cursor-pointer"
                       title={isPlaying ? "Pause (Space)" : "Play (Space)"}
                       aria-label={isPlaying ? "Pause" : "Play"}
                     >
@@ -344,7 +344,7 @@ export function E2BApiKeyGuide() {
                     <button
                       type="button"
                       onClick={() => skip(10)}
-                      className="flex items-center gap-1 rounded-md px-2 py-1 text-zinc-300 hover:bg-zinc-800 hover:text-white transition-colors"
+                      className="flex items-center gap-1 rounded-md px-2 py-1 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors cursor-pointer"
                       title="Forward 10s (Right Arrow)"
                       aria-label="Forward 10 seconds"
                     >
@@ -353,7 +353,7 @@ export function E2BApiKeyGuide() {
                     </button>
 
                     {/* Time readout */}
-                    <span className="ml-2 tabular text-zinc-400 text-[11px]">
+                    <span className="ml-2 tabular text-muted-foreground text-[11px]">
                       {formatTime(currentTime)} / {formatTime(duration)}
                     </span>
                   </div>
@@ -363,7 +363,7 @@ export function E2BApiKeyGuide() {
                     <button
                       type="button"
                       onClick={toggleMute}
-                      className="rounded-md p-1.5 text-zinc-400 hover:bg-zinc-800 hover:text-white transition-colors"
+                      className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors cursor-pointer"
                       title={isMuted ? "Unmute" : "Mute"}
                       aria-label={isMuted ? "Unmute" : "Mute"}
                     >
