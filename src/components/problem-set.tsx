@@ -24,10 +24,13 @@ type EditorState = { mode: "new" } | { mode: "edit"; problemId: string } | null;
 export function ProblemSet({
   eventId,
   editable,
+  figuresEnabled,
   problems,
 }: {
   eventId: string;
   editable: boolean;
+  /** False when the deployment has no figures bucket. */
+  figuresEnabled: boolean;
   problems: ProblemSummary[];
 }) {
   const [editor, setEditor] = useState<EditorState>(null);
@@ -147,6 +150,7 @@ export function ProblemSet({
           key={editingProblem?.id ?? "new"}
           eventId={eventId}
           problem={editingProblem}
+          figuresEnabled={figuresEnabled}
           onDone={() => setEditor(null)}
         />
       ) : null}

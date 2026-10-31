@@ -6,6 +6,8 @@ import {
   ArrowRight,
   Bookmark,
   BookmarkCheck,
+  BookOpen,
+  ChevronDown,
   Clock,
   Code2,
   Loader2,
@@ -22,6 +24,7 @@ import {
 } from "@/app/admin/events/[id]/review/actions";
 import { ReviewCodeEditor } from "@/components/review-code-editor";
 import { RunResultView } from "@/components/run-result";
+import { Statement } from "@/components/statement";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -32,6 +35,11 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -47,6 +55,7 @@ import type {
   ParticipantSubmissionDetail,
   ReviewParticipant,
 } from "@/lib/review/queries";
+import { figureDimensionsMap } from "@/lib/figures/types";
 import type { RunResult } from "@/lib/runner/run";
 import { formatDuration } from "@/lib/time";
 import type { ViolationKind } from "@/lib/violations/kinds";
@@ -688,6 +697,33 @@ export function ParticipantReviewPanel({
                         </span>
                       ) : null}
                     </div>
+
+                    <Collapsible>
+                      <CollapsibleTrigger
+                        render={
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="group -ml-2 justify-start gap-1.5 text-muted-foreground"
+                          />
+                        }
+                      >
+                        <BookOpen data-icon="inline-start" />
+                        Show statement
+                        <ChevronDown
+                          data-icon="inline-end"
+                          className="transition-transform duration-150 ease-out group-data-[panel-open]:rotate-180"
+                        />
+                      </CollapsibleTrigger>
+                      <CollapsibleContent>
+                        <div className="mt-2 rounded-lg border border-border bg-background p-4">
+                          <Statement
+                            markdown={snip.statementMd}
+                            figures={figureDimensionsMap(snip.figures)}
+                          />
+                        </div>
+                      </CollapsibleContent>
+                    </Collapsible>
 
                     {hasCode ? (
                       <>
