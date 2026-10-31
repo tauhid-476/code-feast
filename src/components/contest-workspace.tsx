@@ -1,14 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Maximize2, Play } from "lucide-react";
+import { Code2, Maximize2, Play } from "lucide-react";
 import { ContestCountdown } from "@/components/contest-countdown";
 import { ContestEditor } from "@/components/contest-editor";
-import { ContestRunOutcome } from "@/components/contest-run-outcome";
+import { ContestProblemNav, type ProblemStatus } from "@/components/contest-problem-nav";
+import { ContestTestPanel, type TestPanelTab } from "@/components/contest-test-panel";
 import { Statement } from "@/components/statement";
 import { StrikeCounter } from "@/components/strike-counter";
-import { SubmitContest } from "@/components/submit-contest";
+import { SubmitContest, type ProblemSummary } from "@/components/submit-contest";
 import { useContestDrafts } from "@/components/use-contest-drafts";
 import { useContestSupervision } from "@/components/use-contest-supervision";
 import { useContestRun } from "@/components/use-contest-run";
@@ -36,6 +37,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { draftKey } from "@/lib/drafts/merge";
 import { figureDimensionsMap } from "@/lib/figures/types";
 import { isLanguage, LANGUAGE_LABELS, LANGUAGES, type Language } from "@/lib/languages";
+import type { RunResult } from "@/lib/runner/run";
 
 function languagesFor(problem: ContestProblemView): Language[] {
   if (problem.starters.length === 0) return [...LANGUAGES];
@@ -90,6 +92,11 @@ export function ContestWorkspace({
     problems[0] ? languagesFor(problems[0])[0] : "python",
   );
 
+  // Cached run results per problem so switching problems preserves status & output
+  const [runResults, setRunResults] = useState<Record<string, RunResult | null>>({});
+  const [activeTab, setActiveTab] = useState<TestPanelTab>("testcase");
+  const [isTestPanelCollapsed, setIsTestPanelCollapsed] = useState(false);
+
   const { hydrated, buffers, updateCode, retryAll, flushAll, dirtyCount, saving, failed, saved } =
     useContestDrafts({
       code,
@@ -106,6 +113,12 @@ export function ContestWorkspace({
     sessionId,
     onLocked: () => router.refresh(),
     onSessionRefused,
+    onResult: (result, problemId) => {
+      setRunResults((previous) => ({
+        ...previous,
+        [problemId]: result,
+      }));
+    },
   });
   const supervision = useContestSupervision({
     code,
@@ -113,6 +126,77 @@ export function ContestWorkspace({
     initialStrikes: strikes,
     onSessionRefused,
   });
+
+  const problem =
+    problems.find((candidate) => candidate.id === selectedProblemId) ??
+    problems[0];
+
+  // Derive problem statuses: solved | attempted | unattempted
+  const problemStatuses = useMemo(() => {
+    const statuses: Record<string, ProblemStatus> = {};
+
+    for (const p of problems) {
+      const res = runResults[p.id] ?? (p.id === selectedProblemId ? runState.result : null);
+
+      if (res) {
+        const allPassed =
+          res.cases.length > 0 &&
+          res.cases.every((c) => c.pass) &&
+          !res.compileError &&
+          !res.sandboxError &&
+          !res.timedOut;
+
+        statuses[p.id] = allPassed ? "solved" : "attempted";
+        continue;
+      }
+
+      // Check if participant modified starter code or entered code in any language
+      let hasEdits = false;
+      for (const starter of p.starters) {
+        const buf = buffers[draftKey(p.id, starter.language)];
+        if (buf && buf.code.trim().length > 0 && buf.code !== starter.starterCode) {
+          hasEdits = true;
+          break;
+        }
+      }
+      if (!hasEdits) {
+        for (const lang of LANGUAGES) {
+          const buf = buffers[draftKey(p.id, lang)];
+          if (
+            buf &&
+            buf.code.trim().length > 0 &&
+            !p.starters.some((s) => s.language === lang)
+          ) {
+            hasEdits = true;
+            break;
+          }
+        }
+      }
+
+      statuses[p.id] = hasEdits ? "attempted" : "unattempted";
+    }
+
+    return statuses;
+  }, [problems, runResults, selectedProblemId, runState.result, buffers]);
+
+  const problemSummary: ProblemSummary = useMemo(() => {
+    const solved = problems.filter((p) => problemStatuses[p.id] === "solved").length;
+    const attempted = problems.filter((p) => problemStatuses[p.id] === "attempted").length;
+    const unattempted = problems.filter((p) => problemStatuses[p.id] === "unattempted").length;
+
+    return {
+      total: problems.length,
+      solved,
+      attempted,
+      unattempted,
+      problems: problems.map((p) => ({
+        id: p.id,
+        position: p.position,
+        title: p.title,
+        status: problemStatuses[p.id] ?? "unattempted",
+      })),
+    };
+  }, [problems, problemStatuses]);
 
   if (problems.length === 0) {
     return (
@@ -129,21 +213,28 @@ export function ContestWorkspace({
     );
   }
 
-  const problem =
-    problems.find((candidate) => candidate.id === selectedProblemId) ??
-    problems[0];
   const availableLanguages = languagesFor(problem);
   const key = draftKey(problem.id, language);
   const buffer = buffers[key];
 
   function selectProblem(id: string) {
     setSelectedProblemId(id);
-    // What was run belongs to the Problem and language that produced it.
     runState.clear();
     const next = problems.find((candidate) => candidate.id === id);
     if (!next) return;
     const languages = languagesFor(next);
     if (!languages.includes(language)) setLanguage(languages[0]);
+  }
+
+  async function handleRun() {
+    if (!buffer) return;
+    setActiveTab("result");
+    setIsTestPanelCollapsed(false);
+    await runState.run({
+      problemId: problem.id,
+      language,
+      code: buffer.code,
+    });
   }
 
   const saveText = failed
@@ -155,10 +246,19 @@ export function ContestWorkspace({
         : "Autosave on";
 
   return (
-    <main className="flex h-dvh flex-col overflow-hidden">
-      <header className="flex h-14 shrink-0 items-center justify-between gap-4 border-b border-border px-4">
-        <div className="flex min-w-0 items-baseline gap-3">
-          <span className="label">Contest</span>
+    <main className="flex h-dvh flex-col overflow-hidden bg-background">
+      {/* Contest Top Navigation Bar */}
+      <header className="flex h-14 shrink-0 items-center justify-between gap-4 border-b border-border px-4 bg-card/60 backdrop-blur-xs">
+        <div className="flex min-w-0 items-center gap-3">
+          {/* Platform Logo */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/logo.png"
+            alt="Code Feast"
+            className="h-8 w-auto max-w-[120px] object-contain rounded"
+          />
+          <div className="h-4 w-px bg-border hidden sm:block" />
+          <span className="label hidden sm:inline">Contest</span>
           <h1 className="truncate text-sm font-medium">{eventTitle}</h1>
         </div>
 
@@ -179,6 +279,7 @@ export function ContestWorkspace({
             flush={flushAll}
             disabled={!hydrated}
             onSessionRefused={onSessionRefused}
+            summary={problemSummary}
           />
         </div>
       </header>
@@ -228,35 +329,22 @@ export function ContestWorkspace({
         </Alert>
       ) : null}
 
+      {/* Main Workspace Split View */}
       <div className="grid min-h-0 flex-1 grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
-        <section className="flex min-h-0 flex-col overflow-y-auto border-r border-border">
-          <nav aria-label="Problems" className="flex flex-col gap-1 p-3">
-            {problems.map((item) => (
-              <Button
-                key={item.id}
-                type="button"
-                variant={item.id === problem.id ? "secondary" : "ghost"}
-                size="sm"
-                className="h-auto w-full justify-start gap-3 px-3 py-2"
-                aria-current={item.id === problem.id ? "true" : undefined}
-                onClick={() => selectProblem(item.id)}
-              >
-                <span className="mono text-xs text-muted-foreground">
-                  {String(item.position).padStart(2, "0")}
-                </span>
-                <span className="truncate">{item.title}</span>
-                {item.difficulty ? (
-                  <Badge variant="outline" className="ml-auto">
-                    {item.difficulty}
-                  </Badge>
-                ) : null}
-              </Button>
-            ))}
-          </nav>
+        {/* Left Column: Problem Navigation & Statement */}
+        <section className="flex min-h-0 flex-col border-r border-border bg-card/20">
+          {/* Top Problem Navigation Bar */}
+          <ContestProblemNav
+            problems={problems}
+            selectedProblemId={problem.id}
+            onSelectProblem={selectProblem}
+            statuses={problemStatuses}
+          />
 
-          <article className="flex flex-col gap-6 px-5 pt-2 pb-10">
-            <div className="flex flex-wrap items-center gap-2">
-              <h2 className="text-lg font-semibold tracking-tight">
+          {/* Problem Statement Content */}
+          <article className="flex-1 min-h-0 overflow-y-auto px-5 pt-4 pb-10">
+            <div className="flex flex-wrap items-center gap-2 mb-4">
+              <h2 className="text-xl font-bold tracking-tight">
                 {problem.title}
               </h2>
               {problem.difficulty ? (
@@ -270,7 +358,7 @@ export function ContestWorkspace({
             />
 
             {problem.sampleCases.length > 0 ? (
-              <section className="flex flex-col gap-3">
+              <section className="mt-8 flex flex-col gap-3">
                 <h3 className="label">Sample test cases</h3>
                 {problem.sampleCases.map((sample) => (
                   <div
@@ -299,15 +387,21 @@ export function ContestWorkspace({
           </article>
         </section>
 
-        <section className="flex min-h-0 flex-col">
-          <div className="flex h-12 shrink-0 items-center justify-between gap-3 border-b border-border px-3">
-            <div className="flex items-center gap-3">
+        {/* Right Column: Code Editor & LeetCode-style Test Panel */}
+        <section className="flex min-h-0 flex-col bg-card/10">
+          {/* Editor Top Bar */}
+          <div className="flex h-11 shrink-0 items-center justify-between gap-3 border-b border-border bg-card/40 px-3">
+            <div className="flex items-center gap-2.5">
+              <div className="flex items-center gap-1.5 font-semibold text-xs text-foreground">
+                <Code2 className="size-4 text-emerald-500" />
+                <span>Code</span>
+              </div>
+              <div className="h-3.5 w-px bg-border" />
               <Select
                 value={language}
                 onValueChange={(value) => {
                   if (!isLanguage(value)) return;
                   setLanguage(value);
-                  // The verdict belongs to the language that was run.
                   runState.clear();
                 }}
               >
@@ -326,30 +420,27 @@ export function ContestWorkspace({
               <span className="text-xs text-muted-foreground">{saveText}</span>
             </div>
 
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              disabled={runState.running || !buffer}
-              onClick={() => {
-                if (!buffer) return;
-                void runState.run({
-                  problemId: problem.id,
-                  language,
-                  code: buffer.code,
-                });
-              }}
-            >
-              {runState.running ? (
-                <Spinner data-icon="inline-start" />
-              ) : (
-                <Play data-icon="inline-start" />
-              )}
-              {runState.running ? "Running" : "Run"}
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                disabled={runState.running || !buffer}
+                onClick={handleRun}
+                className="gap-1.5 font-medium"
+              >
+                {runState.running ? (
+                  <Spinner className="size-3.5" />
+                ) : (
+                  <Play className="size-3.5 text-emerald-500 fill-emerald-500" />
+                )}
+                {runState.running ? "Running" : "Run"}
+              </Button>
+            </div>
           </div>
 
-          <div className="min-h-0 flex-1">
+          {/* Monaco Editor Canvas */}
+          <div className="min-h-0 flex-1 relative">
             {hydrated && buffer ? (
               <ContestEditor
                 problemId={problem.id}
@@ -357,7 +448,6 @@ export function ContestWorkspace({
                 defaultValue={buffer.code}
                 onChange={(next) => {
                   updateCode(key, next);
-                  runState.clear();
                 }}
                 onViolation={supervision.report}
               />
@@ -369,22 +459,24 @@ export function ContestWorkspace({
             )}
           </div>
 
-          {runState.error || runState.result ? (
-            <div className="max-h-80 shrink-0 overflow-y-auto border-t border-border p-3">
-              <ContestRunOutcome
-                error={runState.error}
-                result={runState.result}
-              />
-            </div>
-          ) : null}
+          {/* LeetCode Style Bottom Testcase & Test Result Panel */}
+          <ContestTestPanel
+            problem={problem}
+            result={runResults[problem.id] ?? runState.result}
+            error={runState.error}
+            running={runState.running}
+            onRun={handleRun}
+            canRun={Boolean(buffer)}
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+            isCollapsed={isTestPanelCollapsed}
+            onToggleCollapsed={() => setIsTestPanelCollapsed((prev) => !prev)}
+          />
 
-          <div className="flex h-9 shrink-0 items-center justify-between border-t border-border px-3">
-            <span className="text-xs text-muted-foreground">
-              {LANGUAGE_LABELS[language]}
-            </span>
-            <span className="text-xs text-muted-foreground">
-              One Run at a time · two seconds between Runs
-            </span>
+          {/* Bottom Bar Info */}
+          <div className="flex h-7 shrink-0 items-center justify-between border-t border-border bg-card/30 px-3 text-[11px] text-muted-foreground">
+            <span>{LANGUAGE_LABELS[language]}</span>
+            <span>One Run at a time · two seconds between Runs</span>
           </div>
         </section>
       </div>

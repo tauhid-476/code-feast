@@ -32,6 +32,7 @@ export function useContestRun({
   sessionId,
   onLocked,
   onSessionRefused,
+  onResult,
 }: {
   joinCode: string;
   /** This tab's session, sent with the Run; a displaced tab is refused. */
@@ -40,6 +41,8 @@ export function useContestRun({
   onLocked?: () => void;
   /** A 409 for `session_superseded`: another tab took over, explain it in place. */
   onSessionRefused?: () => void;
+  /** Called when a valid run result is received. */
+  onResult?: (result: RunResult, problemId: string) => void;
 }) {
   const [state, setState] = useState<ContestRunState>({
     running: false,
@@ -50,8 +53,8 @@ export function useContestRun({
   const bufferVersion = useRef(0);
 
   const run = useCallback(
-    async (input: StartRunInput) => {
-      if (inFlight.current) return;
+    async (input: StartRunInput): Promise<RunResult | null> => {
+      if (inFlight.current) return null;
       inFlight.current = true;
 
       // The verdict belongs to the code that was sent. If the buffer moves on
@@ -88,26 +91,33 @@ export function useContestRun({
             error:
               body?.error ?? "The Run did not start. Try again in a moment.",
           });
-          return;
+          return null;
         }
 
         const stale = bufferVersion.current !== version;
+        const validResult = stale ? null : body.result;
         setState({
           running: false,
-          result: stale ? null : body.result,
+          result: validResult,
           error: null,
         });
+
+        if (validResult && onResult) {
+          onResult(validResult, input.problemId);
+        }
+        return validResult;
       } catch {
         setState({
           running: false,
           result: null,
           error: "The runner could not be reached. Try again in a moment.",
         });
+        return null;
       } finally {
         inFlight.current = false;
       }
     },
-    [joinCode, sessionId, onLocked, onSessionRefused],
+    [joinCode, sessionId, onLocked, onSessionRefused, onResult],
   );
 
   /** Discards a verdict as soon as the code it describes changes. */
