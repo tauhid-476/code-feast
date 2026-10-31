@@ -52,7 +52,7 @@ export async function joinEventByCode(input: JoinInput): Promise<JoinResult> {
       );
     }
     throw new DomainError(
-      "join_code_invalid",
+      "join_code_unknown",
       "That code does not match any open event. Double check the code.",
       404,
     );
