@@ -1,6 +1,8 @@
 import { asc, eq, inArray } from "drizzle-orm";
 import { getDb } from "@/lib/db/client";
 import { problemStarters, problems, testCases } from "@/lib/db/schema";
+import { listReadyFigureViews } from "@/lib/figures/queries";
+import type { FigureView } from "@/lib/figures/types";
 import { isLanguage, LANGUAGES, type Language } from "@/lib/env";
 import type { ParticipantContext } from "@/lib/participants/queries";
 import type { SampleCase } from "./queries";
@@ -25,6 +27,8 @@ export type ContestProblem = {
   sampleCases: SampleCase[];
   /** Starter Code only. Harness text is never selected here. */
   starters: ContestStarter[];
+  /** Ready Figure metadata; the bytes are served by `/api/figures/<id>`. */
+  figures: FigureView[];
 };
 
 /** Stable language order for the contest selector. */
@@ -83,6 +87,8 @@ export async function listContestProblems(
       asc(problemStarters.language),
     );
 
+  const figures = await listReadyFigureViews(problemIds);
+
   const casesByProblem = new Map<string, SampleCase[]>();
   for (const row of cases) {
     const list = casesByProblem.get(row.problemId) ?? [];
@@ -105,6 +111,7 @@ export async function listContestProblems(
   return rows.map((row) => ({
     ...row,
     sampleCases: casesByProblem.get(row.id) ?? [],
+    figures: figures.get(row.id) ?? [],
     starters: (startersByProblem.get(row.id) ?? []).sort(
       (a, b) =>
         CONTEST_LANGUAGES.indexOf(a.language) -

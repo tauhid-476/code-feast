@@ -10,6 +10,8 @@ import {
 import { DomainError } from "@/lib/errors";
 import { assertOrganizer, type EventActor } from "@/lib/events/manage";
 import { getOrganizerEvent, type EventSummary } from "@/lib/events/queries";
+import { listReadyFigureViews } from "@/lib/figures/queries";
+import type { FigureView } from "@/lib/figures/types";
 import {
   lockAtDeadline,
   participantColumns,
@@ -39,6 +41,8 @@ export type ProblemSnippet = {
   problemId: string;
   problemTitle: string;
   position: number;
+  statementMd: string;
+  figures: FigureView[];
   language: string | null;
   code: string | null;
 };
@@ -183,10 +187,15 @@ export async function getParticipantSubmission(
       id: problems.id,
       title: problems.title,
       position: problems.position,
+      statementMd: problems.statementMd,
     })
     .from(problems)
     .where(eq(problems.eventId, eventId))
     .orderBy(asc(problems.position));
+
+  const figuresByProblem = await listReadyFigureViews(
+    eventProblems.map((problem) => problem.id),
+  );
 
   // In-progress participants never expose live code or drafts
   if (participant.status !== "locked_out") {
@@ -212,6 +221,8 @@ export async function getParticipantSubmission(
         problemId: pr.id,
         problemTitle: pr.title,
         position: pr.position,
+        statementMd: pr.statementMd,
+        figures: figuresByProblem.get(pr.id) ?? [],
         language: null,
         code: null,
       })),
@@ -232,6 +243,8 @@ export async function getParticipantSubmission(
       problemId: pr.id,
       problemTitle: pr.title,
       position: pr.position,
+      statementMd: pr.statementMd,
+      figures: figuresByProblem.get(pr.id) ?? [],
       language: s?.language ?? null,
       code: s?.code ?? null,
     };

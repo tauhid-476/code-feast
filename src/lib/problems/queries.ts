@@ -1,6 +1,8 @@
 import { asc, eq, inArray } from "drizzle-orm";
 import { getDb } from "@/lib/db/client";
 import { problemStarters, problems, testCases } from "@/lib/db/schema";
+import { listReadyFigureViews } from "@/lib/figures/queries";
+import type { FigureView } from "@/lib/figures/types";
 import { isLanguage, languageRank, type Language } from "@/lib/languages";
 
 /** A Sample Test Case as the authoring surface sees it. Positions are 1 and 2. */
@@ -29,6 +31,8 @@ export type ProblemSummary = {
   statementMd: string;
   sampleCases: SampleCase[];
   starters: ProblemStarterPair[];
+  /** Ready Figure metadata for the authoring preview; never the bytes. */
+  figures: FigureView[];
 };
 
 const problemColumns = {
@@ -121,15 +125,17 @@ export async function listProblems(
   if (rows.length === 0) return [];
 
   const problemIds = rows.map((row) => row.id);
-  const [cases, starters] = await Promise.all([
+  const [cases, starters, figures] = await Promise.all([
     listSampleCases(problemIds),
     listStarterPairs(problemIds),
+    listReadyFigureViews(problemIds),
   ]);
 
   return rows.map((row) => ({
     ...row,
     sampleCases: cases.get(row.id) ?? [],
     starters: starters.get(row.id) ?? [],
+    figures: figures.get(row.id) ?? [],
   }));
 }
 
@@ -145,14 +151,16 @@ export async function getProblem(
 
   if (!row) return null;
 
-  const [cases, starters] = await Promise.all([
+  const [cases, starters, figures] = await Promise.all([
     listSampleCases([problemId]),
     listStarterPairs([problemId]),
+    listReadyFigureViews([problemId]),
   ]);
 
   return {
     ...row,
     sampleCases: cases.get(problemId) ?? [],
     starters: starters.get(problemId) ?? [],
+    figures: figures.get(problemId) ?? [],
   };
 }
