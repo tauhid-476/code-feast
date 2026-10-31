@@ -3,6 +3,7 @@ import { db } from "./db";
 import {
   events,
   participants,
+  problemFigures,
   problemStarters,
   problems,
   testCases,
@@ -110,6 +111,26 @@ export async function insertTestCase(
   const [row] = await db
     .insert(testCases)
     .values({ problemId, position, input, expectedOutput })
+    .returning();
+  return row;
+}
+
+export async function insertFigure(
+  problemId: string,
+  overrides: Partial<typeof problemFigures.$inferInsert> = {},
+): Promise<typeof problemFigures.$inferSelect> {
+  const id = overrides.id ?? randomUUID();
+  const [row] = await db
+    .insert(problemFigures)
+    .values({
+      id,
+      problemId,
+      storageKey: `problems/${problemId}/${id}.png`,
+      contentType: "image/png",
+      bytes: 1024,
+      state: "ready",
+      ...compact(overrides),
+    })
     .returning();
   return row;
 }

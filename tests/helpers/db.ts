@@ -12,6 +12,7 @@ const TABLES = [
   "participants",
   "test_cases",
   "problem_starters",
+  "problem_figures",
   "problems",
   "runner_pool",
   "events",

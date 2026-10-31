@@ -79,6 +79,40 @@ export function e2bTemplateId(): string | undefined {
   return process.env.E2B_TEMPLATE_ID || undefined;
 }
 
+export type FiguresStorageConfig = {
+  accessKeyId: string;
+  secretAccessKey: string;
+  endpoint: string;
+  region: string;
+  bucket: string;
+};
+
+/**
+ * Object storage for Figures is optional, exactly like E2B. Neon injects the
+ * AWS-standard variables when a branch has a bucket; without them statements
+ * still render and only the upload control is disabled.
+ */
+export function figuresStorageConfig(): FiguresStorageConfig | null {
+  const accessKeyId = process.env.AWS_ACCESS_KEY_ID;
+  const secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY;
+  const endpoint = process.env.AWS_ENDPOINT_URL_S3;
+  const region = process.env.AWS_REGION;
+
+  if (!accessKeyId || !secretAccessKey || !endpoint || !region) return null;
+
+  return {
+    accessKeyId,
+    secretAccessKey,
+    endpoint,
+    region,
+    bucket: process.env.FIGURES_BUCKET || "figures",
+  };
+}
+
+export function figuresStorageConfigured(): boolean {
+  return figuresStorageConfig() !== null;
+}
+
 /**
  * Language vocabulary lives in a neutral module so client components can read
  * it without importing anything that touches `process.env`.
