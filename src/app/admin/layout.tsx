@@ -16,8 +16,13 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
     <div className="flex flex-1 flex-col">
       <header className="border-b border-border bg-card/60">
         <div className="mx-auto flex h-14 w-full max-w-6xl items-center gap-4 px-6">
-          <Link href="/admin/events" className="flex items-baseline gap-2">
-            <span className="text-sm font-semibold tracking-tight">Code Feast</span>
+          <Link href="/admin/events" className="flex items-center gap-2.5">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/logo.png"
+              alt="Code Feast"
+              className="h-7 w-auto max-w-[120px] object-contain rounded"
+            />
             <span className="label">Organizer</span>
           </Link>
           <Separator orientation="vertical" className="h-4" />
