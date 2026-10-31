@@ -160,6 +160,16 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--border, currentColor);
+  }
+}
+
 html.dark {
   color-scheme: dark;
 }
