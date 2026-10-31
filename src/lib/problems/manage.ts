@@ -7,6 +7,10 @@ import {
   testCases,
 } from "@/lib/db/schema";
 import { DomainError } from "@/lib/errors";
+import {
+  reconcileFiguresInTransaction,
+  removeFigureObjects,
+} from "@/lib/figures/manage";
 import { isApprovedOrganizer } from "@/lib/organizers/whitelist";
 import { LANGUAGE_LABELS, isLanguage, type Language } from "@/lib/languages";
 import {
@@ -213,6 +217,10 @@ export async function createProblem(
       })),
     );
 
+    // A brand-new Problem has no Figures yet, so any `/api/figures/<id>` in the
+    // statement is a broken reference and refuses the save.
+    await reconcileFiguresInTransaction(tx, row.id, problem.statementMd);
+
     return row.id;
   });
 
@@ -266,7 +274,7 @@ export async function updateProblem(
   const { eventId } = await requireDraftProblem(actor, problemId);
   const problem = validatedProblem(input);
 
-  await getDb().transaction(async (tx) => {
+  const removedFigureKeys = await getDb().transaction(async (tx) => {
     await lockDraftEvent(tx, eventId);
 
     await tx
@@ -288,7 +296,13 @@ export async function updateProblem(
         expectedOutput: sampleCase.expectedOutput,
       })),
     );
+
+    // The statement is the record of what is referenced: anything it no longer
+    // mentions is deleted, object included, once the transaction commits.
+    return reconcileFiguresInTransaction(tx, problemId, problem.statementMd);
   });
+
+  await removeFigureObjects(removedFigureKeys);
 
   const updated = await getProblem(problemId);
   if (!updated) {

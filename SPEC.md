@@ -2,7 +2,7 @@
 
 A platform for running one live DSA contest. An organizer authors an event and its problems, shares a join code, starts a shared clock, and participants solve problems in a LeetCode-style editor under anti-cheat supervision. Judging is done by a human reading the submitted code.
 
-Decisions referenced: `docs/adr/0001`–`0004`. Vocabulary: `GLOSSARY.md`.
+Decisions referenced: `docs/adr/0001`–`0005`. Vocabulary: `GLOSSARY.md`.
 
 ---
 
@@ -58,6 +58,7 @@ Title, duration in minutes. Generates a 6-character uppercase alphanumeric join 
 - **Starter code per language**: a full file containing the signed function (e.g. `def two_sum(nums, target)`) that the participant sees.
 - **Harness per language**: hidden snippet appended server-side after the participant's code at run time. Carries the stdin parsing and the call. Not shown to participants, not marked read-only to the organizer, never included in a submission.
 - **Sample test cases**: exactly two per problem (input text, expected output text). Shown to participants with the statement.
+- **Figures** (optional): a picture uploaded to object storage and referenced from the statement as `/api/figures/<id>`, for graph, tree and linked-list problems. PNG, JPEG or WebP, 2MB each, six per problem. Display-only: never part of a sample's input, never reaching the harness or the runner. A remote image URL is not rendered as an image.
 - Reordering by position.
 
 ### 4.3 Test a problem
@@ -163,6 +164,10 @@ problem_starters(id, problem_id, language, starter_code, harness_code)
 
 test_cases(id, problem_id, position, input, expected_output)
 
+problem_figures(id, problem_id, storage_key, content_type, bytes,
+                width, height, state, created_at)
+  unique(storage_key); state ∈ {pending, ready}
+
 participants(id, event_id, user_id, display_name, email,
              status, joined_at, locked_at, lockout_reason,
              strikes, shortlisted, active_session_id, last_seen_at)
@@ -204,7 +209,7 @@ Statuses: `participants.status ∈ {joined, solving, locked_out}`; `lockout_reas
 /admin/events/[id]/submissions/[pid]
 ```
 
-Server actions for mutations; route handlers for `/api/auth/[...path]`, `/api/run`, `/api/draft`, `/api/violation`, `/api/heartbeat`.
+Server actions for mutations; route handlers for `/api/auth/[...path]`, `/api/run`, `/api/draft`, `/api/violation`, `/api/heartbeat`, `/api/figures`, `/api/figures/[id]/confirm`, `/api/figures/[id]`.
 
 ---
 
@@ -219,6 +224,8 @@ Server actions for mutations; route handlers for `/api/auth/[...path]`, `/api/ru
 | Sandbox dies mid-run | Claim health-check replaces it; request retried once |
 | Organizer broke a harness | Visible in the test panel; after `live` nothing can be edited, so the mitigation is the pre-event rehearsal |
 | Deadline passes with the tab closed | Reconciled lockout with the last autosaved code |
+| Bucket unconfigured | Statements render; the **Add figure** control is disabled with the reason; uploads are refused |
+| Figure upload fails | Nothing is inserted; the pending row is swept on the next mint |
 | Someone cannot sign in | No override. The roster is checked before Start; the pre-event instruction is to sign in once before arriving |
 
 ---

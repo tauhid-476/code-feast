@@ -34,6 +34,7 @@ import {
 } from "@/components/ui/select";
 import { Spinner } from "@/components/ui/spinner";
 import { draftKey } from "@/lib/drafts/merge";
+import { figureDimensionsMap } from "@/lib/figures/types";
 import { isLanguage, LANGUAGE_LABELS, LANGUAGES, type Language } from "@/lib/languages";
 
 function languagesFor(problem: ContestProblemView): Language[] {
@@ -263,7 +264,10 @@ export function ContestWorkspace({
               ) : null}
             </div>
 
-            <Statement markdown={problem.statementMd} />
+            <Statement
+              markdown={problem.statementMd}
+              figures={figureDimensionsMap(problem.figures)}
+            />
 
             {problem.sampleCases.length > 0 ? (
               <section className="flex flex-col gap-3">

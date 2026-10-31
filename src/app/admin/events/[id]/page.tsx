@@ -7,6 +7,7 @@ import { ProblemSet } from "@/components/problem-set";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { requireOrganizer } from "@/lib/auth/guards";
+import { figuresStorageConfigured } from "@/lib/env";
 import { getOrganizerEvent } from "@/lib/events/queries";
 import { listProblems } from "@/lib/problems/queries";
 
@@ -105,6 +106,7 @@ export default async function AdminEventPage({
       <ProblemSet
         eventId={event.id}
         editable={editable}
+        figuresEnabled={figuresStorageConfigured()}
         problems={problems}
       />
     </div>

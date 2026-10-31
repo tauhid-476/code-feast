@@ -24,6 +24,10 @@ _Avoid_: Event ID, invite, password, link
 One question inside an event, authored by the organizer, with a statement and a starter function per language.
 _Avoid_: Question, challenge, task, exercise
 
+**Figure**:
+A display-only picture inside a Problem's statement, uploaded by the organizer and never part of any test input.
+_Avoid_: Image, diagram, picture, illustration, asset
+
 **Sample Test Case**:
 An input/expected-output pair shown to participants so they can self-check. It carries no score and does not affect the outcome.
 _Avoid_: Hidden test, judge case, official test

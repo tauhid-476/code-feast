@@ -108,6 +108,49 @@ export const testCases = pgTable(
   ],
 );
 
+/**
+ * A Figure is a display-only picture referenced from a Problem's Markdown as
+ * `/api/figures/<id>`. The row is the authorization record; the bytes live in
+ * the private figures bucket. `pending` rows exist only between mint and the
+ * confirmed upload, and are swept after 24 hours.
+ */
+export const problemFigures = pgTable(
+  "problem_figures",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    problemId: uuid("problem_id")
+      .notNull()
+      .references(() => problems.id, { onDelete: "cascade" }),
+    storageKey: text("storage_key").notNull(),
+    contentType: text("content_type").notNull(),
+    bytes: integer("bytes").notNull(),
+    width: integer("width"),
+    height: integer("height"),
+    state: text("state").notNull().default("pending"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("problem_figures_storage_key_unique").on(t.storageKey),
+    index("problem_figures_problem_state_idx").on(t.problemId, t.state),
+    // The stale-pending sweep reads state then age.
+    index("problem_figures_state_created_idx").on(t.state, t.createdAt),
+    check(
+      "problem_figures_state_check",
+      sql`${t.state} in ('pending', 'ready')`,
+    ),
+    check(
+      "problem_figures_content_type_check",
+      sql`${t.contentType} in ('image/png', 'image/jpeg', 'image/webp')`,
+    ),
+    check(
+      "problem_figures_bytes_check",
+      sql`${t.bytes} between 1 and 2097152`,
+    ),
+  ],
+);
+
 export const participants = pgTable(
   "participants",
   {
@@ -291,6 +334,7 @@ export const schema = {
   problems,
   problemStarters,
   testCases,
+  problemFigures,
   participants,
   drafts,
   submissions,

@@ -1,3 +1,4 @@
+import type { FigureView } from "@/lib/figures/types";
 import type { Language } from "@/lib/languages";
 
 /**
@@ -24,6 +25,7 @@ export type ContestProblemView = {
   statementMd: string;
   sampleCases: ContestSampleCaseView[];
   starters: ContestStarterView[];
+  figures: FigureView[];
 };
 
 export type ContestDraftView = {

@@ -1,11 +1,19 @@
 "use client";
 
-import { useState, useTransition, type FormEvent } from "react";
+import {
+  useRef,
+  useState,
+  useTransition,
+  type ClipboardEvent,
+  type FormEvent,
+} from "react";
+import { ImagePlus } from "lucide-react";
 import { toast } from "sonner";
 import {
   createProblemAction,
   updateProblemAction,
 } from "@/app/admin/events/[id]/actions";
+import { uploadFigure, type UploadedFigure } from "@/components/figure-upload";
 import { ProblemLanguages } from "@/components/problem-languages";
 import { Statement } from "@/components/statement";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -20,6 +28,10 @@ import {
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  figureDimensionsMap,
+  type FigureView,
+} from "@/lib/figures/types";
 import type { ProblemSummary } from "@/lib/problems/queries";
 
 type SampleCaseDraft = { input: string; expectedOutput: string };
@@ -37,15 +49,22 @@ const EMPTY_SAMPLE_CASES: SampleCaseDraft[] = [
 export function ProblemEditor({
   eventId,
   problem,
+  figuresEnabled,
   onDone,
 }: {
   eventId: string;
   problem: ProblemSummary | null;
+  /** False when the deployment has no figures bucket. */
+  figuresEnabled: boolean;
   onDone: () => void;
 }) {
   const [title, setTitle] = useState(problem?.title ?? "");
   const [difficulty, setDifficulty] = useState(problem?.difficulty ?? "");
   const [statementMd, setStatementMd] = useState(problem?.statementMd ?? "");
+  const [figures, setFigures] = useState<FigureView[]>(
+    problem?.figures ?? [],
+  );
+  const [uploading, setUploading] = useState(false);
   const [sampleCases, setSampleCases] = useState<SampleCaseDraft[]>(() => {
     const existing = problem?.sampleCases ?? [];
     return EMPTY_SAMPLE_CASES.map((empty, index) => ({
@@ -55,6 +74,9 @@ export function ProblemEditor({
   });
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const statementRef = useRef<HTMLTextAreaElement>(null);
+  const statementValueRef = useRef(statementMd);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   function updateSampleCase(index: number, patch: Partial<SampleCaseDraft>) {
     setSampleCases((current) =>
@@ -62,6 +84,75 @@ export function ProblemEditor({
         position === index ? { ...sampleCase, ...patch } : sampleCase,
       ),
     );
+  }
+
+  const figureMap = figureDimensionsMap(figures);
+
+  function insertFigure(figure: UploadedFigure) {
+    const textarea = statementRef.current;
+    // Several figures can be pasted at once; the textarea's value and state lag
+    // one render behind, so read the latest text from the ref.
+    const current = statementValueRef.current;
+    const from = textarea?.selectionStart ?? current.length;
+    const to = textarea?.selectionEnd ?? from;
+    const before = current.slice(0, from);
+    const after = current.slice(to);
+    const number = (current.match(/\/api\/figures\//g) ?? []).length + 1;
+    const insertion = `\n\n![Figure ${number}](/api/figures/${figure.id})\n\n`;
+    const next = `${before}${insertion}${after}`;
+    const cursor = before.length + insertion.length;
+
+    statementValueRef.current = next;
+    setStatementMd(next);
+    requestAnimationFrame(() => {
+      const node = statementRef.current;
+      if (!node) return;
+      node.focus();
+      node.setSelectionRange(cursor, cursor);
+    });
+  }
+
+  async function addFigures(files: File[]) {
+    if (files.length === 0) return;
+    if (!problem) {
+      toast.error("Save the problem before adding a figure.");
+      return;
+    }
+    if (!figuresEnabled) {
+      toast.error("Figure storage is not configured on this deployment.");
+      return;
+    }
+
+    setUploading(true);
+    let added = 0;
+    try {
+      for (const file of files) {
+        const uploaded = await uploadFigure(file, problem.id);
+        setFigures((current) => [...current, uploaded]);
+        insertFigure(uploaded);
+        added += 1;
+      }
+      if (added > 0) {
+        toast.success(added === 1 ? "Figure added" : "Figures added");
+      }
+    } catch (uploadError) {
+      toast.error(
+        uploadError instanceof Error
+          ? uploadError.message
+          : "The figure could not be uploaded.",
+      );
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  function handlePaste(event: ClipboardEvent<HTMLTextAreaElement>) {
+    const files = Array.from(event.clipboardData.files).filter((file) =>
+      file.type.startsWith("image/"),
+    );
+    if (files.length === 0) return;
+    event.preventDefault();
+    void addFigures(files);
   }
 
   function submit(formEvent: FormEvent<HTMLFormElement>) {
@@ -128,16 +219,56 @@ export function ProblemEditor({
             </div>
 
             <Field>
-              <FieldLabel htmlFor="problem-statement">Statement</FieldLabel>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <FieldLabel htmlFor="problem-statement">Statement</FieldLabel>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp"
+                  className="sr-only"
+                  tabIndex={-1}
+                  onChange={(event) => {
+                    const files = Array.from(event.target.files ?? []);
+                    event.target.value = "";
+                    void addFigures(files);
+                  }}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="xs"
+                  disabled={!problem || !figuresEnabled || uploading}
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <ImagePlus data-icon="inline-start" />
+                  {uploading ? "Adding…" : "Add figure"}
+                </Button>
+              </div>
               <FieldDescription>
                 Markdown. Raw HTML is not rendered, so anything that looks like
-                a tag stays literal text.
+                a tag stays literal text. Paste a PNG, JPEG or WebP image to add
+                a Figure at the cursor.
               </FieldDescription>
+              {!figuresEnabled ? (
+                <p className="text-xs text-muted-foreground">
+                  Figure storage is not configured on this deployment, so
+                  figures cannot be added.
+                </p>
+              ) : !problem ? (
+                <p className="text-xs text-muted-foreground">
+                  Save this problem first, then add figures.
+                </p>
+              ) : null}
               <div className="grid gap-3 lg:grid-cols-2">
                 <Textarea
+                  ref={statementRef}
                   id="problem-statement"
                   value={statementMd}
-                  onChange={(event) => setStatementMd(event.target.value)}
+                  onChange={(event) => {
+                    statementValueRef.current = event.target.value;
+                    setStatementMd(event.target.value);
+                  }}
+                  onPaste={handlePaste}
                   placeholder={
                     "Given an array of integers and a target, return the indices of the two numbers that add up to it.\n\n## Input\n\nOne array and one target, each on its own line."
                   }
@@ -150,7 +281,7 @@ export function ProblemEditor({
                   className="min-h-64 overflow-auto rounded-lg border border-border bg-background p-4"
                 >
                   {statementMd.trim() ? (
-                    <Statement markdown={statementMd} />
+                    <Statement markdown={statementMd} figures={figureMap} />
                   ) : (
                     <p className="text-sm text-muted-foreground">
                       The preview appears here as you type.

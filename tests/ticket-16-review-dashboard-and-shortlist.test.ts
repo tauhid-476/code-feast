@@ -476,6 +476,8 @@ describe("Ticket 16: Review dashboard and shortlist", () => {
             problemId: "prob-1",
             problemTitle: "Reverse String",
             position: 1,
+            statementMd: "Reverse the string.",
+            figures: [],
             language: "python",
             code: "def reverse_string(s): return s[::-1]",
           },
