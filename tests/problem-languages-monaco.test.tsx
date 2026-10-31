@@ -16,7 +16,6 @@ const mockProblem: ProblemSummary = {
   difficulty: "easy",
   statementMd: "Find two numbers that add up to target.",
   sampleCases: [],
-  hiddenCases: [],
   starters: [
     {
       language: "python",

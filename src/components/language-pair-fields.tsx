@@ -131,7 +131,7 @@ function AdminCodeEditor({
 /**
  * The two editable halves of one language with Monaco code editors.
  * Each language and field uses its own model path to preserve content and undo history.
- * Accessible textareas are rendered as fallbacks for SSR, form compat, and tests.
+ * Both columns are vertically aligned so the editors start at the exact same level.
  */
 export function LanguagePairFields({
   problemId = "default",
@@ -151,59 +151,67 @@ export function LanguagePairFields({
   const harnessPlaceholder = `// The ${label} snippet appended after the participant's code.`;
 
   return (
-    <div className="grid gap-3 lg:grid-cols-2">
-      <Field>
-        <FieldLabel htmlFor={`starter-${language}`}>Starter Code</FieldLabel>
-        <FieldDescription>
-          The whole file a participant opens for {label}, including the signed
-          function.
-        </FieldDescription>
-        <AdminCodeEditor
-          key={`starter-${language}`}
-          problemId={problemId}
-          field="starter"
-          language={language}
-          defaultValue={value.starterCode}
-          placeholder={starterPlaceholder}
-          onChange={(starterCode) => onChange({ starterCode })}
-          onSave={onSave}
-        />
-        {/* Fallback accessible element for SSR/tests */}
-        <textarea
-          id={`starter-${language}`}
-          value={value.starterCode}
-          onChange={(event) => onChange({ starterCode: event.target.value })}
-          className="sr-only"
-          tabIndex={-1}
-          aria-hidden="true"
-        />
+    <div className="grid gap-4 lg:grid-cols-2 lg:grid-rows-[auto_1fr]">
+      <Field className="lg:grid lg:grid-rows-subgrid lg:row-span-2">
+        <div className="flex flex-col gap-1 lg:min-h-[4.25rem]">
+          <FieldLabel htmlFor={`starter-${language}`}>Starter Code</FieldLabel>
+          <FieldDescription>
+            The whole file a participant opens for {label}, including the signed
+            function.
+          </FieldDescription>
+        </div>
+        <div className="w-full">
+          <AdminCodeEditor
+            key={`starter-${language}`}
+            problemId={problemId}
+            field="starter"
+            language={language}
+            defaultValue={value.starterCode}
+            placeholder={starterPlaceholder}
+            onChange={(starterCode) => onChange({ starterCode })}
+            onSave={onSave}
+          />
+          {/* Fallback accessible element for SSR/tests */}
+          <textarea
+            id={`starter-${language}`}
+            value={value.starterCode}
+            onChange={(event) => onChange({ starterCode: event.target.value })}
+            className="sr-only"
+            tabIndex={-1}
+            aria-hidden="true"
+          />
+        </div>
       </Field>
 
-      <Field>
-        <FieldLabel htmlFor={`harness-${language}`}>Harness</FieldLabel>
-        <FieldDescription>
-          Hidden from participants and appended to their code at run time. It
-          parses stdin and calls their function.
-        </FieldDescription>
-        <AdminCodeEditor
-          key={`harness-${language}`}
-          problemId={problemId}
-          field="harness"
-          language={language}
-          defaultValue={value.harnessCode}
-          placeholder={harnessPlaceholder}
-          onChange={(harnessCode) => onChange({ harnessCode })}
-          onSave={onSave}
-        />
-        {/* Fallback accessible element for SSR/tests */}
-        <textarea
-          id={`harness-${language}`}
-          value={value.harnessCode}
-          onChange={(event) => onChange({ harnessCode: event.target.value })}
-          className="sr-only"
-          tabIndex={-1}
-          aria-hidden="true"
-        />
+      <Field className="lg:grid lg:grid-rows-subgrid lg:row-span-2">
+        <div className="flex flex-col gap-1 lg:min-h-[4.25rem]">
+          <FieldLabel htmlFor={`harness-${language}`}>Harness</FieldLabel>
+          <FieldDescription>
+            Hidden from participants and appended to their code at run time. It
+            parses stdin and calls their function.
+          </FieldDescription>
+        </div>
+        <div className="w-full">
+          <AdminCodeEditor
+            key={`harness-${language}`}
+            problemId={problemId}
+            field="harness"
+            language={language}
+            defaultValue={value.harnessCode}
+            placeholder={harnessPlaceholder}
+            onChange={(harnessCode) => onChange({ harnessCode })}
+            onSave={onSave}
+          />
+          {/* Fallback accessible element for SSR/tests */}
+          <textarea
+            id={`harness-${language}`}
+            value={value.harnessCode}
+            onChange={(event) => onChange({ harnessCode: event.target.value })}
+            className="sr-only"
+            tabIndex={-1}
+            aria-hidden="true"
+          />
+        </div>
       </Field>
     </div>
   );
