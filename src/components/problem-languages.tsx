@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useCallback, useEffect, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { saveProblemStarterAction } from "@/app/admin/events/[id]/actions";
 import {
@@ -39,9 +39,9 @@ function samePair(a: StarterPairDraft, b: StarterPairDraft): boolean {
 }
 
 /**
- * Per-language Starter Code and Harness authoring. The Harness is an ordinary
- * textarea with the same freedom as Starter Code; it is hidden from
- * participants, not from the Organizer.
+ * Per-language Starter Code and Harness authoring with Monaco editors.
+ * Language tabs show an unsaved-changes dot when the current draft differs
+ * from the saved version. Cmd/Ctrl+S saves the active language.
  */
 export function ProblemLanguages({
   eventId,
@@ -66,29 +66,47 @@ export function ProblemLanguages({
     }));
   }
 
-  function save(language: Language) {
-    const pair = drafts[language];
-    setError(null);
-    setPendingLanguage(language);
+  const save = useCallback(
+    (language: Language) => {
+      const pair = drafts[language];
+      setError(null);
+      setPendingLanguage(language);
 
-    startSaving(async () => {
-      const result = await saveProblemStarterAction(
-        eventId,
-        problem.id,
-        language,
-        pair,
-      );
-      setPendingLanguage(null);
+      startSaving(async () => {
+        const result = await saveProblemStarterAction(
+          eventId,
+          problem.id,
+          language,
+          pair,
+        );
+        setPendingLanguage(null);
 
-      if ("error" in result) {
-        setError({ language, message: result.error });
-        return;
+        if ("error" in result) {
+          setError({ language, message: result.error });
+          return;
+        }
+
+        setSaved((current) => ({ ...current, [language]: pair }));
+        toast.success(`${LANGUAGE_LABELS[language]} saved`);
+      });
+    },
+    [drafts, eventId, problem.id],
+  );
+
+  // Cmd/Ctrl+S saves the currently active language tab
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "s") {
+        e.preventDefault();
+        if (!saving) {
+          save(active);
+        }
       }
+    }
 
-      setSaved((current) => ({ ...current, [language]: pair }));
-      toast.success(`${LANGUAGE_LABELS[language]} saved`);
-    });
-  }
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [active, save, saving]);
 
   return (
     <section className="mt-6 border-t border-border pt-5">
@@ -108,11 +126,26 @@ export function ProblemLanguages({
         }}
       >
         <TabsList aria-label="Language">
-          {LANGUAGES.map((language) => (
-            <TabsTrigger key={language} value={language}>
-              {LANGUAGE_LABELS[language]}
-            </TabsTrigger>
-          ))}
+          {LANGUAGES.map((language) => {
+            const dirty = !samePair(drafts[language], saved[language]);
+            return (
+              <TabsTrigger
+                key={language}
+                value={language}
+                className="relative gap-1.5"
+              >
+                <span>{LANGUAGE_LABELS[language]}</span>
+                {dirty && (
+                  <span
+                    data-slot="unsaved-dot"
+                    className="size-1.5 rounded-full bg-amber-500 animate-in fade-in"
+                    title="Unsaved changes"
+                    aria-label="Unsaved changes"
+                  />
+                )}
+              </TabsTrigger>
+            );
+          })}
         </TabsList>
 
         {LANGUAGES.map((language) => {
@@ -122,9 +155,13 @@ export function ProblemLanguages({
           return (
             <TabsContent key={language} value={language} className="mt-3">
               <LanguagePairFields
+                problemId={problem.id}
                 language={language}
                 value={drafts[language]}
                 onChange={(change) => patch(language, change)}
+                onSave={() => {
+                  if (!saving) save(language);
+                }}
               />
 
               {error?.language === language ? (
