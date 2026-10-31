@@ -17,7 +17,10 @@ vi.mock("@/app/e/[code]/actions", () => ({
 import { ContestProblemNav } from "@/components/contest-problem-nav";
 import { ContestTestPanel } from "@/components/contest-test-panel";
 import type { ContestProblemView } from "@/components/contest-types";
+import { ContestWorkspace } from "@/components/contest-workspace";
+import { ModeToggle } from "@/components/mode-toggle";
 import { SubmitContest } from "@/components/submit-contest";
+import { ThemeProvider } from "@/components/theme-provider";
 import type { RunResult } from "@/lib/runner/run";
 
 const mockProblems: ContestProblemView[] = [
@@ -49,11 +52,48 @@ const mockProblems: ContestProblemView[] = [
 ];
 
 describe("ContestProblemNav", () => {
-  it("renders problem selector and progress counter", () => {
+  it("renders segmented strip of numbered pills with roving tabindex and states", () => {
     const html = renderToStaticMarkup(
       createElement(ContestProblemNav, {
         problems: mockProblems,
         selectedProblemId: "prob-1",
+        onSelectProblem: () => {},
+        statuses: {
+          "prob-1": "attempted",
+          "prob-2": "unattempted",
+        },
+      }),
+    );
+
+    // Tablist container
+    expect(html).toContain('role="tablist"');
+    expect(html).toContain('aria-label="Contest Problems"');
+
+    // Pill tabs
+    expect(html).toContain('role="tab"');
+    expect(html).toContain('id="problem-tab-prob-1"');
+    expect(html).toContain('aria-selected="true"');
+    expect(html).toContain('tabindex="0"');
+    expect(html).toContain("border-amber-500"); // current pill amber border
+
+    // Attempted indicator (amber dot)
+    expect(html).toContain("bg-amber-500");
+
+    // Second pill is idle with tabindex -1
+    expect(html).toContain('id="problem-tab-prob-2"');
+    expect(html).toContain('aria-selected="false"');
+    expect(html).toContain('tabindex="-1"');
+
+    // Tooltip labels
+    expect(html).toContain("01 · Two Sum · Attempted");
+    expect(html).toContain("02 · Reverse Linked List · Unattempted");
+  });
+
+  it("renders green check icon on passed problem pill", () => {
+    const html = renderToStaticMarkup(
+      createElement(ContestProblemNav, {
+        problems: mockProblems,
+        selectedProblemId: "prob-2",
         onSelectProblem: () => {},
         statuses: {
           "prob-1": "solved",
@@ -62,26 +102,41 @@ describe("ContestProblemNav", () => {
       }),
     );
 
-    expect(html).toContain("Two Sum");
-    expect(html).toContain("1/2 Solved");
-    expect(html).toContain("Previous question");
-    expect(html).toContain("Next question");
+    // Check icon on passed problem
+    expect(html).toContain("lucide-check");
+    expect(html).toContain("text-emerald-500");
+    expect(html).toContain("01 · Two Sum · Passed");
   });
+});
 
-  it("reflects 2/2 Solved when all problems are solved", () => {
+describe("ContestWorkspace Header and Secondary Navigation", () => {
+  it("renders compact progress label, timer, and secondary navigation buttons", () => {
     const html = renderToStaticMarkup(
-      createElement(ContestProblemNav, {
+      createElement(ContestWorkspace, {
+        code: "TESTCODE",
+        eventTitle: "Weekly Contest #1",
+        participantId: "part-1",
+        participantName: "Alice",
         problems: mockProblems,
-        selectedProblemId: "prob-2",
-        onSelectProblem: () => {},
-        statuses: {
-          "prob-1": "solved",
-          "prob-2": "solved",
-        },
+        drafts: [],
+        sessionId: "sess-1",
+        strikes: 0,
+        serverNow: "2026-11-01T12:00:00.000Z",
+        deadlineAt: "2026-11-01T13:00:00.000Z",
+        onSessionRefused: () => {},
       }),
     );
 
-    expect(html).toContain("2/2 Solved");
+    // Header progress label
+    expect(html).toContain("0/2 solved");
+
+    // Timer
+    expect(html).toContain('role="timer"');
+
+    // Secondary navigation at the bottom of the statement panel
+    expect(html).toContain("Previous");
+    expect(html).toContain("Next");
+    expect(html).toContain("Problem 1 of 2");
   });
 });
 
@@ -115,7 +170,7 @@ describe("ContestTestPanel", () => {
       sandboxError: null,
       timedOut: false,
       cases: [
-        {
+         {
           index: 0,
           input: "2 7 11 15\n9\n",
           expected: "0 1\n",
@@ -125,7 +180,7 @@ describe("ContestTestPanel", () => {
           ms: 15,
           pass: true,
         },
-        {
+         {
           index: 1,
           input: "3 2 4\n6\n",
           expected: "1 2\n",
@@ -221,5 +276,24 @@ describe("SubmitContest with Problem Summary", () => {
     );
 
     expect(html).toContain("Submit");
+  });
+});
+
+describe("ThemeProvider & ModeToggle", () => {
+  it("renders ThemeProvider wrapping children", () => {
+    const html = renderToStaticMarkup(
+      createElement(
+        ThemeProvider,
+        { attribute: "class", defaultTheme: "dark" },
+        createElement("div", { id: "test-child" }, "Theme content"),
+      ),
+    );
+
+    expect(html).toContain("Theme content");
+  });
+
+  it("renders ModeToggle button with aria-label", () => {
+    const html = renderToStaticMarkup(createElement(ModeToggle, {}));
+    expect(html).toContain("Toggle theme");
   });
 });

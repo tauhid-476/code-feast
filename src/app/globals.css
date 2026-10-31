@@ -2,19 +2,68 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
-@custom-variant dark (&:is(.dark *));
+@custom-variant dark (&:is(.dark, .dark *));
 
 /*
  * Code Feast visual language: an exam hall at night. Ink-dark surfaces, warm
  * paper text, one amber accent for the live clock, mono type for anything the
  * machine says. No gradients, no glass, no decoration that competes with code.
  *
- * The app is dark-only. shadcn's semantic tokens are mapped onto this palette,
- * so `bg-background`, `text-muted-foreground`, `border-border`, and the rest of
- * the shadcn component surface pick up the theme without per-component styling.
+ * Light mode provides a clean paper-and-slate counterpart with crisp borders
+ * and amber accents, while Dark mode preserves the ink-dark grey tone palette.
  */
 
 :root {
+  --background: #fbfbfa;
+  --foreground: #18191b;
+
+  --card: #ffffff;
+  --card-foreground: #18191b;
+
+  --popover: #ffffff;
+  --popover-foreground: #18191b;
+
+  --primary: #d97706;
+  --primary-foreground: #ffffff;
+
+  --secondary: #f3f3f1;
+  --secondary-foreground: #18191b;
+
+  --muted: #f3f3f1;
+  --muted-foreground: #6c727a;
+
+  --accent: #ebebe7;
+  --accent-foreground: #18191b;
+
+  --destructive: #dc2626;
+
+  --border: #e2e4e8;
+  --input: #cfd4dc;
+  --ring: #d97706;
+
+  --success: #16a34a;
+  --warning: #d97706;
+  --info: #0284c7;
+
+  --chart-1: #d97706;
+  --chart-2: #16a34a;
+  --chart-3: #0284c7;
+  --chart-4: #dc2626;
+  --chart-5: #6c727a;
+
+  --radius: 0.5rem;
+
+  --sidebar: #ffffff;
+  --sidebar-foreground: #18191b;
+  --sidebar-primary: #d97706;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #f3f3f1;
+  --sidebar-accent-foreground: #18191b;
+  --sidebar-border: #e2e4e8;
+  --sidebar-ring: #d97706;
+}
+
+.dark {
   --background: #0b0d0f;
   --foreground: #e9e4da;
 
@@ -111,17 +160,25 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-html {
+html.dark {
   color-scheme: dark;
 }
 
+html:not(.dark) {
+  color-scheme: light;
+}
+
 body {
-  background:
-    radial-gradient(1200px 600px at 50% -10%, #171c21 0%, transparent 60%),
-    var(--background);
+  background-color: var(--background);
   color: var(--foreground);
   font-family: var(--font-geist-sans), system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
+}
+
+.dark body {
+  background:
+    radial-gradient(1200px 600px at 50% -10%, #171c21 0%, transparent 60%),
+    var(--background);
 }
 
 ::selection {

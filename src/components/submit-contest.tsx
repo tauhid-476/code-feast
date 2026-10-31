@@ -105,8 +105,9 @@ export function SubmitContest({
           setError(null);
           setConfirming(true);
         }}
+        className="h-8 px-3 text-xs font-semibold bg-amber-500 hover:bg-amber-600 text-black border-none shadow-xs transition-colors"
       >
-        <Send data-icon="inline-end" />
+        <Send className="size-3.5 mr-1" />
         Submit
       </Button>
 
@@ -126,7 +127,7 @@ export function SubmitContest({
           </AlertDialogHeader>
 
           {/* Solved vs Remaining Reminder Card */}
-          {summary ? (
+          {summary ?  (
             <div className="space-y-3 rounded-lg border border-border bg-card/60 p-3 text-xs">
               <div className="flex items-center justify-between">
                 <span className="font-semibold text-foreground">Questions Overview</span>
@@ -178,7 +179,12 @@ export function SubmitContest({
 
           <AlertDialogFooter>
             <AlertDialogCancel disabled={pending}>Keep working</AlertDialogCancel>
-            <Button type="button" onClick={submit} disabled={pending}>
+            <Button
+              type="button"
+              onClick={submit}
+              disabled={pending}
+              className="bg-amber-500 hover:bg-amber-600 text-black font-semibold"
+            >
               {pending ? (
                 <Spinner data-icon="inline-start" />
               ) : (

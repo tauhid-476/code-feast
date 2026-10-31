@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { EditorPreload } from "@/components/editor-preload";
 import { FullscreenGate } from "@/components/fullscreen-gate";
 import { LobbyLiveWatcher } from "@/components/lobby-live-watcher";
+import { ModeToggle } from "@/components/mode-toggle";
 import { SignOutButton } from "@/components/sign-out-button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -43,7 +44,10 @@ export default async function LobbyPage({ params }: PageProps<"/e/[code]">) {
               {live ? "Enter the contest" : "You&apos;re in"}
             </h1>
           </div>
-          <SignOutButton />
+          <div className="flex items-center gap-2">
+            <ModeToggle />
+            <SignOutButton />
+          </div>
         </div>
 
         {live ? (

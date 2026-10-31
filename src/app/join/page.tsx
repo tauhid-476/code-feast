@@ -1,3 +1,4 @@
+import { ModeToggle } from "@/components/mode-toggle";
 import { SignOutButton } from "@/components/sign-out-button";
 import { JoinCodeForm } from "@/components/join-code-form";
 import { requireParticipant } from "@/lib/auth/guards";
@@ -16,7 +17,10 @@ export default async function JoinPage() {
             <p className="label">Code Feast</p>
             <h1 className="mt-1 text-xl font-semibold">Join an event</h1>
           </div>
-          <SignOutButton />
+          <div className="flex items-center gap-2">
+            <ModeToggle />
+            <SignOutButton />
+          </div>
         </div>
 
         <Card>

@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import dynamic from "next/dynamic";
 import type { OnMount } from "@monaco-editor/react";
+import { useTheme } from "next-themes";
 import { installEditorGuards } from "@/components/editor-guards";
 import type { Language } from "@/lib/languages";
 import type { ViolationKind } from "@/lib/violations/kinds";
@@ -57,6 +58,7 @@ export function ContestEditor({
   /** The workspace's supervision report, so a paste is one counter, not two. */
   onViolation: (kind: ViolationKind) => void;
 }) {
+  const { resolvedTheme } = useTheme();
   const guardsRef = useRef<(() => void) | null>(null);
 
   useEffect(
@@ -82,7 +84,7 @@ export function ContestEditor({
       path={`problem-${problemId}.${EXTENSIONS[language]}`}
       language={language}
       defaultValue={defaultValue}
-      theme="vs-dark"
+      theme={resolvedTheme === "light" ? "light" : "vs-dark"}
       onChange={(value) => onChange(value ?? "")}
       onMount={onMount}
       options={{

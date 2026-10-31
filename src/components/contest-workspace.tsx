@@ -2,11 +2,12 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Code2, Maximize2, Play } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, Code2, Maximize2, Play } from "lucide-react";
 import { ContestCountdown } from "@/components/contest-countdown";
 import { ContestEditor } from "@/components/contest-editor";
 import { ContestProblemNav, type ProblemStatus } from "@/components/contest-problem-nav";
 import { ContestTestPanel, type TestPanelTab } from "@/components/contest-test-panel";
+import { ModeToggle } from "@/components/mode-toggle";
 import { Statement } from "@/components/statement";
 import { StrikeCounter } from "@/components/strike-counter";
 import { SubmitContest, type ProblemSummary } from "@/components/submit-contest";
@@ -38,6 +39,7 @@ import { draftKey } from "@/lib/drafts/merge";
 import { figureDimensionsMap } from "@/lib/figures/types";
 import { isLanguage, LANGUAGE_LABELS, LANGUAGES, type Language } from "@/lib/languages";
 import type { RunResult } from "@/lib/runner/run";
+import { cn } from "cn";
 
 function languagesFor(problem: ContestProblemView): Language[] {
   if (problem.starters.length === 0) return [...LANGUAGES];
@@ -198,14 +200,14 @@ export function ContestWorkspace({
     };
   }, [problems, problemStatuses]);
 
-  if (problems.length === 0) {
+  if (!problem) {
     return (
-      <main className="flex h-dvh items-center justify-center p-6">
-        <Empty className="border border-border">
+      <main className="flex h-dvh flex-col items-center justify-center p-6 text-center">
+        <Empty>
           <EmptyHeader>
-            <EmptyTitle>No problems yet</EmptyTitle>
+            <EmptyTitle>No problems in this contest</EmptyTitle>
             <EmptyDescription>
-              The organizer has not published any problems for this event.
+              The organizer hasn&apos;t added any problems to this event yet.
             </EmptyDescription>
           </EmptyHeader>
         </Empty>
@@ -217,25 +219,31 @@ export function ContestWorkspace({
   const key = draftKey(problem.id, language);
   const buffer = buffers[key];
 
-  function selectProblem(id: string) {
-    setSelectedProblemId(id);
+  function selectProblem(nextId: string) {
+    setSelectedProblemId(nextId);
     runState.clear();
-    const next = problems.find((candidate) => candidate.id === id);
-    if (!next) return;
-    const languages = languagesFor(next);
-    if (!languages.includes(language)) setLanguage(languages[0]);
+
+    const target = problems.find((p) => p.id === nextId);
+    if (!target) return;
+
+    const targetLangs = languagesFor(target);
+    if (!targetLangs.includes(language)) {
+      setLanguage(targetLangs[0] ?? "python");
+    }
   }
 
-  async function handleRun() {
-    if (!buffer) return;
-    setActiveTab("result");
-    setIsTestPanelCollapsed(false);
-    await runState.run({
+  function handleRun() {
+    if (!buffer || runState.running) return;
+    runState.run({
       problemId: problem.id,
       language,
       code: buffer.code,
     });
+    setActiveTab("result");
+    setIsTestPanelCollapsed(false);
   }
+
+  const currentProblemIndex = problems.findIndex((p) => p.id === problem.id);
 
   const saveText = failed
     ? "Not saved"
@@ -247,32 +255,78 @@ export function ContestWorkspace({
 
   return (
     <main className="flex h-dvh flex-col overflow-hidden bg-background">
-      {/* Contest Top Navigation Bar */}
-      <header className="flex h-14 shrink-0 items-center justify-between gap-4 border-b border-border px-4 bg-card/60 backdrop-blur-xs">
+      {/* Contest Top Navigation Bar: 48px height, 16px horizontal padding, vertically centered */}
+      <header className="flex h-12 shrink-0 items-center justify-between gap-3 border-b border-border px-4 bg-card/60 backdrop-blur-xs">
         <div className="flex min-w-0 items-center gap-3">
           {/* Platform Logo */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/logo.png"
             alt="Code Feast"
-            className="h-8 w-auto max-w-[120px] object-contain rounded"
+            className="h-6 w-auto max-w-[100px] object-contain rounded"
           />
-          <div className="h-4 w-px bg-border hidden sm:block" />
-          <span className="label hidden sm:inline">Contest</span>
-          <h1 className="truncate text-sm font-medium">{eventTitle}</h1>
+          <div className="h-4 w-px bg-border hidden md:block" />
+          <span className="hidden xl:inline text-xs font-medium text-muted-foreground truncate max-w-[120px]">
+            {eventTitle}
+          </span>
+
+          {/* Segmented strip of numbered pills, one per problem */}
+          <ContestProblemNav
+            problems={problems}
+            selectedProblemId={problem.id}
+            onSelectProblem={selectProblem}
+            statuses={problemStatuses}
+          />
         </div>
 
-        <div className="flex shrink-0 items-center gap-4">
-          <span className="hidden text-xs text-muted-foreground sm:inline">
-            {participantName}
-          </span>
+        {/* Right side of header: compact progress label + thin segmented bar, timer, submit button */}
+        <div className="flex shrink-0 items-center gap-3 sm:gap-3.5">
+          {participantName ? (
+            <span className="hidden text-xs text-muted-foreground lg:inline font-medium">
+              {participantName}
+            </span>
+          ) : null}
+
           <StrikeCounter strikes={supervision.strikes} />
+
+          {/* Compact progress label ("0/4 solved") with thin segmented bar under it */}
+          <div className="flex flex-col items-end gap-1">
+            <span className="text-[11px] font-medium leading-none text-muted-foreground tabular-nums">
+              {problemSummary.solved}/{problemSummary.total} solved
+            </span>
+            <div
+              className="flex items-center gap-0.5 h-1 w-16"
+              aria-hidden="true"
+            >
+              {problems.map((p) => {
+                const st = problemStatuses[p.id];
+                return (
+                  <div
+                    key={p.id}
+                    className={cn(
+                      "h-full flex-1 rounded-full transition-colors",
+                      st === "solved"
+                        ? "bg-emerald-500"
+                        : st === "attempted"
+                          ? "bg-amber-500"
+                          : "bg-muted-foreground/30",
+                    )}
+                  />
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Timer: mono, tabular-nums */}
           <ContestCountdown
             code={code}
             serverNow={serverNow}
             deadlineAt={deadlineAt}
           />
-          {/* Ticket 11 owns Submit: confirmation, lockout, terminal screen. */}
+
+          <ModeToggle />
+
+          {/* Submit button as the only amber-filled element */}
           <SubmitContest
             code={code}
             sessionId={sessionId}
@@ -331,24 +385,42 @@ export function ContestWorkspace({
 
       {/* Main Workspace Split View */}
       <div className="grid min-h-0 flex-1 grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
-        {/* Left Column: Problem Navigation & Statement */}
+        {/* Left Column: Problem Statement & Secondary Navigation */}
         <section className="flex min-h-0 flex-col border-r border-border bg-card/20">
-          {/* Top Problem Navigation Bar */}
-          <ContestProblemNav
-            problems={problems}
-            selectedProblemId={problem.id}
-            onSelectProblem={selectProblem}
-            statuses={problemStatuses}
-          />
-
           {/* Problem Statement Content */}
-          <article className="flex-1 min-h-0 overflow-y-auto px-5 pt-4 pb-10">
-            <div className="flex flex-wrap items-center gap-2 mb-4">
-              <h2 className="text-xl font-bold tracking-tight">
-                {problem.title}
-              </h2>
-              {problem.difficulty ? (
-                <Badge variant="outline">{problem.difficulty}</Badge>
+          <article className="flex-1 min-h-0 overflow-y-auto px-6 py-5">
+            <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+              <div className="flex items-center gap-2.5">
+                <span className="mono text-xs font-semibold text-muted-foreground">
+                  {String(problem.position).padStart(2, "0")}
+                </span>
+                <h2 className="text-lg font-bold tracking-tight">
+                  {problem.title}
+                </h2>
+                {problem.difficulty ? (
+                  <Badge variant="outline" className="text-xs">
+                    {problem.difficulty}
+                  </Badge>
+                ) : null}
+              </div>
+
+              {/* Status indicator */}
+              {problemStatuses[problem.id] === "solved" ? (
+                <Badge
+                  variant="outline"
+                  className="text-emerald-500 border-emerald-500/30 bg-emerald-500/10 gap-1 text-xs"
+                >
+                  <Check className="size-3" />
+                  <span>Passed</span>
+                </Badge>
+              ) : problemStatuses[problem.id] === "attempted" ? (
+                <Badge
+                  variant="outline"
+                  className="text-amber-500 border-amber-500/30 bg-amber-500/10 gap-1 text-xs"
+                >
+                  <span className="size-1.5 rounded-full bg-amber-500" />
+                  <span>Attempted</span>
+                </Badge>
               ) : null}
             </div>
 
@@ -385,6 +457,45 @@ export function ContestWorkspace({
               </section>
             ) : null}
           </article>
+
+          {/* Secondary Navigation Footer at the bottom of the statement panel */}
+          <footer className="sticky bottom-0 z-10 flex h-12 shrink-0 items-center justify-between border-t border-border bg-card/90 px-4 backdrop-blur-xs">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              disabled={currentProblemIndex <= 0}
+              onClick={() => {
+                if (currentProblemIndex > 0) {
+                  selectProblem(problems[currentProblemIndex - 1].id);
+                }
+              }}
+              className="gap-1.5 text-xs text-muted-foreground hover:text-foreground disabled:opacity-40"
+            >
+              <ChevronLeft className="size-4" />
+              <span>Previous</span>
+            </Button>
+
+            <span className="text-xs text-muted-foreground tabular-nums">
+              Problem {currentProblemIndex + 1} of {problems.length}
+            </span>
+
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              disabled={currentProblemIndex >= problems.length - 1}
+              onClick={() => {
+                if (currentProblemIndex < problems.length - 1) {
+                  selectProblem(problems[currentProblemIndex + 1].id);
+                }
+              }}
+              className="gap-1.5 text-xs text-muted-foreground hover:text-foreground disabled:opacity-40"
+            >
+              <span>Next</span>
+              <ChevronRight className="size-4" />
+            </Button>
+          </footer>
         </section>
 
         {/* Right Column: Code Editor & LeetCode-style Test Panel */}
@@ -409,7 +520,7 @@ export function ContestWorkspace({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent alignItemWithTrigger={false}>
-                  {availableLanguages.map((option) => (
+                  {availableLanguages.map((option) =>  (
                     <SelectItem key={option} value={option}>
                       {LANGUAGE_LABELS[option]}
                     </SelectItem>
@@ -429,7 +540,7 @@ export function ContestWorkspace({
                 onClick={handleRun}
                 className="gap-1.5 font-medium"
               >
-                {runState.running ? (
+                {runState.running ?  (
                   <Spinner className="size-3.5" />
                 ) : (
                   <Play className="size-3.5 text-emerald-500 fill-emerald-500" />

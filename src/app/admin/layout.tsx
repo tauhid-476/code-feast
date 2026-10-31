@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { SignOutButton } from "@/components/sign-out-button";
+import { ModeToggle } from "@/components/mode-toggle";
 import { requireOrganizer } from "@/lib/auth/guards";
 import { isSuperAdminEmail } from "@/lib/env";
 import { Button } from "@/components/ui/button";
@@ -38,6 +39,7 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
             <span className="hidden text-xs text-muted-foreground sm:inline">
               {organizer.email}
             </span>
+            <ModeToggle />
             <SignOutButton />
           </div>
         </div>

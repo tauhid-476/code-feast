@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { useTheme } from "next-themes";
 import { Spinner } from "@/components/ui/spinner";
 
 const MonacoEditor = dynamic(
@@ -31,15 +32,16 @@ export function ReviewCodeEditor({
   language: string;
   problemId: string;
 }) {
+  const { resolvedTheme } = useTheme();
   const ext = EXTENSIONS[language] ?? "txt";
 
   return (
-    <div className="relative h-[380px] w-full overflow-hidden rounded-md border border-border bg-[#1e1e1e]">
+    <div className="relative h-[380px] w-full overflow-hidden rounded-md border border-border bg-card">
       <MonacoEditor
         path={`review-${problemId}.${ext}`}
         language={language === "cpp" ? "cpp" : language}
         value={code}
-        theme="vs-dark"
+        theme={resolvedTheme === "light" ? "light" : "vs-dark"}
         options={{
           readOnly: true,
           domReadOnly: true,

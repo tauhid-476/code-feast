@@ -114,7 +114,7 @@ export function ContestCountdown({
   }, [code, router]);
 
   if (remaining === null) {
-    return <span className="mono text-xl text-muted-foreground">—</span>;
+    return <span className="mono text-xs text-muted-foreground tabular-nums">—</span>;
   }
 
   const urgent = remaining <= 5 * 60;
@@ -125,8 +125,8 @@ export function ContestCountdown({
       aria-label="Time remaining"
       className={
         urgent
-          ? "mono text-xl tabular text-destructive"
-          : "mono text-xl tabular text-primary"
+          ? "mono text-xs font-mono font-semibold tabular-nums text-destructive"
+          : "mono text-xs font-mono font-semibold tabular-nums text-foreground"
       }
     >
       {formatDuration(remaining)}
