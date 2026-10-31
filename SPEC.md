@@ -2,7 +2,7 @@
 
 A platform for running one live DSA contest. An organizer authors an event and its problems, shares a join code, starts a shared clock, and participants solve problems in a LeetCode-style editor under anti-cheat supervision. Judging is done by a human reading the submitted code.
 
-Decisions referenced: `docs/adr/0001`–`0004`. Vocabulary: `GLOSSARY.md`.
+Decisions referenced: `docs/adr/0001`–`0005`. Vocabulary: `GLOSSARY.md`.
 
 ---
 

@@ -40,6 +40,9 @@ a Submission.
 
 ## Plan
 
+**Decisions:** `docs/adr/0005-figures-are-statement-content.md` — inline
+statement content, private branch-scoped bucket, id reference, app-route reads.
+
 ### Language
 
 **Figure** (see `GLOSSARY.md`): a display-only picture inside a Problem's
