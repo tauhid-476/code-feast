@@ -7,17 +7,11 @@ import {
   addApprovedOrganizerAction,
   type AddOrganizerState,
 } from "@/app/admin/organizers/actions";
-import { Alert, AlertDescription } from "@/components/legacy-ui/alert";
-import { Button } from "@/components/legacy-ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/legacy-ui/card";
-import { Field, FieldGroup, FieldLabel } from "@/components/legacy-ui/field";
-import { Input } from "@/components/legacy-ui/input";
+import { Alert } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Card, CardBody, CardText, CardTitle } from "@/components/ui/card";
+import { Field } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
 
 export function AddOrganizerForm() {
   const [state, formAction, pending] = useActionState<AddOrganizerState, FormData>(
@@ -36,22 +30,18 @@ export function AddOrganizerForm() {
   }, [state]);
 
   return (
-    <Card>
-      <CardHeader>
+    <Card className="backdrop-blur-none sm:opacity-100">
+      <CardBody className="gap-3">
         <CardTitle>Whitelist organizer</CardTitle>
-        <CardDescription>
+        <CardText className="line-clamp-none">
           Approved organizers can create events, author problems, and run live
           contests.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form ref={formRef} action={formAction}>
-          <FieldGroup>
+        </CardText>
+        <form ref={formRef} action={formAction} className="mt-1">
+          <div className="flex flex-col gap-4">
             <div className="grid gap-4 md:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_auto] md:items-end">
-              <Field>
-                <FieldLabel htmlFor="email">Email address</FieldLabel>
+              <Field label="Email address">
                 <Input
-                  id="email"
                   name="email"
                   type="email"
                   placeholder="organizer@university.edu"
@@ -60,10 +50,8 @@ export function AddOrganizerForm() {
                 />
               </Field>
 
-              <Field>
-                <FieldLabel htmlFor="note">Organization / Note (Optional)</FieldLabel>
+              <Field label="Organization / Note (Optional)">
                 <Input
-                  id="note"
                   name="note"
                   placeholder="e.g. Stanford ACM, Club Lead"
                   autoComplete="off"
@@ -72,19 +60,17 @@ export function AddOrganizerForm() {
               </Field>
 
               <Button type="submit" disabled={pending}>
-                <UserPlus data-icon="inline-start" />
+                <UserPlus />
                 {pending ? "Adding…" : "Add organizer"}
               </Button>
             </div>
 
             {state && "error" in state ? (
-              <Alert variant="destructive">
-                <AlertDescription>{state.error}</AlertDescription>
-              </Alert>
+              <Alert tone="danger">{state.error}</Alert>
             ) : null}
-          </FieldGroup>
+          </div>
         </form>
-      </CardContent>
+      </CardBody>
     </Card>
   );
 }

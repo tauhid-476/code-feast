@@ -1,128 +1,261 @@
-import { Bot, Braces, Code2, Database, Server, Smartphone, Sparkles } from 'lucide-react'
+import {
+  CheckCircle2,
+  Clock,
+  Code2,
+  Cpu,
+  FileCode2,
+  Shield,
+  ShieldAlert,
+  Sparkles,
+  Terminal,
+} from 'lucide-react'
 
-import { Carousel } from '@/components/carousel'
-import { CohortCard } from '@/components/cohort-card'
 import { CtaPanel } from '@/components/cta-panel'
 import { FeatureBento, type Feature } from '@/components/feature-bento'
 import { Hero } from '@/components/hero'
 import { SectionHead } from '@/components/section-head'
 import { StatStrip } from '@/components/stat-strip'
-import { ReviewCard } from '@/components/testimonials'
-import { MediaFrame } from '@/components/media-frame'
 import { Highlight } from '@/components/ui/highlight'
 import { PageShell } from '@/components/page-shell'
-
-/**
- * A landing page in the chaicode.com order: hero, stats, cohorts, courses,
- * why us, reviews and a closing call to action. Every section is a ChaiUI
- * block; the content is the constants below. Replace them with yours and
- * keep the copy rules: sentence case, no em dashes, one highlight per
- * paragraph, one central element in the hero.
- */
-const COHORTS = [
-  { name: 'GenAI with Python', href: '/cohorts/genai', center: <Sparkles />, orbit: [<Bot key="a" />, <Code2 key="b" />, <Database key="c" />] },
-  { name: 'Web dev', href: '/cohorts/web-dev', center: <Code2 />, orbit: [<Braces key="a" />, <Server key="b" />, <Database key="c" />] },
-  { name: 'Mobile dev', href: '/cohorts/mobile-dev', center: <Smartphone />, orbit: [<Code2 key="a" />, <Server key="b" />] },
-  { name: 'System design', href: '/cohorts/system-design', center: <Server />, orbit: [<Database key="a" />, <Braces key="b" />, <Bot key="c" />] },
-]
-
-const COURSES = [
-  { title: 'FastAPI with GenAI', href: '/courses/fastapi', image: '/chaiui/demo/fastapi.svg' },
-  { title: 'DevOps from zero', href: '/courses/devops', image: '/chaiui/demo/devops.svg' },
-  { title: 'Data structures in Java', href: '/courses/dsa', image: '/chaiui/demo/dsa.svg' },
-  { title: 'FastAPI with GenAI', href: '/courses/fastapi-2', image: '/chaiui/demo/fastapi.svg' },
-]
+import { Card, CardBody, CardTitle, CardText } from '@/components/ui/card'
+import { Chip } from '@/components/ui/chip'
 
 const FEATURES: Feature[] = [
-  { title: 'You finish it', description: 'Learning together keeps you going to the end.', tone: 'blue', link: { label: 'Cohorts', href: '#cohorts' } },
-  { title: 'Real world tasks', description: 'Challenges that mirror what teams expect.', tone: 'purple', link: { label: 'Tasks', href: '/tasks' } },
-  { title: 'Peer reviews', description: 'Give and get feedback on real code.', tone: 'amber', link: { label: 'Code reviews', href: '/reviews' } },
-  { title: 'Community', description: 'Grow with developers on Discord.', tone: 'grey', link: { label: 'Join us', href: '/discord' } },
-  { title: 'Trainings', description: 'Industry experts in class.', tone: 'amber' },
-  { title: 'Self learning', description: 'In-depth courses at your own pace.', tone: 'blue', link: { label: 'Courses', href: '/courses' } },
-  { title: 'Writing', description: 'Write to show your grip on a stack.', tone: 'purple' },
+  {
+    title: 'Synchronized clock',
+    description: 'A server-owned countdown reconciling on every poll. When time expires, lockouts happen immediately.',
+    tone: 'amber',
+  },
+  {
+    title: 'Pre-warmed sandbox pool',
+    description: 'Sub-second code execution using isolated microVMs for Python 3, Java, and C++.',
+    tone: 'blue',
+  },
+  {
+    title: 'Multi-tab deterrence',
+    description: 'Active session handshakes detect concurrent tabs instantly, assigning strikes to prevented takeovers.',
+    tone: 'purple',
+  },
+  {
+    title: 'Proctored workspace',
+    description: 'Monitored fullscreen gate detects blur and visibility changes with automated strike logging.',
+    tone: 'grey',
+  },
+  {
+    title: 'Instant organizer review',
+    description: 'Inspect live code submissions, re-run solutions against test suites, and shortlist candidates.',
+    tone: 'blue',
+    link: { label: 'Organizer events', href: '/admin/events' },
+  },
+  {
+    title: 'Confidential test harnesses',
+    description: 'Evaluation harnesses are appended server-side, keeping test internals hidden from client inspect.',
+    tone: 'amber',
+  },
+  {
+    title: 'Automated lockout',
+    description: 'Elimination rules trigger automatically upon the third strike, freezing submitted code safely.',
+    tone: 'purple',
+  },
 ]
 
-const REVIEWS = [
-  { name: 'Arjun Mehta', username: 'arjun_codes', href: 'https://x.com', text: 'The cohort made me ship every week. Six months later I had a portfolio and an offer.' },
-  { name: 'Priya Sharma', username: 'priya_builds', href: 'https://x.com', text: 'Peer reviews taught me more than any tutorial. Someone always read my code.' },
-  { name: 'Rahul Verma', username: 'rahulv', href: 'https://x.com', text: 'Clear, honest teaching. I finally understood how the pieces of a backend fit.' },
+const STATS = [
+  { value: '3', label: 'Supported languages' },
+  { value: '< 1s', label: 'Sandbox execution latency' },
+  { value: '3 strikes', label: 'Proctoring tolerance' },
+  { value: '100%', label: 'Server-reconciled clock' },
 ]
+
+const STEPS = [
+  {
+    num: '01',
+    title: 'Author and configure',
+    description:
+      'Craft problems with Markdown statements, starter templates, and custom verification harnesses across Python, Java, and C++.',
+    icon: <FileCode2 className="size-5 text-amber-500" />,
+  },
+  {
+    num: '02',
+    title: 'Launch and proctor',
+    description:
+      'Distribute a 6-character event code. Participants enter a fullscreen workspace while the shared clock keeps time synchronized.',
+    icon: <Shield className="size-5 text-blue-500" />,
+  },
+  {
+    num: '03',
+    title: 'Review and shortlist',
+    description:
+      'Examine participant code, re-run against test suites with execution metrics, and bookmark top candidates with zero delay.',
+    icon: <Cpu className="size-5 text-purple-500" />,
+  },
+]
+
+function ContestTerminalMock() {
+  return (
+    <div className="w-full overflow-hidden rounded-xl border border-white/10 bg-black/90 p-4 font-mono text-xs text-neutral-300 shadow-2xl backdrop-blur-md">
+      {/* Window bar */}
+      <div className="flex items-center justify-between border-b border-white/10 pb-3">
+        <div className="flex items-center gap-2">
+          <span className="size-2.5 rounded-full bg-red-500/80" />
+          <span className="size-2.5 rounded-full bg-yellow-500/80" />
+          <span className="size-2.5 rounded-full bg-green-500/80" />
+          <span className="ml-2 text-[11px] font-medium text-neutral-400">code-feast-workspace</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <Chip tone="default" className="text-[10px] py-0 px-2">
+            <Clock className="size-3" />
+            42:15 remaining
+          </Chip>
+          <Chip tone="success" className="text-[10px] py-0 px-2">
+            <ShieldAlert className="size-3 text-green-400" />
+            0 / 3 strikes
+          </Chip>
+        </div>
+      </div>
+
+      {/* Editor tabs */}
+      <div className="flex items-center gap-4 border-b border-white/10 pt-2 pb-2 text-[11px]">
+        <span className="flex items-center gap-1.5 text-white font-medium border-b border-orange-200/80 pb-1 -mb-2">
+          <Code2 className="size-3.5 text-orange-200" />
+          Two Sum (Python 3)
+        </span>
+        <span className="text-neutral-500 hover:text-neutral-400 cursor-default">Valid Anagram</span>
+        <span className="text-neutral-500 hover:text-neutral-400 cursor-default">LRU Cache</span>
+      </div>
+
+      {/* Code snippet */}
+      <div className="py-3 text-[11px] leading-relaxed">
+        <div className="flex gap-3">
+          <span className="select-none text-neutral-600">1</span>
+          <span>
+            <span className="text-purple-400">def</span> <span className="text-blue-400">two_sum</span>(nums: list[int], target: int) -&gt; list[int]:
+          </span>
+        </div>
+        <div className="flex gap-3">
+          <span className="select-none text-neutral-600">2</span>
+          <span className="pl-4 text-neutral-500"># Store compliment indices</span>
+        </div>
+        <div className="flex gap-3">
+          <span className="select-none text-neutral-600">3</span>
+          <span className="pl-4">lookup = &#123;&#125;</span>
+        </div>
+        <div className="flex gap-3">
+          <span className="select-none text-neutral-600">4</span>
+          <span className="pl-4">
+            <span className="text-purple-400">for</span> idx, val <span className="text-purple-400">in</span> enumerate(nums):
+          </span>
+        </div>
+        <div className="flex gap-3">
+          <span className="select-none text-neutral-600">5</span>
+          <span className="pl-8">
+            diff = target - val
+          </span>
+        </div>
+        <div className="flex gap-3">
+          <span className="select-none text-neutral-600">6</span>
+          <span className="pl-8">
+            <span className="text-purple-400">if</span> diff <span className="text-purple-400">in</span> lookup:
+          </span>
+        </div>
+        <div className="flex gap-3">
+          <span className="select-none text-neutral-600">7</span>
+          <span className="pl-12">
+            <span className="text-purple-400">return</span> [lookup[diff], idx]
+          </span>
+        </div>
+        <div className="flex gap-3">
+          <span className="select-none text-neutral-600">8</span>
+          <span className="pl-8">lookup[val] = idx</span>
+        </div>
+        <div className="flex gap-3">
+          <span className="select-none text-neutral-600">9</span>
+          <span className="pl-4">
+            <span className="text-purple-400">return</span> []
+          </span>
+        </div>
+      </div>
+
+      {/* Runner output console */}
+      <div className="rounded-lg border border-white/10 bg-black/60 p-2.5">
+        <div className="flex items-center justify-between pb-1.5 border-b border-white/5 text-[10px]">
+          <span className="flex items-center gap-1.5 text-neutral-400">
+            <Terminal className="size-3 text-neutral-400" />
+            Sandbox Run Output (E2B)
+          </span>
+          <span className="flex items-center gap-1 text-green-400 font-medium">
+            <CheckCircle2 className="size-3" />
+            2 / 2 sample cases passed
+          </span>
+        </div>
+        <div className="pt-2 flex flex-col gap-1 text-[10px] text-neutral-400">
+          <div className="flex items-center justify-between">
+            <span className="text-neutral-300">Case 1: nums = [2,7,11,15], target = 9</span>
+            <span className="text-neutral-500">14ms · stdout: [0, 1]</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-neutral-300">Case 2: nums = [3,2,4], target = 6</span>
+            <span className="text-neutral-500">11ms · stdout: [1, 2]</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 export function LandingPage() {
   return (
     <PageShell>
       <Hero
-        badge="Trusted by 1.5M+ developers worldwide"
-        title="Consistency and community"
-        primary={{ label: 'Start learning', href: '#cohorts' }}
-        secondary={{ label: 'See the impact', href: '#reviews' }}
-        media={<MediaFrame src="/chaiui/demo/fastapi.svg" alt="A ChaiCode course" />}
+        badge={
+          <span className="flex items-center gap-1.5">
+            <Sparkles className="size-3.5" />
+            Live DSA Contest Platform
+          </span>
+        }
+        title="Host synchronized coding competitions"
+        primary={{ label: 'Join contest', href: '/join' }}
+        secondary={{ label: 'Explore features', href: '#features' }}
+        media={<ContestTerminalMock />}
       >
-        Content is everywhere. We provide what is rare, <Highlight>a community-driven learning experience</Highlight>, with peer learning, code
-        reviews and an alumni network.
+        Execute live contests with <Highlight>zero client drift</Highlight>, sandboxed multi-language runtimes, and automated anti-cheat proctoring.
       </Hero>
 
-      <StatStrip
-        className="mt-16 sm:mt-20"
-        stats={[
-          { value: '1.5M+', label: 'Developers' },
-          { value: '12', label: 'Cohorts run' },
-          { value: '4.8', label: 'Average rating' },
-          { value: '600+', label: 'Hours of video' },
-        ]}
-      />
+      <StatStrip className="mt-16 sm:mt-20" stats={STATS} />
 
-      <section id="cohorts" aria-labelledby="cohorts-head" className="mt-16 sm:mt-20">
-        <SectionHead id="cohorts-head" title="Cohorts">
-          Learn in engaging <Highlight>live classes</Highlight>, with peers and mentors who keep you on track.
-        </SectionHead>
-        <Carousel label="Cohorts">
-          {COHORTS.map((c) => (
-            <CohortCard key={c.name} name={c.name} href={c.href} center={c.center} orbit={c.orbit} />
-          ))}
-        </Carousel>
-      </section>
-
-      <section aria-labelledby="courses-head" className="mt-16 sm:mt-20">
-        <SectionHead id="courses-head" title="Courses" action={{ label: 'View all', href: '/courses' }}>
-          Learn at your own pace with structured, <Highlight>high-quality video lessons</Highlight>.
-        </SectionHead>
-        <Carousel label="Courses" arrows={false}>
-          {COURSES.map((c, i) => (
-            <a key={i} href={c.href} className="group block w-[290px] rounded-2xl outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50">
-              <MediaFrame src={c.image} alt="" />
-              <h3 className="mt-2.5 ml-1 text-sm font-semibold text-gray-500 transition-colors group-hover:text-foreground dark:text-gray-300">{c.title}</h3>
-            </a>
-          ))}
-        </Carousel>
-      </section>
-
-      <section aria-labelledby="why-head" className="mt-20 md:mt-24">
-        <SectionHead id="why-head" title="Why learn with us">
-          Our purpose is to make learning accountable, with <Highlight>progress you can see</Highlight> every week.
+      <section id="features" aria-labelledby="features-head" className="mt-20 md:mt-24">
+        <SectionHead id="features-head" title="Engineered for competitive integrity">
+          Every contest runs on isolated infrastructure to ensure <Highlight>consistent, tamper-proof evaluation</Highlight>.
         </SectionHead>
         <FeatureBento features={FEATURES} />
       </section>
 
-      <section id="reviews" aria-labelledby="reviews-head" className="mt-20 md:mt-24">
-        <SectionHead id="reviews-head" title="What learners say">
-          Straight from X, <Highlight>unedited</Highlight>.
+      <section aria-labelledby="how-it-works-head" className="mt-20 md:mt-24">
+        <SectionHead id="how-it-works-head" title="How Code Feast works">
+          From problem authoring to post-contest review in <Highlight>three seamless stages</Highlight>.
         </SectionHead>
-        <div className="mt-6 grid gap-6 md:grid-cols-3">
-          {REVIEWS.map((r) => (
-            <ReviewCard key={r.username} name={r.name} username={r.username} href={r.href}>
-              {r.text}
-            </ReviewCard>
+        <div className="mt-8 grid gap-6 md:grid-cols-3">
+          {STEPS.map((s) => (
+            <Card key={s.num} className="p-6 transition-all duration-300 hover:border-accent-foreground/30">
+              <CardBody className="flex flex-col gap-4">
+                <div className="flex items-center justify-between">
+                  <span className="font-montserrat text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+                    Step {s.num}
+                  </span>
+                  {s.icon}
+                </div>
+                <CardTitle className="text-xl font-semibold">{s.title}</CardTitle>
+                <CardText className="text-sm leading-relaxed text-muted-foreground">{s.description}</CardText>
+              </CardBody>
+            </Card>
           ))}
         </div>
       </section>
 
       <CtaPanel
         className="mt-20 mb-8 md:mt-24"
-        heading="Ready to ship your first project?"
-        tagline="Join the next cohort and build with a community that finishes."
-        action={{ label: 'Get started', href: '#cohorts' }}
+        heading="Ready to run your next live contest?"
+        tagline="Create an event in seconds, author custom challenges, and manage submissions with confidence."
+        action={{ label: 'Host an event', href: '/admin/events' }}
       />
     </PageShell>
   )

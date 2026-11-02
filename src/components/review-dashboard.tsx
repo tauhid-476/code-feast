@@ -2,13 +2,11 @@
 
 import { useMemo, useState, useTransition } from "react";
 import {
-  AlertTriangle,
   ArrowRight,
   Bookmark,
   BookmarkCheck,
   BookOpen,
   ChevronDown,
-  Clock,
   Code2,
   Loader2,
   Play,
@@ -25,23 +23,18 @@ import {
 import { ReviewCodeEditor } from "@/components/review-code-editor";
 import { RunResultView } from "@/components/run-result";
 import { Statement } from "@/components/statement";
-import { Alert, AlertDescription, AlertTitle } from "@/components/legacy-ui/alert";
-import { Badge } from "@/components/legacy-ui/badge";
-import { Button } from "@/components/legacy-ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/legacy-ui/card";
+import { Alert } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Card, CardBody, CardText, CardTitle } from "@/components/ui/card";
+import { Chip } from "@/components/ui/chip";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { Input } from "@/components/legacy-ui/input";
-import { Separator } from "@/components/legacy-ui/separator";
+import { Input } from "@/components/ui/input";
+import { Separator } from "@/components/ui/separator";
+import { Spinner } from "@/components/ui/spinner";
 import {
   Table,
   TableBody,
@@ -49,8 +42,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/legacy-ui/table";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/legacy-ui/tabs";
+} from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type {
   ParticipantSubmissionDetail,
   ReviewParticipant,
@@ -241,31 +234,31 @@ export function ReviewDashboard({
     <div className="flex flex-col gap-8">
       {/* Quick stats grid */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
-        <Card className="p-4">
+        <Card className="p-4 backdrop-blur-none sm:opacity-100">
           <p className="label">Total</p>
           <p className="mt-1 text-2xl font-semibold tabular">{stats.total}</p>
         </Card>
-        <Card className="p-4">
+        <Card className="p-4 backdrop-blur-none sm:opacity-100">
           <p className="label">Submitted</p>
-          <p className="mt-1 text-2xl font-semibold tabular text-emerald-400">
+          <p className="mt-1 text-2xl font-semibold tabular text-emerald-700 dark:text-emerald-400">
             {stats.submitted}
           </p>
         </Card>
-        <Card className="p-4">
+        <Card className="p-4 backdrop-blur-none sm:opacity-100">
           <p className="label">Deadline</p>
           <p className="mt-1 text-2xl font-semibold tabular">{stats.deadline}</p>
         </Card>
-        <Card className="p-4">
+        <Card className="p-4 backdrop-blur-none sm:opacity-100">
           <p className="label">Eliminated</p>
           <p className="mt-1 text-2xl font-semibold tabular text-destructive">
             {stats.eliminated}
           </p>
         </Card>
-        <Card className="p-4">
+        <Card className="p-4 backdrop-blur-none sm:opacity-100">
           <p className="label">In Progress</p>
           <p className="mt-1 text-2xl font-semibold tabular">{stats.inProgress}</p>
         </Card>
-        <Card className="p-4">
+        <Card className="p-4 backdrop-blur-none sm:opacity-100">
           <p className="label">Shortlisted</p>
           <p className="mt-1 text-2xl font-semibold tabular text-primary">
             {stats.shortlisted}
@@ -274,14 +267,14 @@ export function ReviewDashboard({
       </div>
 
       {/* Roster Controls */}
-      <Card>
-        <CardHeader className="pb-4">
+      <Card className="backdrop-blur-none sm:opacity-100">
+        <CardBody className="gap-3 pb-4">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <CardTitle>Participant Roster</CardTitle>
-              <CardDescription>
+              <CardText className="line-clamp-none">
                 Review submissions, inspect strike logs, and shortlist candidates.
-              </CardDescription>
+              </CardText>
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <div className="relative w-64">
@@ -308,8 +301,8 @@ export function ReviewDashboard({
             ].map((f) => (
               <Button
                 key={f.id}
-                variant={statusFilter === f.id ? "default" : "outline"}
-                size="xs"
+                variant={statusFilter === f.id ? "soft" : "outline"}
+                size="sm"
                 onClick={() => setStatusFilter(f.id)}
                 className="transition-colors duration-150 ease-out active:scale-[0.98]"
               >
@@ -317,159 +310,156 @@ export function ReviewDashboard({
               </Button>
             ))}
           </div>
-        </CardHeader>
+        </CardBody>
 
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-12 text-center">Shortlist</TableHead>
+              <TableHead>Participant</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Joined</TableHead>
+              <TableHead>Locked Out</TableHead>
+              <TableHead>Lockout Reason</TableHead>
+              <TableHead>Elapsed</TableHead>
+              <TableHead className="text-center">Strikes</TableHead>
+              <TableHead className="text-right">Action</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filteredParticipants.length === 0 ? (
               <TableRow>
-                <TableHead className="w-12 text-center">Shortlist</TableHead>
-                <TableHead>Participant</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Joined</TableHead>
-                <TableHead>Locked Out</TableHead>
-                <TableHead>Lockout Reason</TableHead>
-                <TableHead>Elapsed</TableHead>
-                <TableHead className="text-center">Strikes</TableHead>
-                <TableHead className="text-right">Action</TableHead>
+                <TableCell colSpan={9} className="h-32 text-center text-muted-foreground">
+                  No participants match your filter.
+                </TableCell>
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredParticipants.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={9} className="h-32 text-center text-muted-foreground">
-                    No participants match your filter.
-                  </TableCell>
-                </TableRow>
-              ) : (
-                filteredParticipants.map((p) => {
-                  const isSelected = selectedDetail?.participant.id === p.id;
+            ) : (
+              filteredParticipants.map((p) => {
+                const isSelected = selectedDetail?.participant.id === p.id;
 
-                  return (
-                    <TableRow
-                      key={p.id}
-                      data-state={isSelected ? "selected" : undefined}
-                      className="cursor-pointer transition-colors duration-150 ease-out"
-                      onClick={() => handleSelectParticipant(p)}
+                return (
+                  <TableRow
+                    key={p.id}
+                    data-state={isSelected ? "selected" : undefined}
+                    className="cursor-pointer transition-colors duration-150 ease-out"
+                    onClick={() => handleSelectParticipant(p)}
+                  >
+                    <TableCell
+                      className="text-center"
+                      onClick={(e) => e.stopPropagation()}
                     >
-                      <TableCell
-                        className="text-center"
-                        onClick={(e) => e.stopPropagation()}
+                      <Button
+                        variant={p.shortlisted ? "soft" : "ghost"}
+                        size="icon"
+                        title={
+                          p.shortlisted
+                            ? "Remove from shortlist"
+                            : "Mark as shortlisted"
+                        }
+                        aria-label={
+                          p.shortlisted
+                            ? "Remove from shortlist"
+                            : "Mark as shortlisted"
+                        }
+                        onClick={(e) => handleToggleShortlist(p.id, e)}
+                        className="transition-transform duration-150 ease-out active:scale-[0.97]"
                       >
-                        <Button
-                          variant={p.shortlisted ? "default" : "ghost"}
-                          size="icon-xs"
-                          title={
-                            p.shortlisted
-                              ? "Remove from shortlist"
-                              : "Mark as shortlisted"
-                          }
-                          aria-label={
-                            p.shortlisted
-                              ? "Remove from shortlist"
-                              : "Mark as shortlisted"
-                          }
-                          onClick={(e) => handleToggleShortlist(p.id, e)}
-                          className="transition-transform duration-150 ease-out active:scale-[0.97]"
-                        >
-                          {p.shortlisted ? (
-                            <BookmarkCheck className="size-3.5 text-primary-foreground" />
-                          ) : (
-                            <Bookmark className="size-3.5 text-muted-foreground hover:text-foreground" />
-                          )}
-                        </Button>
-                      </TableCell>
-
-                      <TableCell>
-                        <div className="flex flex-col">
-                          <span className="font-medium text-foreground">
-                            {p.displayName}
-                          </span>
-                          <span className="text-xs text-muted-foreground mono">
-                            {p.email}
-                          </span>
-                        </div>
-                      </TableCell>
-
-                      <TableCell>
-                        {p.status === "locked_out" ? (
-                          <Badge variant="secondary">Locked out</Badge>
-                        ) : p.status === "solving" ? (
-                          <Badge variant="outline" className="border-blue-500/40 text-blue-400">
-                            Solving
-                          </Badge>
+                        {p.shortlisted ? (
+                          <BookmarkCheck className="text-primary-foreground" />
                         ) : (
-                          <Badge variant="outline">Joined</Badge>
+                          <Bookmark className="text-muted-foreground hover:text-foreground" />
                         )}
-                      </TableCell>
+                      </Button>
+                    </TableCell>
 
-                      <TableCell className="text-xs text-muted-foreground mono">
-                        {formatTimestamp(p.joinedAt)}
-                      </TableCell>
-
-                      <TableCell className="text-xs text-muted-foreground mono">
-                        {formatTimestamp(p.lockedAt)}
-                      </TableCell>
-
-                      <TableCell>
-                        {p.lockoutReason === "submitted" ? (
-                          <Badge variant="outline" className="border-emerald-500/40 text-emerald-400">
-                            Submitted
-                          </Badge>
-                        ) : p.lockoutReason === "deadline" ? (
-                          <Badge variant="outline">Deadline</Badge>
-                        ) : p.lockoutReason === "eliminated" ? (
-                          <Badge variant="destructive">Eliminated</Badge>
-                        ) : (
-                          <span className="text-muted-foreground text-xs">—</span>
-                        )}
-                      </TableCell>
-
-                      <TableCell className="mono tabular text-sm">
-                        {p.elapsedSeconds != null
-                          ? formatDuration(p.elapsedSeconds)
-                          : "—"}
-                      </TableCell>
-
-                      <TableCell className="text-center">
-                        <span
-                          className={`mono tabular font-medium text-xs px-2 py-0.5 rounded ${
-                            p.strikes >= 3
-                              ? "bg-destructive/20 text-destructive"
-                              : p.strikes > 0
-                                ? "bg-amber-500/20 text-amber-300"
-                                : "text-muted-foreground"
-                          }`}
-                        >
-                          {p.strikes}
+                    <TableCell>
+                      <div className="flex flex-col">
+                        <span className="font-medium text-foreground">
+                          {p.displayName}
                         </span>
-                      </TableCell>
+                        <span className="text-xs text-muted-foreground mono">
+                          {p.email}
+                        </span>
+                      </div>
+                    </TableCell>
 
-                      <TableCell className="text-right">
-                        <Button
-                          variant={isSelected ? "secondary" : "outline"}
-                          size="xs"
-                          className="transition-transform duration-150 ease-out active:scale-[0.97]"
-                        >
-                          {isSelected ? "Inspecting" : "Review"}
-                          <ArrowRight data-icon="inline-end" className="size-3 ml-1" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
+                    <TableCell>
+                      {p.status === "locked_out" ? (
+                        <Chip>Locked out</Chip>
+                      ) : p.status === "solving" ? (
+                        <Chip className="border-foreground/30 text-foreground">
+                          Solving
+                        </Chip>
+                      ) : (
+                        <Chip>Joined</Chip>
+                      )}
+                    </TableCell>
+
+                    <TableCell className="text-xs text-muted-foreground mono">
+                      {formatTimestamp(p.joinedAt)}
+                    </TableCell>
+
+                    <TableCell className="text-xs text-muted-foreground mono">
+                      {formatTimestamp(p.lockedAt)}
+                    </TableCell>
+
+                    <TableCell>
+                      {p.lockoutReason === "submitted" ? (
+                        <Chip tone="success">Submitted</Chip>
+                      ) : p.lockoutReason === "deadline" ? (
+                        <Chip>Deadline</Chip>
+                      ) : p.lockoutReason === "eliminated" ? (
+                        <Chip tone="danger">Eliminated</Chip>
+                      ) : (
+                        <span className="text-muted-foreground text-xs">—</span>
+                      )}
+                    </TableCell>
+
+                    <TableCell className="mono tabular text-sm">
+                      {p.elapsedSeconds != null
+                        ? formatDuration(p.elapsedSeconds)
+                        : "—"}
+                    </TableCell>
+
+                    <TableCell className="text-center">
+                      <Chip
+                        tone={p.strikes >= 3 ? "danger" : "default"}
+                        className={
+                          p.strikes === 0
+                            ? "text-muted-foreground"
+                            : p.strikes < 3
+                              ? "text-amber-700 dark:text-amber-300"
+                              : undefined
+                        }
+                      >
+                        {p.strikes}
+                      </Chip>
+                    </TableCell>
+
+                    <TableCell className="text-right">
+                      <Button
+                        variant={isSelected ? "muted" : "outline"}
+                        size="sm"
+                        className="transition-transform duration-150 ease-out active:scale-[0.97]"
+                      >
+                        {isSelected ? "Inspecting" : "Review"}
+                        <ArrowRight className="ml-1" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                );
+              })
+            )}
+          </TableBody>
+        </Table>
       </Card>
 
       {/* Selected Participant Review Section */}
       <div id="submission-viewer">
         {isLoadingSubmission ? (
-          <Card className="p-12 text-center">
+          <Card className="p-12 text-center backdrop-blur-none sm:opacity-100">
             <div className="flex flex-col items-center justify-center gap-3 text-muted-foreground">
-              <Clock className="size-6 animate-spin" />
+              <Spinner label="Loading participant submission" className="size-6" />
               <p className="text-sm">Loading participant submission...</p>
             </div>
           </Card>
@@ -535,35 +525,32 @@ export function ParticipantReviewPanel({
   }
 
   return (
-    <Card className="border-border">
-      <CardHeader className="pb-4">
+    <Card className="backdrop-blur-none sm:opacity-100">
+      <CardBody className="gap-3 pb-4">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex flex-col gap-1">
             <div className="flex flex-wrap items-center gap-2">
               <CardTitle className="text-xl">{participant.displayName}</CardTitle>
               {participant.status === "locked_out" ? (
-                <Badge variant="secondary">Locked out</Badge>
+                <Chip>Locked out</Chip>
               ) : (
-                <Badge variant="outline">{participant.status}</Badge>
+                <Chip className="border-foreground/30 text-foreground">
+                  {participant.status}
+                </Chip>
               )}
               {participant.lockoutReason ? (
-                <Badge
-                  variant={
+                <Chip
+                  tone={
                     participant.lockoutReason === "submitted"
-                      ? "outline"
+                      ? "success"
                       : participant.lockoutReason === "eliminated"
-                        ? "destructive"
-                        : "secondary"
-                  }
-                  className={
-                    participant.lockoutReason === "submitted"
-                      ? "border-emerald-500/40 text-emerald-400"
-                      : ""
+                        ? "danger"
+                        : "default"
                   }
                 >
                   {REASON_LABELS[participant.lockoutReason] ??
                     participant.lockoutReason}
-                </Badge>
+                </Chip>
               ) : null}
             </div>
             <p className="text-sm mono text-muted-foreground">{participant.email}</p>
@@ -571,27 +558,27 @@ export function ParticipantReviewPanel({
 
           <div className="flex items-center gap-2">
             <Button
-              variant={participant.shortlisted ? "default" : "outline"}
+              variant={participant.shortlisted ? "soft" : "outline"}
               size="sm"
               onClick={onToggleShortlist}
               className="transition-transform duration-150 ease-out active:scale-[0.98]"
             >
               {participant.shortlisted ? (
-                <BookmarkCheck data-icon="inline-start" className="size-4" />
+                <BookmarkCheck />
               ) : (
-                <Bookmark data-icon="inline-start" className="size-4" />
+                <Bookmark />
               )}
               {participant.shortlisted ? "Shortlisted" : "Shortlist"}
             </Button>
 
             <Button
               variant="ghost"
-              size="icon-sm"
+              size="icon"
               onClick={onClose}
               aria-label="Close review panel"
               className="text-muted-foreground hover:text-foreground"
             >
-              <X className="size-4" />
+              <X />
             </Button>
           </div>
         </div>
@@ -624,9 +611,9 @@ export function ParticipantReviewPanel({
             </dd>
           </div>
         </dl>
-      </CardHeader>
+      </CardBody>
 
-      <CardContent className="flex flex-col gap-6">
+      <CardBody className="gap-6">
         {/* Code Section */}
         <div>
           <h3 className="text-sm font-semibold tracking-tight mb-3 flex items-center gap-2">
@@ -635,21 +622,14 @@ export function ParticipantReviewPanel({
           </h3>
 
           {!isLocked ? (
-            <Alert>
-              <AlertTriangle className="size-4" />
-              <AlertTitle>Submission not available</AlertTitle>
-              <AlertDescription>
-                This participant is currently {participant.status} and has not
-                been locked out yet. Live in-progress code is private and will
-                only appear here after submission, deadline, or elimination.
-              </AlertDescription>
+            <Alert tone="info" title="Submission not available">
+              This participant is currently {participant.status} and has not been
+              locked out yet. Live in-progress code is private and will only
+              appear here after submission, deadline, or elimination.
             </Alert>
           ) : snippets.length === 0 ? (
-            <Alert>
-              <AlertTitle>No code found</AlertTitle>
-              <AlertDescription>
-                No problem snippets were saved for this participant.
-              </AlertDescription>
+            <Alert tone="info" title="No code found">
+              No problem snippets were saved for this participant.
             </Alert>
           ) : (
             <Tabs defaultValue={defaultTab} className="w-full">
@@ -664,9 +644,9 @@ export function ParticipantReviewPanel({
                       Problem {snip.position}: {snip.problemTitle}
                     </span>
                     {snip.language ? (
-                      <Badge variant="outline" className="text-[10px] px-1 py-0 uppercase">
+                      <Chip className="text-[10px] px-1 py-0 uppercase">
                         {snip.language}
-                      </Badge>
+                      </Chip>
                     ) : (
                       <span className="text-[10px] text-muted-foreground">(empty)</span>
                     )}
@@ -708,12 +688,9 @@ export function ParticipantReviewPanel({
                           />
                         }
                       >
-                        <BookOpen data-icon="inline-start" />
+                        <BookOpen />
                         Show statement
-                        <ChevronDown
-                          data-icon="inline-end"
-                          className="transition-transform duration-150 ease-out group-data-[panel-open]:rotate-180"
-                        />
+                        <ChevronDown className="transition-transform duration-150 ease-out group-data-[panel-open]:rotate-180" />
                       </CollapsibleTrigger>
                       <CollapsibleContent>
                         <div className="mt-2 rounded-lg border border-border bg-background p-4">
@@ -741,17 +718,17 @@ export function ParticipantReviewPanel({
                                 <span className="text-sm font-semibold tracking-tight text-foreground">
                                   Re-run against sample test cases
                                 </span>
-                                <Badge variant="outline" className="text-[10px] text-muted-foreground uppercase">
+                                <Chip className="text-[10px] text-muted-foreground uppercase">
                                   Reading aid
-                                </Badge>
+                                </Chip>
                               </div>
                               <p className="text-xs text-muted-foreground">
-                                Reading aid &mdash; runs code against sample test cases and produces no verdict or score.
+                                Reading aid — runs code against sample test cases and produces no verdict or score.
                               </p>
                             </div>
                             <Button
                               type="button"
-                              variant="secondary"
+                              variant="muted"
                               size="sm"
                               disabled={state.isRunning}
                               onClick={() => handleRerun(snip.problemId)}
@@ -759,12 +736,12 @@ export function ParticipantReviewPanel({
                             >
                               {state.isRunning ? (
                                 <>
-                                  <Loader2 data-icon="inline-start" className="size-3.5 animate-spin" />
+                                  <Loader2 className="animate-spin" />
                                   Running...
                                 </>
                               ) : (
                                 <>
-                                  <Play data-icon="inline-start" className="size-3.5" />
+                                  <Play />
                                   Run submitted code
                                 </>
                               )}
@@ -772,12 +749,8 @@ export function ParticipantReviewPanel({
                           </div>
 
                           {state.error ? (
-                            <Alert variant="destructive">
-                              <AlertTriangle className="size-4" />
-                              <AlertTitle>Run failed</AlertTitle>
-                              <AlertDescription className="text-xs break-words">
-                                {state.error}
-                              </AlertDescription>
+                            <Alert tone="danger" title="Run failed">
+                              <span className="text-xs break-words">{state.error}</span>
                             </Alert>
                           ) : null}
 
@@ -819,41 +792,39 @@ export function ParticipantReviewPanel({
               No strikes or violations recorded against this participant.
             </div>
           ) : (
-            <div className="rounded-md border border-border overflow-hidden">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-40">Time</TableHead>
-                    <TableHead>Event</TableHead>
-                    <TableHead className="w-36 text-right">Classification</TableHead>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-40">Time</TableHead>
+                  <TableHead>Event</TableHead>
+                  <TableHead className="w-36 text-right">Classification</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {violations.map((v) => (
+                  <TableRow key={v.id}>
+                    <TableCell className="mono text-xs text-muted-foreground">
+                      {formatFullDate(v.createdAt)}
+                    </TableCell>
+                    <TableCell className="text-sm font-medium">
+                      {VIOLATION_LABELS[v.kind] ?? v.kind}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {v.counted ? (
+                        <Chip tone="danger">Strike (counted)</Chip>
+                      ) : (
+                        <Chip className="text-muted-foreground">
+                          Blocked (uncounted)
+                        </Chip>
+                      )}
+                    </TableCell>
                   </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {violations.map((v) => (
-                    <TableRow key={v.id}>
-                      <TableCell className="mono text-xs text-muted-foreground">
-                        {formatFullDate(v.createdAt)}
-                      </TableCell>
-                      <TableCell className="text-sm font-medium">
-                        {VIOLATION_LABELS[v.kind] ?? v.kind}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {v.counted ? (
-                          <Badge variant="destructive">Strike (counted)</Badge>
-                        ) : (
-                          <Badge variant="outline" className="text-muted-foreground">
-                            Blocked (uncounted)
-                          </Badge>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+                ))}
+              </TableBody>
+            </Table>
           )}
         </div>
-      </CardContent>
+      </CardBody>
     </Card>
   );
 }

@@ -7,9 +7,9 @@ import { moveProblemAction } from "@/app/admin/events/[id]/actions";
 import { ProblemCompleteness } from "@/components/problem-completeness";
 import { ProblemEditor } from "@/components/problem-editor";
 import { TestProblemDialog } from "@/components/test-problem-dialog";
-import { Badge } from "@/components/legacy-ui/badge";
-import { Button } from "@/components/legacy-ui/button";
-import { Card, CardContent } from "@/components/legacy-ui/card";
+import { Button } from "@/components/ui/button";
+import { Card, CardBody } from "@/components/ui/card";
+import { Chip } from "@/components/ui/chip";
 import {
   Empty,
   EmptyDescription,
@@ -59,7 +59,7 @@ export function ProblemSet({
         </div>
         {editable ? (
           <Button onClick={() => setEditor({ mode: "new" })}>
-            <Plus data-icon="inline-start" />
+            <Plus />
             Add problem
           </Button>
         ) : null}
@@ -79,8 +79,8 @@ export function ProblemSet({
         <ol className="flex flex-col gap-2">
           {problems.map((problem, index) => (
             <li key={problem.id}>
-              <Card size="sm">
-                <CardContent className="flex items-center gap-3">
+              <Card className="backdrop-blur-none sm:opacity-100">
+                <CardBody className="flex-row items-center gap-3">
                   <span className="mono w-5 shrink-0 text-sm text-muted-foreground tabular">
                     {index + 1}
                   </span>
@@ -90,7 +90,7 @@ export function ProblemSet({
                         {problem.title}
                       </span>
                       {problem.difficulty ? (
-                        <Badge variant="outline">{problem.difficulty}</Badge>
+                        <Chip>{problem.difficulty}</Chip>
                       ) : null}
                     </div>
                     <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
@@ -109,7 +109,7 @@ export function ProblemSet({
                       <>
                         <Button
                           variant="ghost"
-                          size="icon-sm"
+                          size="icon"
                           aria-label={`Move ${problem.title} up`}
                           onClick={() => move(problem.id, "up")}
                           disabled={index === 0 || pending}
@@ -118,7 +118,7 @@ export function ProblemSet({
                         </Button>
                         <Button
                           variant="ghost"
-                          size="icon-sm"
+                          size="icon"
                           aria-label={`Move ${problem.title} down`}
                           onClick={() => move(problem.id, "down")}
                           disabled={index === problems.length - 1 || pending}
@@ -132,13 +132,13 @@ export function ProblemSet({
                             setEditor({ mode: "edit", problemId: problem.id })
                           }
                         >
-                          <Pencil data-icon="inline-start" />
+                          <Pencil />
                           Edit
                         </Button>
                       </>
                     ) : null}
                   </div>
-                </CardContent>
+                </CardBody>
               </Card>
             </li>
           ))}

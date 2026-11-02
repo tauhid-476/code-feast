@@ -7,9 +7,9 @@ import {
   LanguagePairFields,
   type StarterPairDraft,
 } from "@/components/language-pair-fields";
-import { Alert, AlertDescription } from "@/components/legacy-ui/alert";
-import { Button } from "@/components/legacy-ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/legacy-ui/tabs";
+import { Alert } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LANGUAGE_LABELS, LANGUAGES, isLanguage, type Language } from "@/lib/languages";
 import type { ProblemSummary } from "@/lib/problems/queries";
 
@@ -165,8 +165,8 @@ export function ProblemLanguages({
               />
 
               {error?.language === language ? (
-                <Alert variant="destructive" className="mt-3">
-                  <AlertDescription>{error.message}</AlertDescription>
+                <Alert tone="danger" className="mt-3">
+                  {error.message}
                 </Alert>
               ) : null}
 

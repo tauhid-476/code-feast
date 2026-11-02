@@ -8,17 +8,11 @@ import {
   type CreateEventState,
 } from "@/app/admin/events/actions";
 import { E2BApiKeyGuide } from "@/components/e2b-api-key-guide";
-import { Alert, AlertDescription } from "@/components/legacy-ui/alert";
-import { Button } from "@/components/legacy-ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/legacy-ui/card";
-import { Field, FieldGroup, FieldLabel } from "@/components/legacy-ui/field";
-import { Input } from "@/components/legacy-ui/input";
+import { Alert } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Card, CardBody, CardText, CardTitle } from "@/components/ui/card";
+import { Field } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
 
 export function CreateEventForm() {
   const [state, formAction, pending] = useActionState<CreateEventState, FormData>(
@@ -40,22 +34,18 @@ export function CreateEventForm() {
   }, [state]);
 
   return (
-    <Card>
-      <CardHeader>
+    <Card className="backdrop-blur-none sm:opacity-100">
+      <CardBody className="gap-3">
         <CardTitle>New event</CardTitle>
-        <CardDescription>
+        <CardText className="line-clamp-none">
           A title and a duration are enough to start. The join code is generated
           for you and can change until the event goes live.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form ref={formRef} action={formAction}>
-          <FieldGroup>
+        </CardText>
+        <form ref={formRef} action={formAction} className="mt-1">
+          <div className="flex flex-col gap-4">
             <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_8rem_auto] md:items-end">
-              <Field>
-                <FieldLabel htmlFor="title">Title</FieldLabel>
+              <Field label="Title">
                 <Input
-                  id="title"
                   name="title"
                   placeholder="Friday Night Contest"
                   autoComplete="off"
@@ -64,11 +54,9 @@ export function CreateEventForm() {
                 />
               </Field>
 
-              <Field>
-                <FieldLabel htmlFor="durationMinutes">Minutes</FieldLabel>
-                <div className="relative">
+              <div className="relative">
+                <Field label="Minutes">
                   <Input
-                    id="durationMinutes"
                     name="durationMinutes"
                     type="number"
                     inputMode="numeric"
@@ -78,47 +66,45 @@ export function CreateEventForm() {
                     className="tabular pr-9"
                     required
                   />
-                  <span className="pointer-events-none absolute inset-y-0 right-2.5 flex items-center text-xs text-muted-foreground">
-                    min
-                  </span>
-                </div>
-              </Field>
+                </Field>
+                <span className="pointer-events-none absolute right-2.5 bottom-0 flex h-9 items-center text-xs text-muted-foreground">
+                  min
+                </span>
+              </div>
 
               <Button type="submit" disabled={pending}>
-                <Plus data-icon="inline-start" />
+                <Plus />
                 {pending ? "Creating…" : "Create event"}
               </Button>
             </div>
 
-            <div className="mt-2 space-y-3 rounded-lg border border-border/80 bg-muted/20 p-4">
-              <Field>
-                <FieldLabel htmlFor="e2bApiKey">
-                  E2B API Key (BYOK - Optional)
-                </FieldLabel>
+            <div className="mt-2 flex flex-col gap-3 rounded-lg border border-border/80 bg-muted/20 p-4">
+              <Field
+                label="E2B API Key (BYOK - Optional)"
+                hint={
+                  <>
+                    If left blank, code runs fall back to the platform
+                    environment variable <code>E2B_API_KEY</code>.
+                  </>
+                }
+              >
                 <Input
-                  id="e2bApiKey"
                   name="e2bApiKey"
                   type="password"
                   placeholder="e2b_... (leaves blank to use platform default)"
                   autoComplete="off"
                 />
-                <span className="text-xs text-muted-foreground">
-                  If left blank, code runs fall back to the platform environment
-                  variable <code>E2B_API_KEY</code>.
-                </span>
               </Field>
 
               <E2BApiKeyGuide />
             </div>
 
             {state && "error" in state ? (
-              <Alert variant="destructive">
-                <AlertDescription>{state.error}</AlertDescription>
-              </Alert>
+              <Alert tone="danger">{state.error}</Alert>
             ) : null}
-          </FieldGroup>
+          </div>
         </form>
-      </CardContent>
+      </CardBody>
     </Card>
   );
 }

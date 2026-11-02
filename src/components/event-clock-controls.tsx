@@ -9,25 +9,9 @@ import {
   startEventAction,
   type ClockActionState,
 } from "@/app/admin/events/[id]/live/actions";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Button } from "@/components/legacy-ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/legacy-ui/card";
-import { Spinner } from "@/components/legacy-ui/spinner";
+import { Button } from "@/components/ui/button";
+import { Card, CardBody, CardText, CardTitle } from "@/components/ui/card";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { endConfirmationText, startConfirmationText } from "@/lib/events/copy";
 
 /**
@@ -101,118 +85,104 @@ export function EventClockControls({
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Clock</CardTitle>
-        <CardDescription>
-          One deadline for everyone. Participants never control it.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        {status === "draft" ? (
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <p className="text-sm text-muted-foreground">
-              Nothing is visible to participants until you start.
-            </p>
-            <Button onClick={() => setStarting(true)} disabled={pending}>
-              <Play data-icon="inline-start" />
-              Start event
-            </Button>
-          </div>
-        ) : null}
+    <>
+      <Card className="backdrop-blur-none sm:opacity-100">
+        <CardBody className="gap-3">
+          <CardTitle>Clock</CardTitle>
+          <CardText className="line-clamp-none">
+            One deadline for everyone. Participants never control it.
+          </CardText>
 
-        {status === "live" ? (
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <p className="text-sm text-muted-foreground">
-              {deadlineReached
-                ? "The deadline was reached. Extending adds ten minutes and reopens participants locked by deadline."
-                : "Extend adds ten minutes to the shared deadline."}
-            </p>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                onClick={extend}
-                disabled={pending || !deadlineAt}
-              >
-                <Timer data-icon="inline-start" />
-                Extend +10
-              </Button>
-              <Button
-                variant="destructive"
-                onClick={() => setEnding(true)}
-                disabled={pending}
-              >
-                <Ban data-icon="inline-start" />
-                End now
-              </Button>
-            </div>
-          </div>
-        ) : null}
-
-        {status === "ended" ? (
-          endedAt ? (
-            <p className="text-sm text-muted-foreground">
-              This event was ended manually by the organizer. It cannot be
-              extended.
-            </p>
-          ) : (
+          {status === "draft" ? (
             <div className="flex flex-wrap items-center justify-between gap-3">
               <p className="text-sm text-muted-foreground">
-                The event reached its deadline. Extending adds ten minutes and
-                reopens participants locked by deadline.
+                Nothing is visible to participants until you start.
               </p>
-              <Button
-                variant="outline"
-                onClick={extend}
-                disabled={pending || !deadlineAt}
-              >
-                <Timer data-icon="inline-start" />
-                Extend +10
+              <Button onClick={() => setStarting(true)} disabled={pending}>
+                <Play />
+                Start event
               </Button>
             </div>
-          )
-        ) : null}
-      </CardContent>
+          ) : null}
 
-      <AlertDialog open={starting} onOpenChange={setStarting}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Start this event?</AlertDialogTitle>
-            <AlertDialogDescription>
-              {startConfirmationText(participants, durationMinutes)}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={pending}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={start} disabled={pending}>
-              {pending ? <Spinner /> : <Play data-icon="inline-start" />}
-              Start event
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+          {status === "live" ? (
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <p className="text-sm text-muted-foreground">
+                {deadlineReached
+                  ? "The deadline was reached. Extending adds ten minutes and reopens participants locked by deadline."
+                  : "Extend adds ten minutes to the shared deadline."}
+              </p>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  onClick={extend}
+                  disabled={pending || !deadlineAt}
+                >
+                  <Timer />
+                  Extend +10
+                </Button>
+                <Button
+                  variant="danger"
+                  onClick={() => setEnding(true)}
+                  disabled={pending}
+                >
+                  <Ban />
+                  End now
+                </Button>
+              </div>
+            </div>
+          ) : null}
 
-      <AlertDialog open={ending} onOpenChange={setEnding}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>End this event now?</AlertDialogTitle>
-            <AlertDialogDescription>
-              {endConfirmationText()}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={pending}>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              variant="destructive"
-              onClick={end}
-              disabled={pending}
-            >
-              {pending ? <Spinner /> : <Ban data-icon="inline-start" />}
-              End now
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </Card>
+          {status === "ended" ? (
+            endedAt ? (
+              <p className="text-sm text-muted-foreground">
+                This event was ended manually by the organizer. It cannot be
+                extended.
+              </p>
+            ) : (
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <p className="text-sm text-muted-foreground">
+                  The event reached its deadline. Extending adds ten minutes and
+                  reopens participants locked by deadline.
+                </p>
+                <Button
+                  variant="outline"
+                  onClick={extend}
+                  disabled={pending || !deadlineAt}
+                >
+                  <Timer />
+                  Extend +10
+                </Button>
+              </div>
+            )
+          ) : null}
+        </CardBody>
+      </Card>
+
+      <ConfirmDialog
+        open={starting}
+        title="Start this event?"
+        confirmLabel="Start event"
+        busyLabel="Starting…"
+        tone="neutral"
+        busy={pending}
+        onConfirm={start}
+        onCancel={() => setStarting(false)}
+      >
+        {startConfirmationText(participants, durationMinutes)}
+      </ConfirmDialog>
+
+      <ConfirmDialog
+        open={ending}
+        title="End this event now?"
+        confirmLabel="End now"
+        busyLabel="Ending…"
+        busy={pending}
+        onConfirm={end}
+        onCancel={() => setEnding(false)}
+      >
+        {endConfirmationText()}
+      </ConfirmDialog>
+    </>
   );
 }

@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Check, ChevronLeft, ChevronRight, Code2, Maximize2, Play } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, Code2, Play } from "lucide-react";
 import { ContestCountdown } from "@/components/contest-countdown";
 import { ContestEditor } from "@/components/contest-editor";
 import { ContestProblemNav, type ProblemStatus } from "@/components/contest-problem-nav";
@@ -18,23 +18,17 @@ import type {
   ContestDraftView,
   ContestProblemView,
 } from "@/components/contest-types";
-import { Alert, AlertAction, AlertDescription, AlertTitle } from "@/components/legacy-ui/alert";
-import { Badge } from "@/components/legacy-ui/badge";
-import { Button } from "@/components/legacy-ui/button";
+import { Alert } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Chip } from "@/components/ui/chip";
 import {
   Empty,
   EmptyDescription,
   EmptyHeader,
   EmptyTitle,
 } from "@/components/ui/empty";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/legacy-ui/select";
-import { Spinner } from "@/components/legacy-ui/spinner";
+import { Select } from "@/components/ui/select";
+import { Spinner } from "@/components/ui/spinner";
 import { draftKey } from "@/lib/drafts/merge";
 import { figureDimensionsMap } from "@/lib/figures/types";
 import { isLanguage, LANGUAGE_LABELS, LANGUAGES, type Language } from "@/lib/languages";
@@ -256,7 +250,7 @@ export function ContestWorkspace({
   return (
     <main className="flex h-dvh flex-col overflow-hidden bg-background">
       {/* Contest Top Navigation Bar: 48px height, 16px horizontal padding, vertically centered */}
-      <header className="flex h-12 shrink-0 items-center justify-between gap-3 border-b border-border px-4 bg-card/60 backdrop-blur-xs">
+      <header className="flex h-12 shrink-0 items-center justify-between gap-3 border-b border-border px-4 bg-card/60">
         <div className="flex min-w-0 items-center gap-3">
           {/* Platform Logo */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -306,7 +300,7 @@ export function ContestWorkspace({
                     className={cn(
                       "h-full flex-1 rounded-full transition-colors",
                       st === "solved"
-                        ? "bg-emerald-500"
+                        ? "bg-emerald-600 dark:bg-emerald-400"
                         : st === "attempted"
                           ? "bg-amber-500"
                           : "bg-muted-foreground/30",
@@ -326,7 +320,7 @@ export function ContestWorkspace({
 
           <ModeToggle />
 
-          {/* Submit button as the only amber-filled element */}
+          {/* Submit button: the one main action in this header */}
           <SubmitContest
             code={code}
             sessionId={sessionId}
@@ -339,47 +333,45 @@ export function ContestWorkspace({
       </header>
 
       {supervision.outOfFullscreen ? (
-        <Alert className="rounded-none border-x-0 border-t-0">
-          <Maximize2 aria-hidden="true" />
-          <AlertTitle>Fullscreen ended</AlertTitle>
-          <AlertDescription>
-            The contest runs in fullscreen. Leaving costs a strike, and the
-            heartbeat keeps counting until you return.
-          </AlertDescription>
-          <AlertAction>
+        <Alert tone="warning" title="Fullscreen ended" className="rounded-none border-x-0 border-t-0">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <span>
+              The contest runs in fullscreen. Leaving costs a strike, and the
+              heartbeat keeps counting until you return.
+            </span>
             <Button
               type="button"
-              size="xs"
+              size="sm"
               variant="outline"
               onClick={supervision.enterFullscreen}
             >
               Return fullscreen
             </Button>
-          </AlertAction>
+          </div>
         </Alert>
       ) : null}
 
       {failed ? (
         <Alert
-          variant="destructive"
+          tone="danger"
+          title="Not saved"
           className="rounded-none border-x-0 border-t-0"
         >
-          <AlertTitle>Not saved</AlertTitle>
-          <AlertDescription>
-            Your code is kept on this device. It retries on the next keystroke,
-            when the connection returns, or when you press Retry. Leave this tab
-            open.
-          </AlertDescription>
-          <AlertAction>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <span>
+              Your code is kept on this device. It retries on the next keystroke,
+              when the connection returns, or when you press Retry. Leave this tab
+              open.
+            </span>
             <Button
               type="button"
-              size="xs"
+              size="sm"
               variant="outline"
               onClick={retryAll}
             >
               Retry
             </Button>
-          </AlertAction>
+          </div>
         </Alert>
       ) : null}
 
@@ -398,29 +390,21 @@ export function ContestWorkspace({
                   {problem.title}
                 </h2>
                 {problem.difficulty ? (
-                  <Badge variant="outline" className="text-xs">
-                    {problem.difficulty}
-                  </Badge>
+                  <Chip className="text-xs">{problem.difficulty}</Chip>
                 ) : null}
               </div>
 
               {/* Status indicator */}
               {problemStatuses[problem.id] === "solved" ? (
-                <Badge
-                  variant="outline"
-                  className="text-emerald-500 border-emerald-500/30 bg-emerald-500/10 gap-1 text-xs"
-                >
+                <Chip tone="success" className="gap-1 text-xs">
                   <Check className="size-3" />
                   <span>Passed</span>
-                </Badge>
+                </Chip>
               ) : problemStatuses[problem.id] === "attempted" ? (
-                <Badge
-                  variant="outline"
-                  className="text-amber-500 border-amber-500/30 bg-amber-500/10 gap-1 text-xs"
-                >
+                <Chip className="gap-1 text-xs text-amber-700 dark:text-amber-300">
                   <span className="size-1.5 rounded-full bg-amber-500" />
                   <span>Attempted</span>
-                </Badge>
+                </Chip>
               ) : null}
             </div>
 
@@ -459,7 +443,7 @@ export function ContestWorkspace({
           </article>
 
           {/* Secondary Navigation Footer at the bottom of the statement panel */}
-          <footer className="sticky bottom-0 z-10 flex h-12 shrink-0 items-center justify-between border-t border-border bg-card/90 px-4 backdrop-blur-xs">
+          <footer className="sticky bottom-0 z-10 flex h-12 shrink-0 items-center justify-between border-t border-border bg-card/90 px-4">
             <Button
               type="button"
               variant="ghost"
@@ -472,7 +456,7 @@ export function ContestWorkspace({
               }}
               className="gap-1.5 text-xs text-muted-foreground hover:text-foreground disabled:opacity-40"
             >
-              <ChevronLeft className="size-4" />
+              <ChevronLeft />
               <span>Previous</span>
             </Button>
 
@@ -493,7 +477,7 @@ export function ContestWorkspace({
               className="gap-1.5 text-xs text-muted-foreground hover:text-foreground disabled:opacity-40"
             >
               <span>Next</span>
-              <ChevronRight className="size-4" />
+              <ChevronRight />
             </Button>
           </footer>
         </section>
@@ -504,28 +488,26 @@ export function ContestWorkspace({
           <div className="flex h-11 shrink-0 items-center justify-between gap-3 border-b border-border bg-card/40 px-3">
             <div className="flex items-center gap-2.5">
               <div className="flex items-center gap-1.5 font-semibold text-xs text-foreground">
-                <Code2 className="size-4 text-emerald-500" />
+                <Code2 className="size-4 text-emerald-700 dark:text-emerald-400" />
                 <span>Code</span>
               </div>
               <div className="h-3.5 w-px bg-border" />
               <Select
+                aria-label="Language"
                 value={language}
-                onValueChange={(value) => {
+                onChange={(event) => {
+                  const value = event.target.value;
                   if (!isLanguage(value)) return;
                   setLanguage(value);
                   runState.clear();
                 }}
+                className="h-8 w-auto text-xs"
               >
-                <SelectTrigger size="sm" aria-label="Language">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent alignItemWithTrigger={false}>
-                  {availableLanguages.map((option) =>  (
-                    <SelectItem key={option} value={option}>
-                      {LANGUAGE_LABELS[option]}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
+                {availableLanguages.map((option) => (
+                  <option key={option} value={option}>
+                    {LANGUAGE_LABELS[option]}
+                  </option>
+                ))}
               </Select>
 
               <span className="text-xs text-muted-foreground">{saveText}</span>
@@ -540,10 +522,10 @@ export function ContestWorkspace({
                 onClick={handleRun}
                 className="gap-1.5 font-medium"
               >
-                {runState.running ?  (
-                  <Spinner className="size-3.5" />
+                {runState.running ? (
+                  <Spinner className="[&_svg]:size-3.5" />
                 ) : (
-                  <Play className="size-3.5 text-emerald-500 fill-emerald-500" />
+                  <Play className="size-3.5 text-emerald-700 fill-emerald-700 dark:text-emerald-400 dark:fill-emerald-400" />
                 )}
                 {runState.running ? "Running" : "Run"}
               </Button>

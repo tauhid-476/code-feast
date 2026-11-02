@@ -21,19 +21,19 @@ export const NAV_LINKS: NavLink[] = [
 
 export const FOOTER_SECTIONS: FooterSection[] = [
   {
-    title: 'Products',
+    title: 'Platform',
     links: [
-      { label: 'Courses', href: '/courses' },
-      { label: 'Cohorts', href: '/#cohorts' },
-      { label: 'Events', href: '/events' },
+      { label: 'Join contest', href: '/join' },
+      { label: 'Organizer events', href: '/admin/events' },
+      { label: 'Features', href: '/#features' },
     ],
   },
   {
-    title: 'Resources',
+    title: 'Access',
     links: [
-      { label: 'Docs', href: '/docs' },
-      { label: 'Privacy policy', href: '/privacy-policy' },
-      { label: 'Terms of service', href: '/terms-of-service' },
+      { label: 'Sign in', href: '/sign-in' },
+      { label: 'Sign up', href: '/sign-up' },
+      { label: 'ChaiUI design', href: 'https://ui.chaicode.com', external: true },
     ],
   },
   {
