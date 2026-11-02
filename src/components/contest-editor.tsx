@@ -91,7 +91,7 @@ export function ContestEditor({
         minimap: { enabled: false },
         fontSize: 13,
         lineHeight: 20,
-        fontFamily: "var(--font-geist-mono), ui-monospace, monospace",
+        fontFamily: "var(--font-mono), ui-monospace, monospace",
         automaticLayout: true,
         scrollBeyondLastLine: false,
         padding: { top: 14, bottom: 14 },

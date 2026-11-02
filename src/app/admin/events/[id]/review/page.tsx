@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { ArrowLeft, BookOpen, Timer } from "lucide-react";
 import { EventStatusBadge } from "@/components/event-status-badge";
 import { ReviewDashboard } from "@/components/review-dashboard";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/legacy-ui/button";
 import { requireOrganizer } from "@/lib/auth/guards";
 import {
   getParticipantSubmission,

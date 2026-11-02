@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { EventSummary } from "@/lib/events/queries";
 import { EventStatusBadge } from "@/components/event-status-badge";
 import { RegenerateCodeButton } from "@/components/regenerate-code-button";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/legacy-ui/button";
 import {
   Empty,
   EmptyDescription,
@@ -16,7 +16,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
+} from "@/components/legacy-ui/table";
 
 export function EventList({ events }: { events: EventSummary[] }) {
   if (events.length === 0) {

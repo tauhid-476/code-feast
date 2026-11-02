@@ -1,7 +1,7 @@
 "use client";
 
 import { RunResultView } from "@/components/run-result";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Alert, AlertDescription, AlertTitle } from "@/components/legacy-ui/alert";
 import type { RunResult } from "@/lib/runner/run";
 
 /**

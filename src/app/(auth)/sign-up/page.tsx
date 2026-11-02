@@ -1,4 +1,4 @@
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/legacy-ui/card";
 import { AuthForm } from "@/components/auth-form";
 import { getViewer, landingFor } from "@/lib/auth/session";
 import { redirect } from "next/navigation";

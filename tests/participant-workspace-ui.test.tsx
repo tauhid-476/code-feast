@@ -284,7 +284,7 @@ describe("ThemeProvider & ModeToggle", () => {
     const html = renderToStaticMarkup(
       createElement(
         ThemeProvider,
-        { attribute: "class", defaultTheme: "dark" },
+        { defaultTheme: "dark" },
         createElement("div", { id: "test-child" }, "Theme content"),
       ),
     );

@@ -3,7 +3,7 @@
 import { FlaskConical } from "lucide-react";
 import { testProblemAction } from "@/app/admin/events/[id]/actions";
 import { TestProblemPanel } from "@/components/test-problem-panel";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/legacy-ui/button";
 import {
   Dialog,
   DialogContent,
@@ -11,7 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog";
+} from "@/components/legacy-ui/dialog";
 
 /**
  * The per-Problem entry point: a row button that opens the panel (SPEC §4.3).

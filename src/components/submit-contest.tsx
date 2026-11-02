@@ -14,9 +14,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
-import { Spinner } from "@/components/ui/spinner";
+import { Alert, AlertDescription } from "@/components/legacy-ui/alert";
+import { Button } from "@/components/legacy-ui/button";
+import { Spinner } from "@/components/legacy-ui/spinner";
 
 export type ProblemSummaryItem = {
   id: string;

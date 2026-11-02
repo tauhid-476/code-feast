@@ -1,4 +1,4 @@
-import { Badge } from "@/components/ui/badge";
+import { Badge } from "@/components/legacy-ui/badge";
 
 /** One status vocabulary for every organizer surface. */
 export function EventStatusBadge({ status }: { status: string }) {

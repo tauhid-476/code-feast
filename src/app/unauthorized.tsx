@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/legacy-ui/button";
+import { Card, CardContent } from "@/components/legacy-ui/card";
 
 export default function Unauthorized() {
   return (

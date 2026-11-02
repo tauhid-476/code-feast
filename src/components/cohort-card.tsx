@@ -1,6 +1,5 @@
 'use client'
 
-import '@fontsource/anton'
 import * as React from 'react'
 
 import { cn } from '@/lib/utils'
@@ -52,7 +51,7 @@ export function CohortCard({
           </TiltCardItem>
 
           <TiltCardItem translateZ={25} className="absolute top-12 w-full px-6 text-center">
-            <p className="font-[Anton] text-3xl text-orange-950 sm:text-4xl dark:text-orange-100">{name}</p>
+            <p className="font-heading font-black text-3xl text-orange-950 sm:text-4xl dark:text-orange-100">{name}</p>
           </TiltCardItem>
 
           <TiltCardItem translateZ={50} className="flex size-full items-center justify-center overflow-hidden">

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { BookOpen, CalendarDays, Code2, PlayCircle, Star } from 'lucide-react'
 import * as React from 'react'
 
@@ -56,9 +57,9 @@ export function PageShell({ children }: { children: React.ReactNode }) {
       <div className="sm:max-w-6xl lg:mx-auto">
         <Navbar
           logo={
-            <a href="/" aria-label="Home" className="rounded-md outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50">
+            <Link href="/" aria-label="Home" className="rounded-md outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50">
               <Logo />
-            </a>
+            </Link>
           }
           links={NAV_LINKS}
         />

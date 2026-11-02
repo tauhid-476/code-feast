@@ -18,9 +18,9 @@ import type {
   ContestDraftView,
   ContestProblemView,
 } from "@/components/contest-types";
-import { Alert, AlertAction, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Alert, AlertAction, AlertDescription, AlertTitle } from "@/components/legacy-ui/alert";
+import { Badge } from "@/components/legacy-ui/badge";
+import { Button } from "@/components/legacy-ui/button";
 import {
   Empty,
   EmptyDescription,
@@ -33,13 +33,13 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Spinner } from "@/components/ui/spinner";
+} from "@/components/legacy-ui/select";
+import { Spinner } from "@/components/legacy-ui/spinner";
 import { draftKey } from "@/lib/drafts/merge";
 import { figureDimensionsMap } from "@/lib/figures/types";
 import { isLanguage, LANGUAGE_LABELS, LANGUAGES, type Language } from "@/lib/languages";
 import type { RunResult } from "@/lib/runner/run";
-import { cn } from "cn";
+import { cn } from "@/lib/utils";
 
 function languagesFor(problem: ContestProblemView): Language[] {
   if (problem.starters.length === 0) return [...LANGUAGES];

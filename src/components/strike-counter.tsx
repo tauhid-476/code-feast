@@ -1,6 +1,6 @@
 import { ShieldAlert } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { cn } from "cn";
+import { Badge } from "@/components/legacy-ui/badge";
+import { cn } from "@/lib/utils";
 import { STRIKE_LIMIT } from "@/lib/violations/kinds";
 
 /**

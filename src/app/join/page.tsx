@@ -2,7 +2,7 @@ import { ModeToggle } from "@/components/mode-toggle";
 import { SignOutButton } from "@/components/sign-out-button";
 import { JoinCodeForm } from "@/components/join-code-form";
 import { requireParticipant } from "@/lib/auth/guards";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/legacy-ui/card";
 
 export const dynamic = "force-dynamic";
 

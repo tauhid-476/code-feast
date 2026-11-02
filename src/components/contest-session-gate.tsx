@@ -17,9 +17,9 @@ import {
   Alert,
   AlertDescription,
   AlertTitle,
-} from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
-import { Spinner } from "@/components/ui/spinner";
+} from "@/components/legacy-ui/alert";
+import { Button } from "@/components/legacy-ui/button";
+import { Spinner } from "@/components/legacy-ui/spinner";
 
 /**
  * The tab's session, before the editor exists (SPEC §6, ticket 14).

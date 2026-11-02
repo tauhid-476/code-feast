@@ -5,8 +5,8 @@ import { Settings } from "lucide-react";
 import { toast } from "sonner";
 import { updateEventSettingsAction } from "@/app/admin/events/actions";
 import { E2BApiKeyGuide } from "@/components/e2b-api-key-guide";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription } from "@/components/legacy-ui/alert";
+import { Button } from "@/components/legacy-ui/button";
 import {
   Dialog,
   DialogContent,
@@ -14,9 +14,9 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog";
-import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
+} from "@/components/legacy-ui/dialog";
+import { Field, FieldGroup, FieldLabel } from "@/components/legacy-ui/field";
+import { Input } from "@/components/legacy-ui/input";
 
 export function EventSettingsDialog({
   eventId,

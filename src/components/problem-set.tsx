@@ -7,9 +7,9 @@ import { moveProblemAction } from "@/app/admin/events/[id]/actions";
 import { ProblemCompleteness } from "@/components/problem-completeness";
 import { ProblemEditor } from "@/components/problem-editor";
 import { TestProblemDialog } from "@/components/test-problem-dialog";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/legacy-ui/badge";
+import { Button } from "@/components/legacy-ui/button";
+import { Card, CardContent } from "@/components/legacy-ui/card";
 import {
   Empty,
   EmptyDescription,

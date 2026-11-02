@@ -4,15 +4,15 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { authClient } from "@/lib/auth/client";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription } from "@/components/legacy-ui/alert";
+import { Button } from "@/components/legacy-ui/button";
 import {
   Field,
   FieldDescription,
   FieldGroup,
   FieldLabel,
-} from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
+} from "@/components/legacy-ui/field";
+import { Input } from "@/components/legacy-ui/input";
 
 type Mode = "sign-in" | "sign-up";
 

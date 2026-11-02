@@ -3,8 +3,8 @@ import { SignOutButton } from "@/components/sign-out-button";
 import { ModeToggle } from "@/components/mode-toggle";
 import { requireOrganizer } from "@/lib/auth/guards";
 import { isSuperAdminEmail } from "@/lib/env";
-import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
+import { Button } from "@/components/legacy-ui/button";
+import { Separator } from "@/components/legacy-ui/separator";
 
 export const dynamic = "force-dynamic";
 

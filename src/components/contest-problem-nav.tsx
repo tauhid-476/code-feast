@@ -8,8 +8,8 @@ import {
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { cn } from "cn";
+} from "@/components/legacy-ui/tooltip";
+import { cn } from "@/lib/utils";
 
 export type ProblemStatus = "solved" | "attempted" | "unattempted";
 

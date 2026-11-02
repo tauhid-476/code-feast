@@ -4,14 +4,14 @@ import { useTransition } from "react";
 import { Trash2, Mail, Building } from "lucide-react";
 import { toast } from "sonner";
 import { removeApprovedOrganizerAction } from "@/app/admin/organizers/actions";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/legacy-ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
+} from "@/components/legacy-ui/card";
 import {
   Table,
   TableBody,
@@ -19,7 +19,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
+} from "@/components/legacy-ui/table";
 import type { ApprovedOrganizer } from "@/lib/organizers/whitelist";
 
 export function OrganizersList({

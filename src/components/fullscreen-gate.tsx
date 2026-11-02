@@ -5,9 +5,9 @@ import { useRouter } from "next/navigation";
 import { Maximize2 } from "lucide-react";
 import { enterContestAction } from "@/app/e/[code]/actions";
 import { ContestCountdown } from "@/components/contest-countdown";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Alert, AlertDescription, AlertTitle } from "@/components/legacy-ui/alert";
+import { Button } from "@/components/legacy-ui/button";
+import { Card, CardContent } from "@/components/legacy-ui/card";
 
 /**
  * The Start gate. Browsers only grant fullscreen from a user gesture, so this

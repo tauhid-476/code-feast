@@ -1,8 +1,8 @@
 "use client";
 
-import { Badge } from "@/components/ui/badge";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { cn } from "cn";
+import { Badge } from "@/components/legacy-ui/badge";
+import { Alert, AlertDescription, AlertTitle } from "@/components/legacy-ui/alert";
+import { cn } from "@/lib/utils";
 import type { RunCaseResult, RunResult } from "@/lib/runner/run";
 
 /**

@@ -2,10 +2,10 @@
 
 import { useActionState } from "react";
 import { joinAction } from "@/app/join/actions";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
-import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
+import { Alert, AlertDescription } from "@/components/legacy-ui/alert";
+import { Button } from "@/components/legacy-ui/button";
+import { Field, FieldGroup, FieldLabel } from "@/components/legacy-ui/field";
+import { Input } from "@/components/legacy-ui/input";
 
 export function JoinCodeForm() {
   const [state, formAction, pending] = useActionState(joinAction, null);

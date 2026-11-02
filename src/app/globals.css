@@ -164,7 +164,7 @@
   --color-sidebar-ring: var(--sidebar-ring);
   --font-sans: 'Manrope Variable', 'Manrope', ui-sans-serif, system-ui, sans-serif;
   --font-mono: 'Geist Mono Variable', 'Geist Mono', ui-monospace, monospace;
-  --font-heading: var(--font-geist-sans);
+  --font-heading: var(--font-sans);
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -297,19 +297,6 @@ html:not(.dark) {
   color-scheme: light;
 }
 
-body {
-  background-color: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-geist-sans), system-ui, sans-serif;
-  -webkit-font-smoothing: antialiased;
-}
-
-.dark body {
-  background:
-    radial-gradient(1200px 600px at 50% -10%, #171c21 0%, transparent 60%),
-    var(--background);
-}
-
 ::selection {
   background: var(--primary);
   color: var(--primary-foreground);
@@ -323,7 +310,7 @@ body {
 /* ---------- typographic utilities ---------- */
 
 .label {
-  font-family: var(--font-geist-mono), monospace;
+  font-family: var(--font-mono), monospace;
   font-size: 0.6875rem;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -331,7 +318,7 @@ body {
 }
 
 .mono {
-  font-family: var(--font-geist-mono), monospace;
+  font-family: var(--font-mono), monospace;
   font-variant-numeric: tabular-nums;
 }
 
@@ -383,7 +370,7 @@ body {
 }
 
 .prose-statement code {
-  font-family: var(--font-geist-mono), monospace;
+  font-family: var(--font-mono), monospace;
   font-size: 0.85em;
   background: var(--secondary);
   border: 1px solid var(--border);

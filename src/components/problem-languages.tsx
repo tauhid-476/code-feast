@@ -7,9 +7,9 @@ import {
   LanguagePairFields,
   type StarterPairDraft,
 } from "@/components/language-pair-fields";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Alert, AlertDescription } from "@/components/legacy-ui/alert";
+import { Button } from "@/components/legacy-ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/legacy-ui/tabs";
 import { LANGUAGE_LABELS, LANGUAGES, isLanguage, type Language } from "@/lib/languages";
 import type { ProblemSummary } from "@/lib/problems/queries";
 

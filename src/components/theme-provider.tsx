@@ -32,11 +32,10 @@ export function ThemeProvider({
   children,
   defaultTheme = 'dark',
   storageKey = STORAGE_KEY,
-}: {
-  children: React.ReactNode
+}: React.PropsWithChildren<{
   defaultTheme?: Theme
   storageKey?: string
-}) {
+}>) {
   // The server cannot see localStorage, so start from the default and read
   // the stored choice after mount. ThemeScript has already set the class,
   // so nothing flashes in between.
@@ -71,10 +70,15 @@ export function ThemeProvider({
   return <ThemeContext value={value}>{children}</ThemeContext>
 }
 
+const fallbackContext: ThemeState = {
+  theme: "dark",
+  setTheme: () => {},
+  toggle: () => {},
+}
+
 export function useTheme() {
   const ctx = use(ThemeContext)
-  if (!ctx) throw new Error('useTheme must be used inside <ThemeProvider>')
-  return ctx
+  return ctx ?? fallbackContext
 }
 
 /**

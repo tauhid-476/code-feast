@@ -5,7 +5,7 @@ import {
   Dialog,
   DialogContent,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from "@/components/legacy-ui/dialog";
 
 /**
  * The one way a Figure is drawn. It sits on a light paper surface so a diagram

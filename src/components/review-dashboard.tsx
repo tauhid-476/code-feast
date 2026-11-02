@@ -25,23 +25,23 @@ import {
 import { ReviewCodeEditor } from "@/components/review-code-editor";
 import { RunResultView } from "@/components/run-result";
 import { Statement } from "@/components/statement";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription, AlertTitle } from "@/components/legacy-ui/alert";
+import { Badge } from "@/components/legacy-ui/badge";
+import { Button } from "@/components/legacy-ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
+} from "@/components/legacy-ui/card";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { Input } from "@/components/ui/input";
-import { Separator } from "@/components/ui/separator";
+import { Input } from "@/components/legacy-ui/input";
+import { Separator } from "@/components/legacy-ui/separator";
 import {
   Table,
   TableBody,
@@ -49,8 +49,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+} from "@/components/legacy-ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/legacy-ui/tabs";
 import type {
   ParticipantSubmissionDetail,
   ReviewParticipant,

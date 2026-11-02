@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/legacy-ui/badge";
+import { Card, CardContent } from "@/components/legacy-ui/card";
+import { Separator } from "@/components/legacy-ui/separator";
 import type { LockoutReason } from "@/lib/participants/lockout";
 import { elapsedSeconds, formatDuration } from "@/lib/time";
 

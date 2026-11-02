@@ -1,8 +1,8 @@
 import type { ReactNode } from "react";
 import { MonitorSmartphone } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/legacy-ui/badge";
+import { Card, CardContent } from "@/components/legacy-ui/card";
+import { Separator } from "@/components/legacy-ui/separator";
 import { sessionTakeoverText } from "@/lib/contest/copy";
 
 /**

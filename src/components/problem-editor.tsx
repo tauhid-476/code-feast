@@ -16,18 +16,18 @@ import {
 import { uploadFigure, type UploadedFigure } from "@/components/figure-upload";
 import { ProblemLanguages } from "@/components/problem-languages";
 import { Statement } from "@/components/statement";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription } from "@/components/legacy-ui/alert";
+import { Button } from "@/components/legacy-ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+} from "@/components/legacy-ui/card";
+import { Field, FieldDescription, FieldLabel } from "@/components/legacy-ui/field";
+import { Input } from "@/components/legacy-ui/input";
+import { Textarea } from "@/components/legacy-ui/textarea";
 import {
   figureDimensionsMap,
   type FigureView,

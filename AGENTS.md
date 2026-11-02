@@ -66,39 +66,33 @@ not contain `_test`.
 
 ## UI
 
-**Use shadcn components. Do not hand-roll UI primitives.** Everything in
-`src/components/ui/` is shadcn source and is the only allowed implementation of
-buttons, inputs, labels, cards, tables, badges, alerts, dialogs, selects, tabs,
-tooltips, separators, empty states, spinners, and toasts. If a component is
-missing, add it with the CLI instead of writing your own:
+The UI uses **ui.chaicode.com** (ChaiUI, Radix-based). Before writing or
+reviewing any frontend code, load the `chaiui` skill (`.agents/skills/chaiui`)
+and read its `references/components.md`. After a slice, apply `chaiui-review`.
 
-```
-npx shadcn@latest add <component>
-```
+- Primitives live in `src/components/ui/`. Do not hand-roll buttons, inputs,
+  cards, dialogs, alerts, selects, tabs or badges. Add missing ones with
+  `npx shadcn@latest add @chaiui/<name>`.
+- Use `asChild` for links, not `render`. Button variants are
+  `soft | solid | outline | muted | ghost | danger`, sizes `sm | md | lg | icon`.
+  `Alert` takes `tone`, `Badge` uses ChaiUI variants, `Dialog` takes
+  `open / onClose / title`.
+- Light and dark are both supported via the ChaiUI theme provider. Use semantic
+  tokens only (`bg-card`, `text-muted-foreground`, `border-border`,
+  `text-brand`); never raw hex or palette colors.
+- Fonts: Manrope (sans) and Geist Mono (`.mono`, `.label`). No `next/font`.
+- Marketing and shell pages may use the ChaiUI look: asymmetric buttons,
+  `card-chai`, `Backdrop`, subtle motion. The **contest workspace, review and
+  problem editor stay sober**: no glass, no decorative motion, no gradients.
+- Motion: specific transition properties, `ease-out` under 300ms, respect
+  `prefers-reduced-motion`.
+- `src/components/legacy-ui/` is temporary. Never add imports to it. Migrating
+  a file means replacing its `legacy-ui` imports with `ui` ones.
+- Do not change anything under `src/lib/`, `src/app/api/`, server actions or
+  `use-contest-*` hooks during UI work. Change classNames, wrappers and
+  primitives only.
+- Transient feedback uses `toast()` from `sonner`; inline failures use `Alert tone="danger"`.
 
-`components.json` is configured for Base UI (`base-nova`), the `cn` merge
-package, and `lucide-react`. Use the `render` prop for links, not `asChild`.
-
-**Before writing or reviewing any frontend code, load the `emil-design-eng`
-skill** (`skill` tool, id `emil-design-eng`) and apply its review checklist:
-exact transition properties, `ease-out` under 300ms, `:active` feedback, no
-`transition: all`, no `space-y-*`, `size-*` for equal dimensions, semantic color
-tokens only, and reduced-motion respect.
-
-House rules on top of shadcn:
-
-- The app is dark-only. Style with semantic tokens (`bg-card`,
-  `text-muted-foreground`, `border-border`, `text-primary`); never raw hex or
-  palette colors like `bg-zinc-800`.
-- Typography helpers that are not components live in `globals.css`: `.label`
-  for uppercase mono micro-labels, `.mono` for machine text, `.tabular` for
-  aligned numbers, `.prose-statement` for rendered Markdown.
-- Icons come from `lucide-react` and are passed as components, sized by the
-  component (`data-icon`), not with manual `size-4` classes inside a Button.
-- Feedback that is transient uses `toast()` from `sonner`; inline form failures
-  use `Alert variant="destructive"`.
-- Any new route should look like it belongs: same header rhythm, same spacing
-  scale, no gradients, no glass, no decorative motion.
 
 ## Testing
 

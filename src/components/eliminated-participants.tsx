@@ -7,16 +7,16 @@ import {
   reinstateParticipantAction,
   type ReinstateActionState,
 } from "@/app/admin/events/[id]/live/actions";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/legacy-ui/badge";
+import { Button } from "@/components/legacy-ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Spinner } from "@/components/ui/spinner";
+} from "@/components/legacy-ui/card";
+import { Spinner } from "@/components/legacy-ui/spinner";
 import {
   Table,
   TableBody,
@@ -24,13 +24,13 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
+} from "@/components/legacy-ui/table";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@/components/ui/tooltip";
+} from "@/components/legacy-ui/tooltip";
 import type { Participant } from "@/lib/participants/lockout";
 
 /**

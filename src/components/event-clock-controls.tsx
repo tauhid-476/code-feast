@@ -19,15 +19,15 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/legacy-ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Spinner } from "@/components/ui/spinner";
+} from "@/components/legacy-ui/card";
+import { Spinner } from "@/components/legacy-ui/spinner";
 import { endConfirmationText, startConfirmationText } from "@/lib/events/copy";
 
 /**

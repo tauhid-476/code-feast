@@ -13,11 +13,11 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import type { ContestProblemView } from "@/components/contest-types";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
-import { Spinner } from "@/components/ui/spinner";
+import { Alert, AlertDescription, AlertTitle } from "@/components/legacy-ui/alert";
+import { Button } from "@/components/legacy-ui/button";
+import { Spinner } from "@/components/legacy-ui/spinner";
 import type { RunResult } from "@/lib/runner/run";
-import { cn } from "cn";
+import { cn } from "@/lib/utils";
 
 export type TestPanelTab = "testcase" | "result";
 

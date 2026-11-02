@@ -8,17 +8,17 @@ import {
   type CreateEventState,
 } from "@/app/admin/events/actions";
 import { E2BApiKeyGuide } from "@/components/e2b-api-key-guide";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription } from "@/components/legacy-ui/alert";
+import { Button } from "@/components/legacy-ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
+} from "@/components/legacy-ui/card";
+import { Field, FieldGroup, FieldLabel } from "@/components/legacy-ui/field";
+import { Input } from "@/components/legacy-ui/input";
 
 export function CreateEventForm() {
   const [state, formAction, pending] = useActionState<CreateEventState, FormData>(
