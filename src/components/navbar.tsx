@@ -1,6 +1,7 @@
 'use client'
 
-import { ChevronDown } from 'lucide-react'
+import Link from 'next/link'
+import { CalendarDays, ChevronDown, Code2, LogIn } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import * as React from 'react'
 
@@ -13,27 +14,47 @@ export type NavLink = { label: string; href: string; external?: boolean; icon?: 
 export type NavItem = { label: string; description?: string; href: string; icon?: React.ReactNode; active?: boolean }
 export type NavGroup = { label: string; href?: string; items?: NavItem[]; columns?: 1 | 2; active?: boolean }
 
+export const CODE_FEAST_NAV_LINKS: NavLink[] = [
+  { label: 'Join contest', href: '/join', icon: <Code2 className="size-4" /> },
+  { label: 'Events', href: '/admin/events', icon: <CalendarDays className="size-4" /> },
+  { label: 'Sign in', href: '/sign-in', icon: <LogIn className="size-4" /> },
+]
+
+export const CODE_FEAST_NAV_GROUPS: NavGroup[] = [
+  {
+    label: 'Contest',
+    items: [
+      { label: 'Join contest', href: '/join', description: 'Enter an active contest with a code', icon: <Code2 className="size-4" /> },
+      { label: 'Events', href: '/admin/events', description: 'Manage and review contest events', icon: <CalendarDays className="size-4" /> },
+    ],
+  },
+  {
+    label: 'Account',
+    items: [
+      { label: 'Sign in', href: '/sign-in', description: 'Access your account', icon: <LogIn className="size-4" /> },
+    ],
+  },
+]
+
 /**
- * The site header in both chaicode layouts. Sticky and transparent; the blur
- * arrives only once the page has scrolled (navigation/navbar/index.tsx).
+ * The site header adapted for Code Feast. Sticky and transparent; the blur
+ * arrives only once the page has scrolled.
  *
- * - `layout="menu"` (chaicode.com): logo on the left; the theme switcher and
+ * - `layout="menu"`: logo on the left; the theme switcher and
  *   a menu button holding every link on the right.
- * - `layout="inline"` (Chai Prep): logo plus dropdown groups on the left,
- *   `actions` (sign in, avatar) on the right. Better for a product with many
- *   sections. Below lg the groups fold into a panel under the menu button.
- *
- * Links are plain <a> elements; swap in your router's Link if you have one.
+ * - `layout="inline"`: logo plus dropdown groups on the left,
+ *   `actions` (sign in, avatar) on the right. Below lg the groups fold into
+ *   a panel under the menu button.
  */
 export function Navbar({
   logo,
   layout = 'menu',
-  links = [],
-  groups = [],
+  links = CODE_FEAST_NAV_LINKS,
+  groups = CODE_FEAST_NAV_GROUPS,
   actions,
   className,
 }: {
-  /** Usually <a href="/" aria-label="Home"><Logo /></a>. */
+  /** Usually <Link href="/" aria-label="Home"><Logo /></Link>. */
   logo: React.ReactNode
   layout?: 'menu' | 'inline'
   /** For the menu layout. */
@@ -72,9 +93,9 @@ export function Navbar({
                 g.items?.length ? (
                   <NavMenu key={g.label} group={g} />
                 ) : (
-                  <a key={g.label} href={g.href} className={navLink} data-active={g.active || undefined} aria-current={g.active ? 'page' : undefined}>
+                  <Link key={g.label} href={g.href ?? '/'} className={navLink} data-active={g.active || undefined} aria-current={g.active ? 'page' : undefined}>
                     {g.label}
-                  </a>
+                  </Link>
                 ),
               )}
             </div>
@@ -110,18 +131,18 @@ export function Navbar({
                       <ul>
                         {g.items.map((it) => (
                           <li key={it.href}>
-                            <a href={it.href} className={cn(menuItem, 'items-center')} onClick={() => setMobileOpen(false)} aria-current={it.active ? 'page' : undefined}>
+                            <Link href={it.href} className={cn(menuItem, 'items-center')} onClick={() => setMobileOpen(false)} aria-current={it.active ? 'page' : undefined}>
                               {it.icon}
                               <span className="text-sm font-medium">{it.label}</span>
-                            </a>
+                            </Link>
                           </li>
                         ))}
                       </ul>
                     </>
                   ) : (
-                    <a href={g.href} className={cn(menuItem, 'text-sm font-medium')} onClick={() => setMobileOpen(false)}>
+                    <Link href={g.href ?? '/'} className={cn(menuItem, 'text-sm font-medium')} onClick={() => setMobileOpen(false)}>
                       {g.label}
-                    </a>
+                    </Link>
                   )}
                 </div>
               ))}
@@ -141,7 +162,7 @@ const menuItem =
 
 const panel = 'rounded-xl border border-gray-400/20 bg-background/80 p-2 backdrop-blur-lg dark:border-orange-50/10'
 
-/** chaicode.com's single menu: every link behind the morphing button. */
+/** Single menu: every link behind the morphing button. */
 function MenuDropdown({ links }: { links: NavLink[] }) {
   const [open, setOpen] = React.useState(false)
   return (
@@ -158,10 +179,10 @@ function MenuDropdown({ links }: { links: NavLink[] }) {
             className="p-2 px-3 text-base focus:bg-transparent"
             onSelect={(e) => (e.currentTarget as HTMLElement).querySelector('a')?.click()}
           >
-            <a href={l.href} tabIndex={-1} className="pointer-events-none flex items-center gap-2" {...(l.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}>
+            <Link href={l.href} tabIndex={-1} className="pointer-events-none flex items-center gap-2" {...(l.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}>
               {l.icon}
               {l.label}
-            </a>
+            </Link>
           </DropdownMenuItem>
         ))}
       </DropdownMenuContent>
@@ -246,13 +267,13 @@ function NavMenu({ group }: { group: NavGroup }) {
             className={cn(panel, 'absolute top-full left-0 mt-2', group.columns === 2 ? 'grid w-[34rem] grid-cols-2 gap-0.5' : 'w-[19rem]')}
           >
             {group.items!.map((it) => (
-              <a key={it.href} href={it.href} className={menuItem} onClick={() => setOpen(false)} aria-current={it.active ? 'page' : undefined}>
+              <Link key={it.href} href={it.href} className={menuItem} onClick={() => setOpen(false)} aria-current={it.active ? 'page' : undefined}>
                 {it.icon && <span className="mt-0.5 shrink-0 text-muted-foreground">{it.icon}</span>}
                 <span className="min-w-0">
                   <span className="block text-[13.5px] font-medium">{it.label}</span>
                   {it.description && <span className="mt-0.5 block text-[12.5px] leading-snug text-muted-foreground">{it.description}</span>}
                 </span>
-              </a>
+              </Link>
             ))}
           </motion.div>
         )}

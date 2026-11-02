@@ -4,15 +4,10 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { authClient } from "@/lib/auth/client";
-import { Alert, AlertDescription } from "@/components/legacy-ui/alert";
-import { Button } from "@/components/legacy-ui/button";
-import {
-  Field,
-  FieldDescription,
-  FieldGroup,
-  FieldLabel,
-} from "@/components/legacy-ui/field";
-import { Input } from "@/components/legacy-ui/input";
+import { Alert } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Field } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
 
 type Mode = "sign-in" | "sign-up";
 
@@ -59,11 +54,9 @@ export function AuthForm({ mode }: { mode: Mode }) {
 
   return (
     <form onSubmit={submit}>
-      <FieldGroup>
-        <Field>
-          <FieldLabel htmlFor="email">Email</FieldLabel>
+      <div className="flex flex-col gap-4">
+        <Field label="Email">
           <Input
-            id="email"
             type="email"
             autoComplete="email"
             required
@@ -72,10 +65,11 @@ export function AuthForm({ mode }: { mode: Mode }) {
           />
         </Field>
 
-        <Field>
-          <FieldLabel htmlFor="password">Password</FieldLabel>
+        <Field
+          label="Password"
+          hint={mode === "sign-up" ? "At least 8 characters." : undefined}
+        >
           <Input
-            id="password"
             type="password"
             autoComplete={mode === "sign-up" ? "new-password" : "current-password"}
             required
@@ -83,14 +77,11 @@ export function AuthForm({ mode }: { mode: Mode }) {
             value={password}
             onChange={(event) => setPassword(event.target.value)}
           />
-          {mode === "sign-up" ? (
-            <FieldDescription>At least 8 characters.</FieldDescription>
-          ) : null}
         </Field>
 
         {error ? (
-          <Alert variant="destructive">
-            <AlertDescription>{error}</AlertDescription>
+          <Alert tone="danger">
+            {error}
           </Alert>
         ) : null}
 
@@ -115,7 +106,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
             </>
           )}
         </p>
-      </FieldGroup>
+      </div>
     </form>
   );
 }

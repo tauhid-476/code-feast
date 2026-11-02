@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BookOpen, CalendarDays, Code2, PlayCircle, Star } from 'lucide-react'
+import { CalendarDays, Code2, LogIn } from 'lucide-react'
 import * as React from 'react'
 
 import { Footer, type FooterSection } from '@/components/footer'
@@ -14,11 +14,9 @@ import { Logo } from '@/components/logo'
  * Edit NAV_LINKS and FOOTER_SECTIONS for your site.
  */
 export const NAV_LINKS: NavLink[] = [
-  { label: 'Cohorts', href: '/#cohorts', icon: <Code2 className="size-4" /> },
-  { label: 'Courses', href: '/courses', icon: <PlayCircle className="size-4" /> },
-  { label: 'Events', href: '/events', icon: <CalendarDays className="size-4" /> },
-  { label: 'Docs', href: '/docs', icon: <BookOpen className="size-4" /> },
-  { label: 'Reviews', href: '/#reviews', icon: <Star className="size-4" /> },
+  { label: 'Join contest', href: '/join', icon: <Code2 className="size-4" /> },
+  { label: 'Events', href: '/admin/events', icon: <CalendarDays className="size-4" /> },
+  { label: 'Sign in', href: '/sign-in', icon: <LogIn className="size-4" /> },
 ]
 
 export const FOOTER_SECTIONS: FooterSection[] = [
