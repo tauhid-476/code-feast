@@ -16,16 +16,10 @@ import {
 import { uploadFigure, type UploadedFigure } from "@/components/figure-upload";
 import { ProblemLanguages } from "@/components/problem-languages";
 import { Statement } from "@/components/statement";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
+import { Card, CardBody, CardText, CardTitle } from "@/components/ui/card";
+import { Field, Label } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -176,21 +170,17 @@ export function ProblemEditor({
   }
 
   return (
-    <Card>
-      <CardHeader>
+    <Card className="backdrop-blur-none sm:opacity-100">
+      <CardBody className="gap-3">
         <CardTitle>{problem ? "Edit problem" : "New problem"}</CardTitle>
-        <CardDescription>
+        <CardText className="line-clamp-none">
           The statement is Markdown. Samples are shown to participants with it.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
+        </CardText>
         <form onSubmit={submit}>
           <div className="flex flex-col gap-5">
             <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_10rem]">
-              <Field>
-                <FieldLabel htmlFor="problem-title">Title</FieldLabel>
+              <Field label="Title">
                 <Input
-                  id="problem-title"
                   value={title}
                   onChange={(event) => setTitle(event.target.value)}
                   placeholder="Two Sum"
@@ -200,15 +190,8 @@ export function ProblemEditor({
                 />
               </Field>
 
-              <Field>
-                <FieldLabel htmlFor="problem-difficulty">
-                  Difficulty
-                  <span className="font-normal text-muted-foreground">
-                    optional
-                  </span>
-                </FieldLabel>
+              <Field label="Difficulty" aside="optional">
                 <Input
-                  id="problem-difficulty"
                   value={difficulty}
                   onChange={(event) => setDifficulty(event.target.value)}
                   placeholder="Easy"
@@ -218,9 +201,9 @@ export function ProblemEditor({
               </Field>
             </div>
 
-            <Field>
+            <div className="flex flex-col gap-1.5">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <FieldLabel htmlFor="problem-statement">Statement</FieldLabel>
+                <Label htmlFor="problem-statement">Statement</Label>
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -236,19 +219,19 @@ export function ProblemEditor({
                 <Button
                   type="button"
                   variant="outline"
-                  size="xs"
+                  size="sm"
                   disabled={!problem || !figuresEnabled || uploading}
                   onClick={() => fileInputRef.current?.click()}
                 >
-                  <ImagePlus data-icon="inline-start" />
+                  <ImagePlus />
                   {uploading ? "Adding…" : "Add figure"}
                 </Button>
               </div>
-              <FieldDescription>
+              <p className="text-xs text-muted-foreground">
                 Markdown. Raw HTML is not rendered, so anything that looks like
                 a tag stays literal text. Paste a PNG, JPEG or WebP image to add
                 a Figure at the cursor.
-              </FieldDescription>
+              </p>
               {!figuresEnabled ? (
                 <p className="text-xs text-muted-foreground">
                   Figure storage is not configured on this deployment, so
@@ -289,7 +272,7 @@ export function ProblemEditor({
                   )}
                 </div>
               </div>
-            </Field>
+            </div>
 
             <section className="flex flex-col gap-3">
               <div>
@@ -307,12 +290,8 @@ export function ProblemEditor({
                   >
                     <p className="label">Sample {index + 1}</p>
                     <div className="mt-3 flex flex-col gap-3">
-                      <Field>
-                        <FieldLabel htmlFor={`sample-${index}-input`}>
-                          Input
-                        </FieldLabel>
+                      <Field label="Input">
                         <Textarea
-                          id={`sample-${index}-input`}
                           value={sampleCase.input}
                           onChange={(event) =>
                             updateSampleCase(index, {
@@ -323,12 +302,8 @@ export function ProblemEditor({
                           className="mono min-h-20 text-[0.8rem]"
                         />
                       </Field>
-                      <Field>
-                        <FieldLabel htmlFor={`sample-${index}-output`}>
-                          Expected output
-                        </FieldLabel>
+                      <Field label="Expected output">
                         <Textarea
-                          id={`sample-${index}-output`}
                           value={sampleCase.expectedOutput}
                           onChange={(event) =>
                             updateSampleCase(index, {
@@ -345,11 +320,7 @@ export function ProblemEditor({
               </div>
             </section>
 
-            {error ? (
-              <Alert variant="destructive">
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            ) : null}
+            {error ? <Alert tone="danger">{error}</Alert> : null}
 
             <div className="flex items-center justify-end gap-2">
               <Button
@@ -382,7 +353,7 @@ export function ProblemEditor({
             </p>
           </section>
         )}
-      </CardContent>
+      </CardBody>
     </Card>
   );
 }

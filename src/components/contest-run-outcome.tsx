@@ -1,7 +1,7 @@
 "use client";
 
 import { RunResultView } from "@/components/run-result";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Alert } from "@/components/ui/alert";
 import type { RunResult } from "@/lib/runner/run";
 
 /**
@@ -18,9 +18,8 @@ export function ContestRunOutcome({
 }) {
   if (error) {
     return (
-      <Alert variant="destructive">
-        <AlertTitle>Run did not start</AlertTitle>
-        <AlertDescription>{error}</AlertDescription>
+      <Alert tone="danger" title="Run did not start">
+        {error}
       </Alert>
     );
   }

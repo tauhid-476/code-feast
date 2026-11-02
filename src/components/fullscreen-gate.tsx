@@ -5,9 +5,9 @@ import { useRouter } from "next/navigation";
 import { Maximize2 } from "lucide-react";
 import { enterContestAction } from "@/app/e/[code]/actions";
 import { ContestCountdown } from "@/components/contest-countdown";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardBody } from "@/components/ui/card";
 
 /**
  * The Start gate. Browsers only grant fullscreen from a user gesture, so this
@@ -69,8 +69,8 @@ export function FullscreenGate({
   }
 
   return (
-    <Card>
-      <CardContent className="flex flex-col gap-5">
+    <Card className="backdrop-blur-none sm:opacity-100">
+      <CardBody className="flex flex-col gap-5">
         <div>
           <p className="label">Live</p>
           <p className="mt-1 text-2xl font-semibold tracking-tight text-balance">
@@ -96,23 +96,24 @@ export function FullscreenGate({
         </p>
 
         {error ? (
-          <Alert variant="destructive">
-            <AlertTitle>Fullscreen is required</AlertTitle>
-            <AlertDescription>{error}</AlertDescription>
+          <Alert tone="danger" title="Fullscreen is required">
+            {error}
           </Alert>
         ) : null}
 
         <Button
           type="button"
+          variant="solid"
+          iconRight={null}
           size="lg"
           className="w-full"
           disabled={pending}
           onClick={enter}
         >
-          <Maximize2 data-icon="inline-start" />
+          <Maximize2 />
           {pending ? "Entering…" : "Enter fullscreen"}
         </Button>
-      </CardContent>
+      </CardBody>
     </Card>
   );
 }

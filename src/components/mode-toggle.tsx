@@ -2,14 +2,14 @@
 
 import { useSyncExternalStore } from "react";
 import { Moon, Sun } from "lucide-react";
-import { useTheme } from "next-themes";
-import { Button } from "@/components/ui/button";
-import { cn } from "cn";
+import { useTheme } from "@/components/theme-provider";
+import { Button } from "@/components/legacy-ui/button";
+import { cn } from "@/lib/utils";
 
 const emptySubscribe = () => () => {};
 
 export function ModeToggle({ className }: { className?: string }) {
-  const { setTheme, resolvedTheme } = useTheme();
+  const { setTheme, theme } = useTheme();
   const mounted = useSyncExternalStore(
     emptySubscribe,
     () => true,
@@ -31,7 +31,7 @@ export function ModeToggle({ className }: { className?: string }) {
     );
   }
 
-  const isDark = resolvedTheme === "dark";
+  const isDark = theme === "dark";
 
   return (
     <Button

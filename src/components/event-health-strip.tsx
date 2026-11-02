@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { EventCountdown } from "@/components/event-countdown";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/legacy-ui/card";
 import type { EventHealth } from "@/lib/events/live";
 
 function Stat({

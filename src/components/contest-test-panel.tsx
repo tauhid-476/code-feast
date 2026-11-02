@@ -9,15 +9,14 @@ import {
   Terminal,
   Check,
   X,
-  Clock,
   AlertTriangle,
 } from "lucide-react";
 import type { ContestProblemView } from "@/components/contest-types";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import type { RunResult } from "@/lib/runner/run";
-import { cn } from "cn";
+import { cn } from "@/lib/utils";
 
 export type TestPanelTab = "testcase" | "result";
 
@@ -146,12 +145,12 @@ export function ContestTestPanel({
             <span>Test Result</span>
             {result ? (
               allPassed ? (
-                <span className="flex size-2 rounded-full bg-emerald-500" />
+                <span className="flex size-2 rounded-full bg-emerald-600 dark:bg-emerald-400" />
               ) : (
-                <span className="flex size-2 rounded-full bg-rose-500" />
+                <span className="flex size-2 rounded-full bg-red-600 dark:bg-red-400" />
               )
             ) : null}
-            {running ? <Spinner className="size-3" /> : null}
+            {running ? <Spinner className="[&_svg]:size-3" /> : null}
           </button>
         </div>
 
@@ -159,7 +158,7 @@ export function ContestTestPanel({
         <div className="flex items-center gap-2">
           <Button
             type="button"
-            size="xs"
+            size="sm"
             variant="outline"
             disabled={running || !canRun}
             onClick={() => {
@@ -170,26 +169,22 @@ export function ContestTestPanel({
             className="gap-1.5 font-medium"
           >
             {running ? (
-              <Spinner className="size-3" />
+              <Spinner className="[&_svg]:size-3" />
             ) : (
-              <Play className="size-3 text-emerald-500 fill-emerald-500" />
+              <Play className="size-3 text-emerald-700 fill-emerald-700 dark:text-emerald-400 dark:fill-emerald-400" />
             )}
             {running ? "Running" : "Run"}
           </Button>
 
           <Button
             type="button"
-            size="icon-xs"
+            size="icon"
             variant="ghost"
             onClick={onToggleCollapsed}
             aria-label={isCollapsed ? "Expand test panel" : "Collapse test panel"}
             title={isCollapsed ? "Expand panel" : "Collapse panel"}
           >
-            {isCollapsed ? (
-              <ChevronUp className="size-4" />
-            ) : (
-              <ChevronDown className="size-4" />
-            )}
+            {isCollapsed ? <ChevronUp /> : <ChevronDown />}
           </Button>
         </div>
       </div>
@@ -308,7 +303,7 @@ function TestResultTabContent({
   if (running) {
     return (
       <div className="flex h-full min-h-[120px] flex-col items-center justify-center gap-2 text-xs text-muted-foreground">
-        <Spinner className="size-5" />
+        <Spinner className="[&_svg]:size-5" />
         <span>Running code in sandbox against sample test cases...</span>
       </div>
     );
@@ -316,9 +311,8 @@ function TestResultTabContent({
 
   if (error) {
     return (
-      <Alert variant="destructive">
-        <AlertTitle>Run failed</AlertTitle>
-        <AlertDescription className="text-xs">{error}</AlertDescription>
+      <Alert tone="danger" title="Run failed">
+        <span className="text-xs">{error}</span>
       </Alert>
     );
   }
@@ -337,13 +331,13 @@ function TestResultTabContent({
         </div>
         <Button
           type="button"
-          size="xs"
+          size="sm"
           variant="outline"
           disabled={!canRun}
           onClick={onRun}
           className="gap-1.5"
         >
-          <Play className="size-3 text-emerald-500 fill-emerald-500" />
+          <Play className="size-3 text-emerald-700 fill-emerald-700 dark:text-emerald-400 dark:fill-emerald-400" />
           Run Code
         </Button>
       </div>
@@ -353,11 +347,11 @@ function TestResultTabContent({
   if (result.compileError) {
     return (
       <div className="space-y-2">
-        <div className="flex items-center gap-2 text-rose-500 font-semibold text-sm">
+        <div className="flex items-center gap-2 text-red-600 font-semibold text-sm dark:text-red-400">
           <AlertTriangle className="size-4" />
           <span>Compile Error</span>
         </div>
-        <pre className="mono max-h-48 overflow-auto rounded-md border border-rose-500/30 bg-background p-2.5 text-xs text-rose-400 whitespace-pre-wrap break-words leading-relaxed">
+        <pre className="mono max-h-48 overflow-auto rounded-md border border-red-600/30 bg-background p-2.5 text-xs text-red-700 whitespace-pre-wrap break-words leading-relaxed dark:border-red-400/30 dark:text-red-300">
           {result.compileError}
         </pre>
       </div>
@@ -366,23 +360,16 @@ function TestResultTabContent({
 
   if (result.sandboxError) {
     return (
-      <Alert variant="destructive">
-        <AlertTitle>Runner Error</AlertTitle>
-        <AlertDescription className="text-xs">{result.sandboxError}</AlertDescription>
+      <Alert tone="danger" title="Runner Error">
+        <span className="text-xs">{result.sandboxError}</span>
       </Alert>
     );
   }
 
   if (result.timedOut) {
     return (
-      <Alert>
-        <AlertTitle className="flex items-center gap-1.5">
-          <Clock className="size-4" />
-          Time limit exceeded
-        </AlertTitle>
-        <AlertDescription className="text-xs">
-          A sample that runs past its limit is stopped and counted as a failure.
-        </AlertDescription>
+      <Alert tone="info" title="Time limit exceeded">
+        A sample that runs past its limit is stopped and counted as a failure.
       </Alert>
     );
   }
@@ -404,7 +391,9 @@ function TestResultTabContent({
         <span
           className={cn(
             "text-base font-bold tracking-tight",
-            isAccepted ? "text-emerald-500" : "text-rose-500",
+            isAccepted
+              ? "text-emerald-700 dark:text-emerald-400"
+              : "text-red-600 dark:text-red-400",
           )}
         >
           {isAccepted ? "Accepted" : "Wrong Answer"}
@@ -434,9 +423,9 @@ function TestResultTabContent({
               )}
             >
               {c.pass ? (
-                <Check className="size-3 text-emerald-500 font-bold" />
+                <Check className="size-3 text-emerald-700 font-bold dark:text-emerald-400" />
               ) : (
-                <X className="size-3 text-rose-500 font-bold" />
+                <X className="size-3 text-red-600 font-bold dark:text-red-400" />
               )}
               Case {idx + 1}
             </button>
@@ -464,7 +453,7 @@ function TestResultTabContent({
               "mono mt-1 max-h-36 overflow-auto rounded-md border bg-background p-2.5 text-xs leading-relaxed whitespace-pre-wrap",
               activeCase.pass
                 ? "border-border text-foreground"
-                : "border-rose-500/40 text-rose-400 bg-rose-500/5",
+                : "border-red-600/40 text-red-700 dark:border-red-400/40 dark:text-red-300",
             )}
           >
             {activeCase.actual.trim() ? (
@@ -486,10 +475,10 @@ function TestResultTabContent({
 
         {activeCase.stderr ? (
           <div>
-            <span className="text-[11px] font-medium text-rose-500 uppercase tracking-wider">
+            <span className="text-[11px] font-medium text-red-600 uppercase tracking-wider dark:text-red-400">
               Stderr / Traceback
             </span>
-            <pre className="mono mt-1 max-h-40 overflow-auto rounded-md border border-rose-500/30 bg-background p-2.5 text-xs leading-relaxed text-rose-400 whitespace-pre-wrap break-words">
+            <pre className="mono mt-1 max-h-40 overflow-auto rounded-md border border-red-600/30 bg-background p-2.5 text-xs leading-relaxed text-red-700 whitespace-pre-wrap break-words dark:border-red-400/30 dark:text-red-300">
               {activeCase.stderr}
             </pre>
           </div>

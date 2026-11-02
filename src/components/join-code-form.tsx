@@ -2,9 +2,9 @@
 
 import { useActionState } from "react";
 import { joinAction } from "@/app/join/actions";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
+import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 
 export function JoinCodeForm() {
@@ -12,11 +12,9 @@ export function JoinCodeForm() {
 
   return (
     <form action={formAction}>
-      <FieldGroup>
-        <Field>
-          <FieldLabel htmlFor="code">Join code</FieldLabel>
+      <div className="flex flex-col gap-4">
+        <Field label="Join code">
           <Input
-            id="code"
             name="code"
             className="mono h-12 text-center text-lg tracking-[0.4em] uppercase"
             placeholder="ABC123"
@@ -28,16 +26,12 @@ export function JoinCodeForm() {
           />
         </Field>
 
-        {state?.error ? (
-          <Alert variant="destructive">
-            <AlertDescription>{state.error}</AlertDescription>
-          </Alert>
-        ) : null}
+        {state?.error ? <Alert tone="danger">{state.error}</Alert> : null}
 
         <Button type="submit" disabled={pending} className="w-full">
           {pending ? "Checking…" : "Enter event"}
         </Button>
-      </FieldGroup>
+      </div>
     </form>
   );
 }

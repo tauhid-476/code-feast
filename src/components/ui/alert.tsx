@@ -1,75 +1,45 @@
-import * as React from "react"
-import { cva, type VariantProps } from "class-variance-authority"
-import { cn } from "cn"
+import { cva, type VariantProps } from 'class-variance-authority'
+import { CircleAlert, CircleCheck, Info, TriangleAlert } from 'lucide-react'
+import * as React from 'react'
 
-const alertVariants = cva(
-  "group/alert relative grid w-full gap-0.5 rounded-lg border px-2.5 py-2 text-left text-sm has-data-[slot=alert-action]:relative has-data-[slot=alert-action]:pr-18 has-[>svg]:grid-cols-[auto_1fr] has-[>svg]:gap-x-2 *:[svg]:row-span-2 *:[svg]:translate-y-0.5 *:[svg]:text-current *:[svg:not([class*='size-'])]:size-4",
-  {
-    variants: {
-      variant: {
-        default: "bg-card text-card-foreground",
-        destructive:
-          "bg-card text-destructive *:data-[slot=alert-description]:text-destructive/90 *:[svg]:text-current",
-      },
+import { cn } from '@/lib/utils'
+
+/**
+ * A message in the flow of the page: a notice, a warning, a failure. Like
+ * every status in ChaiUI it is a thin coloured outline and coloured text on
+ * the page background, never a filled block. `info` is neutral grey.
+ */
+const alertVariants = cva('relative flex gap-3 rounded-xl border px-4 py-3 text-sm', {
+  variants: {
+    tone: {
+      info: 'border-card-edge-hover text-foreground [&>svg]:text-muted-foreground',
+      success: 'border-green-600/30 text-green-800 dark:border-green-400/30 dark:text-green-300',
+      warning: 'border-yellow-600/35 text-yellow-800 dark:border-yellow-400/30 dark:text-yellow-200',
+      danger: 'border-red-600/30 text-red-800 dark:border-red-400/30 dark:text-red-300',
     },
-    defaultVariants: {
-      variant: "default",
-    },
-  }
-)
+  },
+  defaultVariants: { tone: 'info' },
+})
+
+const icons = { info: Info, success: CircleCheck, warning: TriangleAlert, danger: CircleAlert }
 
 function Alert({
+  tone = 'info',
+  title,
   className,
-  variant,
+  children,
   ...props
-}: React.ComponentProps<"div"> & VariantProps<typeof alertVariants>) {
+}: Omit<React.ComponentProps<'div'>, 'title'> & VariantProps<typeof alertVariants> & { title?: React.ReactNode }) {
+  const Icon = icons[tone ?? 'info']
   return (
-    <div
-      data-slot="alert"
-      role="alert"
-      className={cn(alertVariants({ variant }), className)}
-      {...props}
-    />
+    <div data-slot="alert" role={tone === 'danger' ? 'alert' : 'status'} className={cn(alertVariants({ tone }), className)} {...props}>
+      <Icon className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+      <div className="min-w-0 space-y-0.5">
+        {title && <p className="font-montserrat font-semibold">{title}</p>}
+        {children && <div className="leading-relaxed opacity-90">{children}</div>}
+      </div>
+    </div>
   )
 }
 
-function AlertTitle({ className, ...props }: React.ComponentProps<"div">) {
-  return (
-    <div
-      data-slot="alert-title"
-      className={cn(
-        "font-medium group-has-[>svg]/alert:col-start-2 [&_a]:underline [&_a]:underline-offset-3 [&_a]:hover:text-foreground",
-        className
-      )}
-      {...props}
-    />
-  )
-}
-
-function AlertDescription({
-  className,
-  ...props
-}: React.ComponentProps<"div">) {
-  return (
-    <div
-      data-slot="alert-description"
-      className={cn(
-        "text-sm text-balance text-muted-foreground md:text-pretty [&_a]:underline [&_a]:underline-offset-3 [&_a]:hover:text-foreground [&_p:not(:last-child)]:mb-4",
-        className
-      )}
-      {...props}
-    />
-  )
-}
-
-function AlertAction({ className, ...props }: React.ComponentProps<"div">) {
-  return (
-    <div
-      data-slot="alert-action"
-      className={cn("absolute top-2 right-2", className)}
-      {...props}
-    />
-  )
-}
-
-export { Alert, AlertTitle, AlertDescription, AlertAction }
+export { Alert, alertVariants }

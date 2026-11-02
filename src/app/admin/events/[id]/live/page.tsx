@@ -5,8 +5,8 @@ import { EliminatedParticipantsCard } from "@/components/eliminated-participants
 import { EventClockControls } from "@/components/event-clock-controls";
 import { EventHealthStrip } from "@/components/event-health-strip";
 import { EventStatusBadge } from "@/components/event-status-badge";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription, AlertTitle } from "@/components/legacy-ui/alert";
+import { Button } from "@/components/legacy-ui/button";
 import { requireOrganizer } from "@/lib/auth/guards";
 import { getEventHealth } from "@/lib/events/live";
 

@@ -3,9 +3,9 @@
 import { useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import type { OnMount } from "@monaco-editor/react";
-import { useTheme } from "next-themes";
-import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
-import { Spinner } from "@/components/ui/spinner";
+import { useTheme } from "@/components/theme-provider";
+import { Field, FieldDescription, FieldLabel } from "@/components/legacy-ui/field";
+import { Spinner } from "@/components/legacy-ui/spinner";
 import { LANGUAGE_LABELS, type Language } from "@/lib/languages";
 
 export type StarterPairDraft = {
@@ -67,7 +67,7 @@ function AdminCodeEditor({
   onChange: (value: string) => void;
   onSave?: () => void;
 }) {
-  const { resolvedTheme } = useTheme();
+  const { theme } = useTheme();
   const [isEmpty, setIsEmpty] = useState(() => (defaultValue ?? "").length === 0);
   const onSaveRef = useRef(onSave);
 
@@ -101,7 +101,7 @@ function AdminCodeEditor({
         path={modelPath}
         language={MONACO_LANGUAGES[language]}
         defaultValue={defaultValue}
-        theme={resolvedTheme === "light" ? "light" : "vs-dark"}
+        theme={theme === "light" ? "light" : "vs-dark"}
         onChange={(val) => {
           const text = val ?? "";
           setIsEmpty(text.length === 0);
@@ -113,7 +113,7 @@ function AdminCodeEditor({
           lineNumbers: "on",
           fontSize: 13,
           lineHeight: 20,
-          fontFamily: "var(--font-geist-mono), ui-monospace, monospace",
+          fontFamily: "var(--font-mono), ui-monospace, monospace",
           automaticLayout: true,
           scrollBeyondLastLine: false,
           padding: { top: 14, bottom: 14 },

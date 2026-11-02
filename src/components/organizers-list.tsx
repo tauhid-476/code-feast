@@ -5,13 +5,7 @@ import { Trash2, Mail, Building } from "lucide-react";
 import { toast } from "sonner";
 import { removeApprovedOrganizerAction } from "@/app/admin/organizers/actions";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardBody, CardText, CardTitle } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -44,14 +38,12 @@ export function OrganizersList({
   };
 
   return (
-    <Card>
-      <CardHeader>
+    <Card className="backdrop-blur-none sm:opacity-100">
+      <CardBody className="gap-3">
         <CardTitle>Whitelisted Organizers</CardTitle>
-        <CardDescription>
+        <CardText className="line-clamp-none">
           Users in this list have permission to access the admin panel, create contests, and manage problem sets.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
+        </CardText>
         {organizers.length === 0 ? (
           <p className="py-6 text-center text-sm text-muted-foreground">
             No organizers have been manually whitelisted yet. (Super-admins configured via env still have full access.)
@@ -97,7 +89,7 @@ export function OrganizersList({
                       className="text-destructive hover:bg-destructive/10 hover:text-destructive"
                       aria-label={`Revoke ${org.email}`}
                     >
-                      <Trash2 className="size-4" />
+                      <Trash2 />
                     </Button>
                   </TableCell>
                 </TableRow>
@@ -105,7 +97,7 @@ export function OrganizersList({
             </TableBody>
           </Table>
         )}
-      </CardContent>
+      </CardBody>
     </Card>
   );
 }

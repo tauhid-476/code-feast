@@ -1,6 +1,6 @@
 import { ShieldAlert } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { cn } from "cn";
+import { Chip } from "@/components/ui/chip";
+import { cn } from "@/lib/utils";
 import { STRIKE_LIMIT } from "@/lib/violations/kinds";
 
 /**
@@ -23,16 +23,16 @@ export function StrikeCounter({
   const dangerous = strikes >= limit - 1;
 
   return (
-    <Badge
-      variant={dangerous ? "destructive" : "outline"}
+    <Chip
+      tone={dangerous ? "danger" : "default"}
       aria-live="polite"
       aria-label={`Strikes: ${strikes} of ${limit}`}
     >
-      <ShieldAlert data-icon="inline-start" aria-hidden="true" />
+      <ShieldAlert className="size-3" aria-hidden="true" />
       <span className="label">Strikes</span>
       <span className={cn("mono tabular", dangerous && "font-semibold")}>
         {strikes} of {limit}
       </span>
-    </Badge>
+    </Chip>
   );
 }

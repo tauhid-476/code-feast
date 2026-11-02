@@ -4,12 +4,12 @@ import { useState, useTransition } from "react";
 import { Play } from "lucide-react";
 import type { TestProblemActionState } from "@/app/admin/events/[id]/actions";
 import { RunResultView } from "@/components/run-result";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
-import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
-import { Spinner } from "@/components/ui/spinner";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Textarea } from "@/components/ui/textarea";
+import { Alert, AlertDescription } from "@/components/legacy-ui/alert";
+import { Button } from "@/components/legacy-ui/button";
+import { Field, FieldDescription, FieldLabel } from "@/components/legacy-ui/field";
+import { Spinner } from "@/components/legacy-ui/spinner";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/legacy-ui/tabs";
+import { Textarea } from "@/components/legacy-ui/textarea";
 import {
   LANGUAGE_LABELS,
   LANGUAGES,

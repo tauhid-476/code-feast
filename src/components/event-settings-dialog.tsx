@@ -5,17 +5,10 @@ import { Settings } from "lucide-react";
 import { toast } from "sonner";
 import { updateEventSettingsAction } from "@/app/admin/events/actions";
 import { E2BApiKeyGuide } from "@/components/e2b-api-key-guide";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
+import { Dialog, DialogActions } from "@/components/ui/dialog";
+import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 
 export function EventSettingsDialog({
@@ -49,29 +42,24 @@ export function EventSettingsDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger
-        render={
-          <Button variant="outline" size="sm">
-            <Settings data-icon="inline-start" />
-            Settings
-          </Button>
-        }
-      />
-      <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-xl">
-        <DialogHeader>
-          <DialogTitle>Event Settings</DialogTitle>
-          <DialogDescription>
-            Update event title, duration, or bring your own E2B API Key for sandboxes.
-          </DialogDescription>
-        </DialogHeader>
+    <>
+      <Button variant="outline" size="sm" onClick={() => setOpen(true)}>
+        <Settings />
+        Settings
+      </Button>
 
-        <form onSubmit={handleSubmit}>
-          <FieldGroup>
-            <Field>
-              <FieldLabel htmlFor="edit-title">Title</FieldLabel>
+      <Dialog
+        open={open}
+        onClose={() => setOpen(false)}
+        busy={pending}
+        title="Event Settings"
+        description="Update event title, duration, or bring your own E2B API Key for sandboxes."
+        className="max-h-[85vh] overflow-y-auto sm:max-w-xl"
+      >
+        <form onSubmit={handleSubmit} className="mt-5">
+          <div className="flex flex-col gap-4">
+            <Field label="Title">
               <Input
-                id="edit-title"
                 name="title"
                 defaultValue={currentTitle}
                 maxLength={120}
@@ -79,10 +67,8 @@ export function EventSettingsDialog({
               />
             </Field>
 
-            <Field>
-              <FieldLabel htmlFor="edit-durationMinutes">Duration (Minutes)</FieldLabel>
+            <Field label="Duration (Minutes)">
               <Input
-                id="edit-durationMinutes"
                 name="durationMinutes"
                 type="number"
                 min={1}
@@ -92,13 +78,16 @@ export function EventSettingsDialog({
               />
             </Field>
 
-            <div className="space-y-3 rounded-lg border border-border/80 bg-muted/20 p-4">
-              <Field>
-                <FieldLabel htmlFor="edit-e2bApiKey">
-                  E2B API Key (BYOK)
-                </FieldLabel>
+            <div className="flex flex-col gap-3 rounded-lg border border-border/80 bg-muted/20 p-4">
+              <Field
+                label="E2B API Key (BYOK)"
+                hint={
+                  hasCustomE2bKey
+                    ? "This event has a custom E2B API key configured. Enter a new key to update, or leave blank to keep current."
+                    : "If left blank, code runs fall back to the platform environment variable E2B_API_KEY."
+                }
+              >
                 <Input
-                  id="edit-e2bApiKey"
                   name="e2bApiKey"
                   type="password"
                   placeholder={
@@ -108,23 +97,14 @@ export function EventSettingsDialog({
                   }
                   autoComplete="off"
                 />
-                <span className="text-xs text-muted-foreground">
-                  {hasCustomE2bKey
-                    ? "This event has a custom E2B API key configured. Enter a new key to update, or leave blank to keep current."
-                    : "If left blank, code runs fall back to the platform environment variable E2B_API_KEY."}
-                </span>
               </Field>
 
               <E2BApiKeyGuide />
             </div>
 
-            {error ? (
-              <Alert variant="destructive">
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            ) : null}
+            {error ? <Alert tone="danger">{error}</Alert> : null}
 
-            <div className="flex justify-end gap-2 pt-2">
+            <DialogActions className="mt-0 pt-2">
               <Button
                 type="button"
                 variant="outline"
@@ -135,10 +115,10 @@ export function EventSettingsDialog({
               <Button type="submit" disabled={pending}>
                 {pending ? "Saving…" : "Save settings"}
               </Button>
-            </div>
-          </FieldGroup>
+            </DialogActions>
+          </div>
         </form>
-      </DialogContent>
-    </Dialog>
+      </Dialog>
+    </>
   );
 }
