@@ -4,8 +4,8 @@ import { FullscreenGate } from "@/components/fullscreen-gate";
 import { LobbyLiveWatcher } from "@/components/lobby-live-watcher";
 import { ModeToggle } from "@/components/mode-toggle";
 import { SignOutButton } from "@/components/sign-out-button";
-import { Card, CardContent } from "@/components/legacy-ui/card";
-import { Separator } from "@/components/legacy-ui/separator";
+import { Card, CardBody } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 import { requireParticipant } from "@/lib/auth/guards";
 import { readContestGate } from "@/lib/participants/gate";
 import { loadParticipantContext } from "@/lib/participants/queries";
@@ -57,8 +57,8 @@ export default async function LobbyPage({ params }: PageProps<"/e/[code]">) {
             deadlineAt={event.deadlineAt?.toISOString() ?? null}
           />
         ) : (
-          <Card>
-            <CardContent className="flex flex-col gap-5">
+          <Card className="backdrop-blur-none sm:opacity-100">
+            <CardBody className="flex flex-col gap-5">
               <div>
                 <p className="label">Event</p>
                 <p className="mt-1 text-2xl font-semibold tracking-tight text-balance">
@@ -89,7 +89,7 @@ export default async function LobbyPage({ params }: PageProps<"/e/[code]">) {
                   about the problems until then.
                 </p>
               </div>
-            </CardContent>
+            </CardBody>
           </Card>
         )}
 

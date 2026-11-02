@@ -2,7 +2,7 @@ import { ModeToggle } from "@/components/mode-toggle";
 import { SignOutButton } from "@/components/sign-out-button";
 import { JoinCodeForm } from "@/components/join-code-form";
 import { requireParticipant } from "@/lib/auth/guards";
-import { Card, CardContent } from "@/components/legacy-ui/card";
+import { Card, CardBody } from "@/components/ui/card";
 
 export const dynamic = "force-dynamic";
 
@@ -23,15 +23,15 @@ export default async function JoinPage() {
           </div>
         </div>
 
-        <Card>
-          <CardContent>
+        <Card className="backdrop-blur-none sm:opacity-100">
+          <CardBody>
             <p className="mb-4 text-sm text-muted-foreground">
               Signed in as{" "}
               <span className="text-foreground">{participant.email}</span>. Enter
               the code your organizer shared.
             </p>
             <JoinCodeForm />
-          </CardContent>
+          </CardBody>
         </Card>
       </div>
     </main>

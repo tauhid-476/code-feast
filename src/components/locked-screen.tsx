@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
-import { Badge } from "@/components/legacy-ui/badge";
-import { Card, CardContent } from "@/components/legacy-ui/card";
-import { Separator } from "@/components/legacy-ui/separator";
+import { Card, CardBody } from "@/components/ui/card";
+import { Chip } from "@/components/ui/chip";
+import { Separator } from "@/components/ui/separator";
 import type { LockoutReason } from "@/lib/participants/lockout";
 import { elapsedSeconds, formatDuration } from "@/lib/time";
 
@@ -53,13 +53,11 @@ export function LockedScreen({
           {action}
         </header>
 
-        <Card>
-          <CardContent className="flex flex-col gap-5">
+        <Card className="backdrop-blur-none sm:opacity-100">
+          <CardBody className="flex flex-col gap-5">
             <div className="flex flex-col gap-2">
               <div className="flex flex-wrap items-center gap-2">
-                <Badge variant="outline">
-                  {reason ? REASON_LABEL[reason] : "Ended"}
-                </Badge>
+                <Chip>{reason ? REASON_LABEL[reason] : "Ended"}</Chip>
                 <span className="text-xs text-muted-foreground">
                   {participantName}
                 </span>
@@ -82,7 +80,7 @@ export function LockedScreen({
             <p className="text-xs text-muted-foreground">
               Your code is frozen. It can no longer be viewed or changed.
             </p>
-          </CardContent>
+          </CardBody>
         </Card>
       </div>
     </main>

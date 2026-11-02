@@ -1,8 +1,8 @@
 import type { ReactNode } from "react";
 import { MonitorSmartphone } from "lucide-react";
-import { Badge } from "@/components/legacy-ui/badge";
-import { Card, CardContent } from "@/components/legacy-ui/card";
-import { Separator } from "@/components/legacy-ui/separator";
+import { Card, CardBody } from "@/components/ui/card";
+import { Chip } from "@/components/ui/chip";
+import { Separator } from "@/components/ui/separator";
 import { sessionTakeoverText } from "@/lib/contest/copy";
 
 /**
@@ -36,16 +36,13 @@ export function SessionTakeover({
           {action}
         </header>
 
-        <Card>
-          <CardContent className="flex flex-col gap-5">
+        <Card className="backdrop-blur-none sm:opacity-100">
+          <CardBody className="flex flex-col gap-5">
             <div className="flex flex-wrap items-center gap-2">
-              <Badge variant="destructive">
-                <MonitorSmartphone
-                  data-icon="inline-start"
-                  aria-hidden="true"
-                />
+              <Chip tone="danger">
+                <MonitorSmartphone className="size-3" aria-hidden="true" />
                 Newer tab
-              </Badge>
+              </Chip>
               <span className="text-xs text-muted-foreground">
                 {participantName}
               </span>
@@ -66,7 +63,7 @@ export function SessionTakeover({
               Keep working in the newer tab. Signing out here will not undo the
               strike, and reloading this page will not take the contest back.
             </p>
-          </CardContent>
+          </CardBody>
         </Card>
       </div>
     </main>
