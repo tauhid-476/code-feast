@@ -138,6 +138,35 @@ describe("ContestWorkspace Header and Secondary Navigation", () => {
     expect(html).toContain("Next");
     expect(html).toContain("Problem 1 of 2");
   });
+
+  it("renders ChaiUI language dropdown menu and split panel collapse triggers", () => {
+    const html = renderToStaticMarkup(
+      createElement(ContestWorkspace, {
+        code: "TESTCODE",
+        eventTitle: "Weekly Contest #1",
+        participantId: "part-1",
+        participantName: "Alice",
+        problems: mockProblems,
+        drafts: [],
+        sessionId: "sess-1",
+        strikes: 0,
+        serverNow: "2026-11-01T12:00:00.000Z",
+        deadlineAt: "2026-11-01T13:00:00.000Z",
+        onSessionRefused: () => {},
+      }),
+    );
+
+    // Language dropdown menu trigger
+    expect(html).toContain('aria-label="Language"');
+    expect(html).toContain("Python 3");
+
+    // Split panel collapse buttons
+    expect(html).toContain('aria-label="Collapse problem statement panel"');
+    expect(html).toContain('aria-label="Collapse code editor panel"');
+
+    // Resizer handle divider
+    expect(html).toContain("cursor-col-resize");
+  });
 });
 
 describe("ContestTestPanel", () => {

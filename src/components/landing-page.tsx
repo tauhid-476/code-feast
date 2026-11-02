@@ -1,13 +1,9 @@
+import Image from 'next/image'
 import {
-  CheckCircle2,
-  Clock,
-  Code2,
   Cpu,
   FileCode2,
   Shield,
-  ShieldAlert,
   Sparkles,
-  Terminal,
 } from 'lucide-react'
 
 import { CtaPanel } from '@/components/cta-panel'
@@ -18,7 +14,6 @@ import { StatStrip } from '@/components/stat-strip'
 import { Highlight } from '@/components/ui/highlight'
 import { PageShell } from '@/components/page-shell'
 import { Card, CardBody, CardTitle, CardText } from '@/components/ui/card'
-import { Chip } from '@/components/ui/chip'
 
 const FEATURES: Feature[] = [
   {
@@ -90,118 +85,6 @@ const STEPS = [
   },
 ]
 
-function ContestTerminalMock() {
-  return (
-    <div className="w-full overflow-hidden rounded-xl border border-white/10 bg-black/90 p-4 font-mono text-xs text-neutral-300 shadow-2xl backdrop-blur-md">
-      {/* Window bar */}
-      <div className="flex items-center justify-between border-b border-white/10 pb-3">
-        <div className="flex items-center gap-2">
-          <span className="size-2.5 rounded-full bg-red-500/80" />
-          <span className="size-2.5 rounded-full bg-yellow-500/80" />
-          <span className="size-2.5 rounded-full bg-green-500/80" />
-          <span className="ml-2 text-[11px] font-medium text-neutral-400">code-feast-workspace</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <Chip tone="default" className="text-[10px] py-0 px-2">
-            <Clock className="size-3" />
-            42:15 remaining
-          </Chip>
-          <Chip tone="success" className="text-[10px] py-0 px-2">
-            <ShieldAlert className="size-3 text-green-400" />
-            0 / 3 strikes
-          </Chip>
-        </div>
-      </div>
-
-      {/* Editor tabs */}
-      <div className="flex items-center gap-4 border-b border-white/10 pt-2 pb-2 text-[11px]">
-        <span className="flex items-center gap-1.5 text-white font-medium border-b border-orange-200/80 pb-1 -mb-2">
-          <Code2 className="size-3.5 text-orange-200" />
-          Two Sum (Python 3)
-        </span>
-        <span className="text-neutral-500 hover:text-neutral-400 cursor-default">Valid Anagram</span>
-        <span className="text-neutral-500 hover:text-neutral-400 cursor-default">LRU Cache</span>
-      </div>
-
-      {/* Code snippet */}
-      <div className="py-3 text-[11px] leading-relaxed">
-        <div className="flex gap-3">
-          <span className="select-none text-neutral-600">1</span>
-          <span>
-            <span className="text-purple-400">def</span> <span className="text-blue-400">two_sum</span>(nums: list[int], target: int) -&gt; list[int]:
-          </span>
-        </div>
-        <div className="flex gap-3">
-          <span className="select-none text-neutral-600">2</span>
-          <span className="pl-4 text-neutral-500"># Store compliment indices</span>
-        </div>
-        <div className="flex gap-3">
-          <span className="select-none text-neutral-600">3</span>
-          <span className="pl-4">lookup = &#123;&#125;</span>
-        </div>
-        <div className="flex gap-3">
-          <span className="select-none text-neutral-600">4</span>
-          <span className="pl-4">
-            <span className="text-purple-400">for</span> idx, val <span className="text-purple-400">in</span> enumerate(nums):
-          </span>
-        </div>
-        <div className="flex gap-3">
-          <span className="select-none text-neutral-600">5</span>
-          <span className="pl-8">
-            diff = target - val
-          </span>
-        </div>
-        <div className="flex gap-3">
-          <span className="select-none text-neutral-600">6</span>
-          <span className="pl-8">
-            <span className="text-purple-400">if</span> diff <span className="text-purple-400">in</span> lookup:
-          </span>
-        </div>
-        <div className="flex gap-3">
-          <span className="select-none text-neutral-600">7</span>
-          <span className="pl-12">
-            <span className="text-purple-400">return</span> [lookup[diff], idx]
-          </span>
-        </div>
-        <div className="flex gap-3">
-          <span className="select-none text-neutral-600">8</span>
-          <span className="pl-8">lookup[val] = idx</span>
-        </div>
-        <div className="flex gap-3">
-          <span className="select-none text-neutral-600">9</span>
-          <span className="pl-4">
-            <span className="text-purple-400">return</span> []
-          </span>
-        </div>
-      </div>
-
-      {/* Runner output console */}
-      <div className="rounded-lg border border-white/10 bg-black/60 p-2.5">
-        <div className="flex items-center justify-between pb-1.5 border-b border-white/5 text-[10px]">
-          <span className="flex items-center gap-1.5 text-neutral-400">
-            <Terminal className="size-3 text-neutral-400" />
-            Sandbox Run Output (E2B)
-          </span>
-          <span className="flex items-center gap-1 text-green-400 font-medium">
-            <CheckCircle2 className="size-3" />
-            2 / 2 sample cases passed
-          </span>
-        </div>
-        <div className="pt-2 flex flex-col gap-1 text-[10px] text-neutral-400">
-          <div className="flex items-center justify-between">
-            <span className="text-neutral-300">Case 1: nums = [2,7,11,15], target = 9</span>
-            <span className="text-neutral-500">14ms · stdout: [0, 1]</span>
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="text-neutral-300">Case 2: nums = [3,2,4], target = 6</span>
-            <span className="text-neutral-500">11ms · stdout: [1, 2]</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
-
 export function LandingPage() {
   return (
     <PageShell>
@@ -215,10 +98,49 @@ export function LandingPage() {
         title="Host synchronized coding competitions"
         primary={{ label: 'Join contest', href: '/join' }}
         secondary={{ label: 'Explore features', href: '#features' }}
-        media={<ContestTerminalMock />}
       >
         Execute live contests with <Highlight>zero client drift</Highlight>, sandboxed multi-language runtimes, and automated anti-cheat proctoring.
       </Hero>
+
+      {/* Platform Workspace Showcase */}
+      <div className="relative mx-auto mt-12 w-full max-w-6xl sm:mt-16">
+        <div className="overflow-hidden rounded-2xl border border-border/80 bg-card shadow-2xl transition-all duration-300 dark:border-white/10 dark:bg-black/40">
+          {/* Window Header */}
+          <div className="flex h-10 items-center justify-between border-b border-border/60 bg-muted/40 px-4 dark:border-white/10 dark:bg-white/[0.02]">
+            <div className="flex items-center gap-2">
+              <span className="size-2.5 rounded-full bg-red-500/80" />
+              <span className="size-2.5 rounded-full bg-yellow-500/80" />
+              <span className="size-2.5 rounded-full bg-green-500/80" />
+              <span className="ml-2 font-mono text-[11px] text-muted-foreground">
+                code-feast-workspace · live contest session
+              </span>
+            </div>
+            <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+              <span className="hidden sm:inline-block font-mono">Multi-Asset & File Attachments</span>
+            </div>
+          </div>
+
+          {/* Screenshot Display with Dynamic Dark/Light Theme Switching */}
+          <div className="relative aspect-[2940/1846] w-full bg-muted/20">
+            <Image
+              src="/assets/graph_light.png"
+              alt="Code Feast live contest workspace with graph problem and file attachments in light theme"
+              width={2940}
+              height={1846}
+              priority
+              className="block h-full w-full object-cover dark:hidden"
+            />
+            <Image
+              src="/assets/graph_dark.png"
+              alt="Code Feast live contest workspace with graph problem and file attachments in dark theme"
+              width={2940}
+              height={1846}
+              priority
+              className="hidden h-full w-full object-cover dark:block"
+            />
+          </div>
+        </div>
+      </div>
 
       <StatStrip className="mt-16 sm:mt-20" stats={STATS} />
 
