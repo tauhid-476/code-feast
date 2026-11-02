@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" width="640" height="360">
+  <defs><radialGradient id="g" cx="20%" cy="30%" r="80%"><stop offset="0" stop-color="#22364a"/><stop offset="1" stop-color="#0e1012"/></radialGradient></defs>
+  <rect width="640" height="360" fill="url(#g)"/>
+  <text x="320" y="170" text-anchor="middle" font-family="Montserrat, Arial, sans-serif" font-weight="700" font-size="60" fill="#fafafa" letter-spacing="-2">LangGraph</text>
+  <text x="320" y="215" text-anchor="middle" font-family="Montserrat, Arial, sans-serif" font-weight="500" font-size="22" fill="#ffedd5" fill-opacity=".85">Masterclass, 19 October</text>
+</svg>

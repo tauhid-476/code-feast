@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" width="640" height="360">
+  <defs>
+    <radialGradient id="g" cx="78%" cy="22%" r="75%"><stop offset="0" stop-color="#5a3b22"/><stop offset="1" stop-color="#1b1410"/></radialGradient>
+    <pattern id="h" width="28" height="48.5" patternUnits="userSpaceOnUse" patternTransform="scale(1.4)"><path d="M14 0 28 8.1v16.2L14 32.4 0 24.3V8.1z" fill="none" stroke="#fff" stroke-opacity=".05"/></pattern>
+  </defs>
+  <rect width="640" height="360" fill="url(#g)"/>
+  <rect width="640" height="360" fill="url(#h)"/>
+  <text x="40" y="196" font-family="Montserrat, Arial, sans-serif" font-weight="700" font-size="68" fill="#fafafa" letter-spacing="-2">FastAPI</text>
+  <text x="42" y="240" font-family="Montserrat, Arial, sans-serif" font-weight="500" font-size="26" fill="#ffedd5" fill-opacity=".85">with GenAI</text>
+</svg>
