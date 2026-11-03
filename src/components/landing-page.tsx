@@ -123,7 +123,7 @@ export function LandingPage() {
           {/* Screenshot Display with Dynamic Dark/Light Theme Switching */}
           <div className="relative aspect-[2940/1846] w-full bg-muted/20">
             <Image
-              src="/assets/graph_light.png"
+              src="/assets/tree_light.png"
               alt="Code Feast live contest workspace with graph problem and file attachments in light theme"
               width={2940}
               height={1846}
@@ -131,7 +131,7 @@ export function LandingPage() {
               className="block h-full w-full object-cover dark:hidden"
             />
             <Image
-              src="/assets/graph_dark.png"
+              src="/assets/tree_dark.png"
               alt="Code Feast live contest workspace with graph problem and file attachments in dark theme"
               width={2940}
               height={1846}
