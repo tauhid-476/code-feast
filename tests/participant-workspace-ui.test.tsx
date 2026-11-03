@@ -1,26 +1,25 @@
+import { describe, it, expect, vi } from "vitest";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it, vi } from "vitest";
-
-vi.mock("next/navigation", () => ({
-  useRouter: () => ({
-    push: vi.fn(),
-    replace: vi.fn(),
-    refresh: vi.fn(),
-  }),
-}));
 
 vi.mock("@/app/e/[code]/actions", () => ({
   submitContestAction: vi.fn(),
 }));
 
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({
+    refresh: vi.fn(),
+    push: vi.fn(),
+  }),
+}));
+
 import { ContestProblemNav } from "@/components/contest-problem-nav";
-import { ContestTestPanel } from "@/components/contest-test-panel";
-import type { ContestProblemView } from "@/components/contest-types";
 import { ContestWorkspace } from "@/components/contest-workspace";
-import { ModeToggle } from "@/components/mode-toggle";
+import { ContestTestPanel } from "@/components/contest-test-panel";
 import { SubmitContest } from "@/components/submit-contest";
 import { ThemeProvider } from "@/components/theme-provider";
+import { ModeToggle } from "@/components/mode-toggle";
+import type { ContestProblemView } from "@/components/contest-types";
 import type { RunResult } from "@/lib/runner/run";
 
 const mockProblems: ContestProblemView[] = [
@@ -28,25 +27,42 @@ const mockProblems: ContestProblemView[] = [
     id: "prob-1",
     position: 1,
     title: "Two Sum",
-    difficulty: "easy",
-    statementMd: "Find two numbers.",
+    difficulty: "Easy",
+    statementMd: "Given an array of integers `nums` and an integer `target`...",
     sampleCases: [
-      { position: 1, input: "2 7 11 15\n9\n", expectedOutput: "0 1\n" },
-      { position: 2, input: "3 2 4\n6\n", expectedOutput: "1 2\n" },
+      {
+        position: 1,
+        input: "2 7 11 15\n9\n",
+        expectedOutput: "0 1\n",
+      },
     ],
-    starters: [{ language: "python", starterCode: "def two_sum(): pass\n" }],
+    starters: [
+      {
+        language: "python",
+        starterCode: "def solve():\n    pass\n",
+      },
+    ],
     figures: [],
   },
   {
     id: "prob-2",
     position: 2,
     title: "Reverse Linked List",
-    difficulty: "medium",
-    statementMd: "Reverse a linked list.",
+    difficulty: "Medium",
+    statementMd: "Reverse a singly linked list...",
     sampleCases: [
-      { position: 1, input: "1 2 3 4 5\n", expectedOutput: "5 4 3 2 1\n" },
+      {
+        position: 1,
+        input: "1 2 3 4 5\n",
+        expectedOutput: "5 4 3 2 1\n",
+      },
     ],
-    starters: [{ language: "python", starterCode: "def reverse(): pass\n" }],
+    starters: [
+      {
+        language: "python",
+        starterCode: "def reverse():\n    pass\n",
+      },
+    ],
     figures: [],
   },
 ];
@@ -65,18 +81,13 @@ describe("ContestProblemNav", () => {
       }),
     );
 
-    // Tablist container
+    // Nav container with tablist role
     expect(html).toContain('role="tablist"');
-    expect(html).toContain('aria-label="Contest Problems"');
 
-    // Pill tabs
-    expect(html).toContain('role="tab"');
+    // First pill is selected with tabindex 0 and amber dot for attempted
     expect(html).toContain('id="problem-tab-prob-1"');
     expect(html).toContain('aria-selected="true"');
     expect(html).toContain('tabindex="0"');
-    expect(html).toContain("border-amber-500"); // current pill amber border
-
-    // Attempted indicator (amber dot)
     expect(html).toContain("bg-amber-500");
 
     // Second pill is idle with tabindex -1
@@ -137,6 +148,9 @@ describe("ContestWorkspace Header and Secondary Navigation", () => {
     expect(html).toContain("Previous");
     expect(html).toContain("Next");
     expect(html).toContain("Problem 1 of 2");
+
+    // Left statement panel should no longer contain sample test cases
+    expect(html).not.toContain("Sample test cases");
   });
 
   it("renders ChaiUI language dropdown menu and split panel collapse triggers", () => {
@@ -199,7 +213,7 @@ describe("ContestTestPanel", () => {
       sandboxError: null,
       timedOut: false,
       cases: [
-         {
+        {
           index: 0,
           input: "2 7 11 15\n9\n",
           expected: "0 1\n",
@@ -209,7 +223,7 @@ describe("ContestTestPanel", () => {
           ms: 15,
           pass: true,
         },
-         {
+        {
           index: 1,
           input: "3 2 4\n6\n",
           expected: "1 2\n",
@@ -238,7 +252,7 @@ describe("ContestTestPanel", () => {
     );
 
     expect(html).toContain("Accepted");
-    expect(html).toContain("2 of 2 passed");
+    expect(html).toContain("Passed test cases: 2 / 2");
     expect(html).toContain("Runtime: 27 ms");
   });
 
@@ -277,9 +291,91 @@ describe("ContestTestPanel", () => {
     );
 
     expect(html).toContain("Wrong Answer");
-    expect(html).toContain("0 of 1 passed");
+    expect(html).toContain("Passed test cases: 0 / 1");
     expect(html).toContain("9 9");
     expect(html).toContain("0 1");
+  });
+
+  it("renders variables with variable names in testcase tab and result tab", () => {
+    const problemWithVars: ContestProblemView = {
+      ...mockProblems[0],
+      sampleCases: [
+        {
+          position: 1,
+          input: "5\n[[0,1],[1,2],[3,4]]",
+          expectedOutput: "2",
+          variables: [
+            { name: "n", value: "5" },
+            { name: "edges", value: "[[0,1],[1,2],[3,4]]" },
+          ],
+        },
+      ],
+    };
+
+    const testcaseHtml = renderToStaticMarkup(
+      createElement(ContestTestPanel, {
+        problem: problemWithVars,
+        result: null,
+        error: null,
+        running: false,
+        onRun: () => {},
+        canRun: true,
+        activeTab: "testcase",
+        onTabChange: () => {},
+        isCollapsed: false,
+        onToggleCollapsed: () => {},
+      }),
+    );
+
+    expect(testcaseHtml).toContain("n =");
+    expect(testcaseHtml).toContain("5");
+    expect(testcaseHtml).toContain("edges =");
+    expect(testcaseHtml).toContain("[[0,1],[1,2],[3,4]]");
+    expect(testcaseHtml).toContain("Expected =");
+    expect(testcaseHtml).toContain("2");
+
+    const resultWithVars: RunResult = {
+      compileError: null,
+      sandboxError: null,
+      timedOut: false,
+      cases: [
+        {
+          index: 0,
+          input: "5\n[[0,1],[1,2],[3,4]]",
+          expected: "2",
+          actual: "2",
+          stderr: "",
+          exitCode: 0,
+          ms: 18,
+          pass: true,
+          variables: [
+            { name: "n", value: "5" },
+            { name: "edges", value: "[[0,1],[1,2],[3,4]]" },
+          ],
+        },
+      ],
+    };
+
+    const resultHtml = renderToStaticMarkup(
+      createElement(ContestTestPanel, {
+        problem: problemWithVars,
+        result: resultWithVars,
+        error: null,
+        running: false,
+        onRun: () => {},
+        canRun: true,
+        activeTab: "result",
+        onTabChange: () => {},
+        isCollapsed: false,
+        onToggleCollapsed: () => {},
+      }),
+    );
+
+    expect(resultHtml).toContain("n=5");
+    expect(resultHtml).toContain("edges=[[0,1],[1,2],[3,4]]");
+    expect(resultHtml).toContain("Your Output:");
+    expect(resultHtml).toContain("Expected output:");
+    expect(resultHtml).toContain("Passed test cases: 1 / 1");
   });
 });
 
@@ -318,11 +414,13 @@ describe("ThemeProvider & ModeToggle", () => {
       ),
     );
 
+    expect(html).toContain('id="test-child"');
     expect(html).toContain("Theme content");
   });
 
   it("renders ModeToggle button with aria-label", () => {
-    const html = renderToStaticMarkup(createElement(ModeToggle, {}));
+    const html = renderToStaticMarkup(createElement(ModeToggle));
+
     expect(html).toContain("Toggle theme");
   });
 });

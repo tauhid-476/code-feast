@@ -69,6 +69,7 @@ export async function listContestProblems(
       position: testCases.position,
       input: testCases.input,
       expectedOutput: testCases.expectedOutput,
+      variables: testCases.variables,
     })
     .from(testCases)
     .where(inArray(testCases.problemId, problemIds))
@@ -96,6 +97,7 @@ export async function listContestProblems(
       position: row.position,
       input: row.input,
       expectedOutput: row.expectedOutput,
+      variables: row.variables ?? null,
     });
     casesByProblem.set(row.problemId, list);
   }

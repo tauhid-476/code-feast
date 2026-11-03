@@ -83,6 +83,11 @@ export function RunResultView({ result }: { result: RunResult }) {
 }
 
 function RunCaseBlock({ caseResult }: { caseResult: RunCaseResult }) {
+  const displayInput =
+    caseResult.variables && caseResult.variables.length > 0
+      ? caseResult.variables.map((v) => `${v.name} = ${v.value}`).join("\n")
+      : caseResult.input;
+
   return (
     <div className="rounded-lg border border-border bg-background/40 p-3">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
@@ -104,7 +109,7 @@ function RunCaseBlock({ caseResult }: { caseResult: RunCaseResult }) {
       </div>
 
       <div className="mt-3 grid gap-2 md:grid-cols-3">
-        <OutputBlock label="Input" text={caseResult.input} />
+        <OutputBlock label="Input" text={displayInput} />
         <OutputBlock label="Expected" text={caseResult.expected} />
         <OutputBlock
           label="Actual"
@@ -139,15 +144,13 @@ function OutputBlock({
       <span className="label">{label}</span>
       <pre
         className={cn(
-          "mono mt-1 max-h-40 min-h-12 overflow-auto rounded-md border bg-background p-2 text-xs leading-relaxed whitespace-pre-wrap break-words",
-          failed ? "border-destructive/40" : "border-border",
+          "mono mt-1 max-h-40 overflow-auto rounded-md border bg-background p-2 text-xs leading-relaxed whitespace-pre-wrap",
+          failed
+            ? "border-destructive/40 text-destructive"
+            : "border-border text-foreground",
         )}
       >
-        {text.trim() ? (
-          text
-        ) : (
-          <span className="text-muted-foreground">(empty)</span>
-        )}
+        {text.length > 0 ? text : <span className="opacity-40">(empty)</span>}
       </pre>
     </div>
   );

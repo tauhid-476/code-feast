@@ -7,7 +7,7 @@ import {
   type ClipboardEvent,
   type FormEvent,
 } from "react";
-import { ImagePlus } from "lucide-react";
+import { ImagePlus, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import {
   createProblemAction,
@@ -27,13 +27,6 @@ import {
   type FigureView,
 } from "@/lib/figures/types";
 import type { ProblemSummary } from "@/lib/problems/queries";
-
-type SampleCaseDraft = { input: string; expectedOutput: string };
-
-const EMPTY_SAMPLE_CASES: SampleCaseDraft[] = [
-  { input: "", expectedOutput: "" },
-  { input: "", expectedOutput: "" },
-];
 
 /**
  * The statement preview is the only place Markdown is rendered while editing.
@@ -59,25 +52,86 @@ export function ProblemEditor({
     problem?.figures ?? [],
   );
   const [uploading, setUploading] = useState(false);
-  const [sampleCases, setSampleCases] = useState<SampleCaseDraft[]>(() => {
+
+  const [parameters, setParameters] = useState<string[]>(() => {
     const existing = problem?.sampleCases ?? [];
-    return EMPTY_SAMPLE_CASES.map((empty, index) => ({
-      input: existing[index]?.input ?? empty.input,
-      expectedOutput: existing[index]?.expectedOutput ?? empty.expectedOutput,
-    }));
+    if (existing[0]?.variables && existing[0].variables.length > 0) {
+      return existing[0].variables.map((v) => v.name);
+    }
+    if (existing[0]?.input) {
+      const lines = existing[0].input.split("\n");
+      if (lines.length > 1) {
+        return lines.map((_, i) => (i === 0 ? "nums" : i === 1 ? "target" : `param${i + 1}`));
+      }
+      return ["input"];
+    }
+    return ["nums", "target"];
   });
+
+  const [caseValues, setCaseValues] = useState<string[][]>(() => {
+    const existing = problem?.sampleCases ?? [];
+    return [0, 1].map((caseIdx) => {
+      const sc = existing[caseIdx];
+      if (sc?.variables && sc.variables.length > 0) {
+        return sc.variables.map((v) => v.value);
+      }
+      if (sc?.input) {
+        const lines = sc.input.split("\n");
+        return lines;
+      }
+      return ["", ""];
+    });
+  });
+
+  const [expectedOutputs, setExpectedOutputs] = useState<string[]>(() => {
+    const existing = problem?.sampleCases ?? [];
+    return [existing[0]?.expectedOutput ?? "", existing[1]?.expectedOutput ?? ""];
+  });
+
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const statementRef = useRef<HTMLTextAreaElement>(null);
   const statementValueRef = useRef(statementMd);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  function updateSampleCase(index: number, patch: Partial<SampleCaseDraft>) {
-    setSampleCases((current) =>
-      current.map((sampleCase, position) =>
-        position === index ? { ...sampleCase, ...patch } : sampleCase,
-      ),
-    );
+  function addParameter() {
+    setParameters((prev) => [...prev, `param${prev.length + 1}`]);
+    setCaseValues((prev) => [
+      [...(prev[0] ?? []), ""],
+      [...(prev[1] ?? []), ""],
+    ]);
+  }
+
+  function removeParameter(pIdx: number) {
+    if (parameters.length <= 1) return;
+    setParameters((prev) => prev.filter((_, i) => i !== pIdx));
+    setCaseValues((prev) => [
+      (prev[0] ?? []).filter((_, i) => i !== pIdx),
+      (prev[1] ?? []).filter((_, i) => i !== pIdx),
+    ]);
+  }
+
+  function updateParameterName(pIdx: number, name: string) {
+    setParameters((prev) => prev.map((curr, i) => (i === pIdx ? name : curr)));
+  }
+
+  function updateCaseValue(sampleIndex: number, pIdx: number, value: string) {
+    setCaseValues((prev) => {
+      const next = [[...(prev[0] ?? [])], [...(prev[1] ?? [])]];
+      while (next[sampleIndex].length <= pIdx) {
+        next[sampleIndex].push("");
+      }
+      next[sampleIndex][pIdx] = value;
+      return next;
+    });
+  }
+
+  function updateExpectedOutput(sampleIndex: number, value: string) {
+    setExpectedOutputs((prev) => {
+      const next = [...prev];
+      next[sampleIndex] = value;
+      return next;
+    });
   }
 
   const figureMap = figureDimensionsMap(figures);
@@ -153,7 +207,25 @@ export function ProblemEditor({
     formEvent.preventDefault();
     setError(null);
 
-    const input = { title, difficulty, statementMd, sampleCases };
+    const sampleCasesPayload = [0, 1].map((sampleIndex) => {
+      const vars = parameters.map((param, pIdx) => ({
+        name: param.trim() || `param${pIdx + 1}`,
+        value: caseValues[sampleIndex]?.[pIdx] ?? "",
+      }));
+      const rawInput = vars.map((v) => v.value).join("\n");
+      return {
+        input: rawInput,
+        expectedOutput: expectedOutputs[sampleIndex] ?? "",
+        variables: vars,
+      };
+    });
+
+    const input = {
+      title,
+      difficulty,
+      statementMd,
+      sampleCases: sampleCasesPayload,
+    };
 
     startTransition(async () => {
       const result = problem
@@ -208,8 +280,8 @@ export function ProblemEditor({
                   ref={fileInputRef}
                   type="file"
                   accept="image/png,image/jpeg,image/webp"
-                  className="sr-only"
-                  tabIndex={-1}
+                  multiple
+                  className="hidden"
                   onChange={(event) => {
                     const files = Array.from(event.target.files ?? []);
                     event.target.value = "";
@@ -222,14 +294,22 @@ export function ProblemEditor({
                   size="sm"
                   disabled={!problem || !figuresEnabled || uploading}
                   onClick={() => fileInputRef.current?.click()}
+                  title={
+                    !figuresEnabled
+                      ? "Figure storage is not configured"
+                      : !problem
+                        ? "Save the problem before adding figures"
+                        : undefined
+                  }
+                  className="gap-1.5"
                 >
-                  <ImagePlus />
-                  {uploading ? "Adding…" : "Add figure"}
+                  <ImagePlus className="size-3.5" />
+                  <span>{uploading ? "Uploading…" : "Add figure"}</span>
                 </Button>
               </div>
               <p className="text-xs text-muted-foreground">
-                Markdown. Raw HTML is not rendered, so anything that looks like
-                a tag stays literal text. Paste a PNG, JPEG or WebP image to add
+                GitHub Flavored Markdown. Paste images directly or use Add
+                figure to upload PNG, JPEG, or WebP up to 2MB each. They insert as
                 a Figure at the cursor.
               </p>
               {!figuresEnabled ? (
@@ -274,6 +354,59 @@ export function ProblemEditor({
               </div>
             </div>
 
+            {/* Input Parameters Definition */}
+            <section className="flex flex-col gap-3 rounded-lg border border-border bg-background/40 p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="label">Input Parameters</h3>
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    Define parameter names for problem inputs (e.g. <code className="mono text-[11px]">nums</code>, <code className="mono text-[11px]">target</code> or <code className="mono text-[11px]">n</code>, <code className="mono text-[11px]">edges</code>).
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={addParameter}
+                  className="gap-1 text-xs"
+                >
+                  <Plus className="size-3" />
+                  <span>Add parameter</span>
+                </Button>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2 pt-1">
+                {parameters.map((param, pIdx) => (
+                  <div
+                    key={pIdx}
+                    className="flex items-center gap-1.5 rounded-md border border-border bg-card px-2.5 py-1"
+                  >
+                    <span className="mono text-xs text-muted-foreground select-none">
+                      param {pIdx + 1}:
+                    </span>
+                    <input
+                      type="text"
+                      value={param}
+                      onChange={(e) => updateParameterName(pIdx, e.target.value)}
+                      placeholder={`param${pIdx + 1}`}
+                      className="mono h-6 w-24 bg-transparent text-xs text-foreground focus:outline-hidden"
+                    />
+                    {parameters.length > 1 ? (
+                      <button
+                        type="button"
+                        onClick={() => removeParameter(pIdx)}
+                        className="text-muted-foreground hover:text-destructive transition-colors p-0.5 rounded cursor-pointer"
+                        title="Remove parameter"
+                      >
+                        <Trash2 className="size-3.5" />
+                      </button>
+                    ) : null}
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            {/* Sample test cases */}
             <section className="flex flex-col gap-3">
               <div>
                 <h3 className="label">Sample test cases</h3>
@@ -283,35 +416,37 @@ export function ProblemEditor({
               </div>
 
               <div className="grid gap-3 lg:grid-cols-2">
-                {sampleCases.map((sampleCase, index) => (
+                {[0, 1].map((sampleIndex) => (
                   <div
-                    key={index}
-                    className="rounded-lg border border-border bg-background/40 p-3"
+                    key={sampleIndex}
+                    className="rounded-lg border border-border bg-background/40 p-4"
                   >
-                    <p className="label">Sample {index + 1}</p>
+                    <p className="label">Sample {sampleIndex + 1}</p>
                     <div className="mt-3 flex flex-col gap-3">
-                      <Field label="Input">
-                        <Textarea
-                          value={sampleCase.input}
-                          onChange={(event) =>
-                            updateSampleCase(index, {
-                              input: event.target.value,
-                            })
-                          }
-                          placeholder={"2 7 11 15\n9"}
-                          className="mono min-h-20 text-[0.8rem]"
-                        />
-                      </Field>
+                      {parameters.map((param, pIdx) => {
+                        const paramName = param.trim() || `param${pIdx + 1}`;
+                        return (
+                          <Field key={pIdx} label={`${paramName} =`}>
+                            <Textarea
+                              value={caseValues[sampleIndex]?.[pIdx] ?? ""}
+                              onChange={(event) =>
+                                updateCaseValue(sampleIndex, pIdx, event.target.value)
+                              }
+                              placeholder={pIdx === 0 ? "2 7 11 15" : "9"}
+                              className="mono min-h-16 text-[0.8rem]"
+                            />
+                          </Field>
+                        );
+                      })}
+
                       <Field label="Expected output">
                         <Textarea
-                          value={sampleCase.expectedOutput}
+                          value={expectedOutputs[sampleIndex] ?? ""}
                           onChange={(event) =>
-                            updateSampleCase(index, {
-                              expectedOutput: event.target.value,
-                            })
+                            updateExpectedOutput(sampleIndex, event.target.value)
                           }
-                          placeholder={"0 1"}
-                          className="mono min-h-20 text-[0.8rem]"
+                          placeholder="0 1"
+                          className="mono min-h-16 text-[0.8rem]"
                         />
                       </Field>
                     </div>

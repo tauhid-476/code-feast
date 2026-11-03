@@ -17,6 +17,7 @@ import {
   getProblem,
   listProblems,
   type ProblemSummary,
+  type TestCaseVariable,
 } from "./queries";
 
 /** The acting account. Domain modules never read the session themselves. */
@@ -26,8 +27,9 @@ export type ProblemActor = {
 };
 
 export type SampleCaseInput = {
-  input: string;
+  input?: string;
   expectedOutput: string;
+  variables?: TestCaseVariable[] | null;
 };
 
 export type ProblemInput = {
@@ -133,9 +135,15 @@ function validateDifficulty(
   return trimmed ? trimmed : null;
 }
 
+export type ValidatedSampleCase = {
+  input: string;
+  expectedOutput: string;
+  variables: TestCaseVariable[] | null;
+};
+
 function validateSampleCases(
   sampleCases: SampleCaseInput[],
-): SampleCaseInput[] {
+): ValidatedSampleCase[] {
   if (!Array.isArray(sampleCases) || sampleCases.length < SAMPLE_CASE_COUNT) {
     throw new DomainError(
       "sample_cases_missing",
@@ -148,19 +156,48 @@ function validateSampleCases(
       "A problem holds exactly two sample test cases.",
     );
   }
-  for (const sampleCase of sampleCases) {
-    if (
-      !sampleCase ||
-      typeof sampleCase.input !== "string" ||
-      typeof sampleCase.expectedOutput !== "string"
-    ) {
+  return sampleCases.map((sampleCase) => {
+    if (!sampleCase || typeof sampleCase.expectedOutput !== "string") {
       throw new DomainError(
         "sample_cases_malformed",
         "Sample test cases must specify input and expected output.",
       );
     }
-  }
-  return sampleCases;
+
+    let variables: TestCaseVariable[] | null = null;
+    if (Array.isArray(sampleCase.variables) && sampleCase.variables.length > 0) {
+      for (const v of sampleCase.variables) {
+        if (!v || typeof v.name !== "string" || typeof v.value !== "string") {
+          throw new DomainError(
+            "sample_cases_malformed",
+            "Variable parameters must have a name and value.",
+          );
+        }
+      }
+      variables = sampleCase.variables.map((v) => ({
+        name: v.name.trim(),
+        value: v.value,
+      }));
+    }
+
+    let input = typeof sampleCase.input === "string" ? sampleCase.input : "";
+    if (!input && variables && variables.length > 0) {
+      input = variables.map((v) => v.value).join("\n");
+    }
+
+    if (typeof input !== "string" || (!input && !variables)) {
+      throw new DomainError(
+        "sample_cases_malformed",
+        "Sample test cases must specify input and expected output.",
+      );
+    }
+
+    return {
+      input,
+      expectedOutput: sampleCase.expectedOutput,
+      variables,
+    };
+  });
 }
 
 function validatedProblem(input: ProblemInput) {
@@ -214,6 +251,7 @@ export async function createProblem(
         position: index + 1,
         input: sampleCase.input,
         expectedOutput: sampleCase.expectedOutput,
+        variables: sampleCase.variables,
       })),
     );
 
@@ -294,6 +332,7 @@ export async function updateProblem(
         position: index + 1,
         input: sampleCase.input,
         expectedOutput: sampleCase.expectedOutput,
+        variables: sampleCase.variables,
       })),
     );
 

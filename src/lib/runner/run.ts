@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type { Language } from "@/lib/languages";
 import { assembleRunProgram } from "@/lib/problems/program";
+import type { TestCaseVariable } from "@/lib/problems/queries";
 import { withClaimedSandbox } from "@/lib/runner/pool";
 import {
   DEFAULT_COMMAND_TIMEOUT_MS,
@@ -32,6 +33,7 @@ export type RunCaseResult = {
   exitCode: number | null;
   ms: number;
   pass: boolean;
+  variables?: TestCaseVariable[] | null;
 };
 
 export type RunResult = {
@@ -175,7 +177,7 @@ async function runCase(
   runner: LanguageRunner,
   dir: string,
   index: number,
-  sample: { input: string; expected: string },
+  sample: { input: string; expected: string; variables?: TestCaseVariable[] | null },
 ): Promise<{ case?: RunCaseResult; sandboxError?: string }> {
   try {
     const result = await handle.run(runner.runCommand(dir), {
@@ -193,6 +195,7 @@ async function runCase(
         exitCode: result.exitCode,
         ms: result.ms,
         pass: result.exitCode === 0 && outputMatches(actual, sample.expected),
+        variables: sample.variables ?? null,
       },
     };
   } catch (error) {
@@ -208,6 +211,7 @@ async function runCase(
           // The case burned its whole allowance; that is its duration.
           ms: runner.caseTimeoutMs,
           pass: false,
+          variables: sample.variables ?? null,
         },
       };
     }
@@ -297,6 +301,7 @@ export async function runAgainstSamples(
         const outcome = await runCase(handle, runner, dir, index, {
           input: sample.input,
           expected: sample.expectedOutput,
+          variables: sample.variables,
         });
         if (outcome.case) result.cases.push(outcome.case);
 

@@ -229,8 +229,8 @@ describe("per-language starter code and harness", () => {
     expect(shown[0].position).toBe(1);
     expect(shown[0].statementMd).toBe("Find the pair.");
     expect(shown[0].sampleCases).toEqual([
-      { position: 1, input: twoCases[0].input, expectedOutput: twoCases[0].expectedOutput },
-      { position: 2, input: twoCases[1].input, expectedOutput: twoCases[1].expectedOutput },
+      { position: 1, input: twoCases[0].input, expectedOutput: twoCases[0].expectedOutput, variables: null },
+      { position: 2, input: twoCases[1].input, expectedOutput: twoCases[1].expectedOutput, variables: null },
     ]);
     expect(shown[0].starters.map((starter) => starter.language)).toEqual([
       "python",
@@ -259,8 +259,8 @@ describe("per-language starter code and harness", () => {
     expect(program.language).toBe("python");
     expect(program.source).toBe(`${code}\n${PYTHON_HARNESS}`);
     expect(program.sampleCases).toEqual([
-      { position: 1, input: twoCases[0].input, expectedOutput: twoCases[0].expectedOutput },
-      { position: 2, input: twoCases[1].input, expectedOutput: twoCases[1].expectedOutput },
+      { position: 1, input: twoCases[0].input, expectedOutput: twoCases[0].expectedOutput, variables: null },
+      { position: 2, input: twoCases[1].input, expectedOutput: twoCases[1].expectedOutput, variables: null },
     ]);
     // The assembled source is for execution, not a participant-facing payload.
     expect(program).not.toHaveProperty("starterCode");

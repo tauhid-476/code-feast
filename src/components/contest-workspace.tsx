@@ -529,33 +529,7 @@ export function ContestWorkspace({
                 figures={figureDimensionsMap(problem.figures)}
               />
 
-              {problem.sampleCases.length > 0 ? (
-                <section className="mt-8 flex flex-col gap-3">
-                  <h3 className="label">Sample test cases</h3>
-                  {problem.sampleCases.map((sample) => (
-                    <div
-                      key={sample.position}
-                      className="rounded-lg border border-border bg-card p-3"
-                    >
-                      <p className="label">Sample {sample.position}</p>
-                      <dl className="mt-2 grid grid-cols-2 gap-3">
-                        <div>
-                          <dt className="label">Input</dt>
-                          <dd className="mono mt-1 max-h-32 overflow-auto text-xs whitespace-pre-wrap text-foreground">
-                            {sample.input}
-                          </dd>
-                        </div>
-                        <div>
-                          <dt className="label">Expected</dt>
-                          <dd className="mono mt-1 max-h-32 overflow-auto text-xs whitespace-pre-wrap text-foreground">
-                            {sample.expectedOutput}
-                          </dd>
-                        </div>
-                      </dl>
-                    </div>
-                  ))}
-                </section>
-              ) : null}
+              
             </article>
 
             {/* Secondary Navigation Footer at the bottom of the statement panel */}
