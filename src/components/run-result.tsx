@@ -2,6 +2,7 @@
 
 import { Badge } from "@/components/legacy-ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/legacy-ui/alert";
+import { formatVariableValue } from "@/lib/problems/format";
 import { cn } from "@/lib/utils";
 import type { RunCaseResult, RunResult } from "@/lib/runner/run";
 
@@ -85,7 +86,11 @@ export function RunResultView({ result }: { result: RunResult }) {
 function RunCaseBlock({ caseResult }: { caseResult: RunCaseResult }) {
   const displayInput =
     caseResult.variables && caseResult.variables.length > 0
-      ? caseResult.variables.map((v) => `${v.name} = ${v.value}`).join("\n")
+      ? caseResult.variables
+          .map(
+            (v) => `${v.name} = ${formatVariableValue(v.value, v.name)}`,
+          )
+          .join("\n")
       : caseResult.input;
 
   return (
@@ -150,7 +155,7 @@ function OutputBlock({
             : "border-border text-foreground",
         )}
       >
-        {text.length > 0 ? text : <span className="opacity-40">(empty)</span>}
+        {text.trim() ? text : <span className="text-muted-foreground">(empty)</span>}
       </pre>
     </div>
   );

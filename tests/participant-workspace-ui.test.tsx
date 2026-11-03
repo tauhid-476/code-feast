@@ -371,11 +371,106 @@ describe("ContestTestPanel", () => {
       }),
     );
 
-    expect(resultHtml).toContain("n=5");
-    expect(resultHtml).toContain("edges=[[0,1],[1,2],[3,4]]");
+    expect(resultHtml).toContain("n = 5");
+    expect(resultHtml).toContain("edges = [[0,1],[1,2],[3,4]]");
     expect(resultHtml).toContain("Your Output:");
     expect(resultHtml).toContain("Expected output:");
     expect(resultHtml).toContain("Passed test cases: 1 / 1");
+  });
+
+  it("formats data structures like array brackets and string quotes for participants", () => {
+    const problemWithDataStructures: ContestProblemView = {
+      ...mockProblems[0],
+      sampleCases: [
+        {
+          position: 1,
+          input: "2 7 11 15\n9",
+          expectedOutput: "0 1",
+          variables: [
+            { name: "nums", value: "2 7 11 15" },
+            { name: "target", value: "9" },
+          ],
+        },
+        {
+          position: 2,
+          input: "()",
+          expectedOutput: "true",
+          variables: [{ name: "s", value: "()" }],
+        },
+      ],
+    };
+
+    const testcaseHtml = renderToStaticMarkup(
+      createElement(ContestTestPanel, {
+        problem: problemWithDataStructures,
+        result: null,
+        error: null,
+        running: false,
+        onRun: () => {},
+        canRun: true,
+        activeTab: "testcase",
+        onTabChange: () => {},
+        isCollapsed: false,
+        onToggleCollapsed: () => {},
+      }),
+    );
+
+    expect(testcaseHtml).toContain("nums =");
+    expect(testcaseHtml).toContain("[2, 7, 11, 15]");
+    expect(testcaseHtml).toContain("target =");
+    expect(testcaseHtml).toContain("9");
+
+    const result: RunResult = {
+      compileError: null,
+      sandboxError: null,
+      timedOut: false,
+      cases: [
+        {
+          index: 0,
+          input: "2 7 11 15\n9",
+          expected: "0 1",
+          actual: "0 1",
+          stderr: "",
+          exitCode: 0,
+          ms: 10,
+          pass: true,
+          variables: [
+            { name: "nums", value: "2 7 11 15" },
+            { name: "target", value: "9" },
+          ],
+        },
+        {
+          index: 1,
+          input: "()",
+          expected: "true",
+          actual: "true",
+          stderr: "",
+          exitCode: 0,
+          ms: 10,
+          pass: true,
+          variables: [{ name: "s", value: "()" }],
+        },
+      ],
+    };
+
+    const resultHtml = renderToStaticMarkup(
+      createElement(ContestTestPanel, {
+        problem: problemWithDataStructures,
+        result,
+        error: null,
+        running: false,
+        onRun: () => {},
+        canRun: true,
+        activeTab: "result",
+        onTabChange: () => {},
+        isCollapsed: false,
+        onToggleCollapsed: () => {},
+      }),
+    );
+
+    expect(resultHtml).toContain("nums = [2, 7, 11, 15]");
+    expect(resultHtml).toContain("target = 9");
+    expect(resultHtml).toContain("Passed test cases: 2 / 2");
   });
 });
 

@@ -360,7 +360,7 @@ export function ProblemEditor({
                 <div>
                   <h3 className="label">Input Parameters</h3>
                   <p className="mt-0.5 text-xs text-muted-foreground">
-                    Define parameter names for problem inputs (e.g. <code className="mono text-[11px]">nums</code>, <code className="mono text-[11px]">target</code> or <code className="mono text-[11px]">n</code>, <code className="mono text-[11px]">edges</code>).
+                    Define parameter names for problem inputs (e.g. <code className="mono text-[11px]">nums</code>, <code className="mono text-[11px]">target</code> or <code className="mono text-[11px]">s</code>). Displayed to participants formatted as data structures (e.g. <code className="mono text-[11px]">[2, 7, 11, 15]</code>, <code className="mono text-[11px]">&quot;()&quot;</code>).
                   </p>
                 </div>
                 <Button

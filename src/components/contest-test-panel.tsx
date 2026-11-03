@@ -15,6 +15,7 @@ import type { ContestProblemView } from "@/components/contest-types";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
+import { formatVariableValue } from "@/lib/problems/format";
 import type { RunResult } from "@/lib/runner/run";
 import { cn } from "@/lib/utils";
 
@@ -150,7 +151,7 @@ export function ContestTestPanel({
                 <span className="flex size-2 rounded-full bg-red-600 dark:bg-red-400" />
               )
             ) : null}
-{running ? <Spinner className="[&_svg]:size-3" /> : null}
+            {running ? <Spinner className="[&_svg]:size-3" /> : null}
           </button>
         </div>
 
@@ -158,7 +159,7 @@ export function ContestTestPanel({
         <div className="flex items-center gap-1">
           <Button
             type="button"
-size="sm"
+            size="sm"
             variant="outline"
             disabled={running || !canRun}
             onClick={() => {
@@ -270,7 +271,7 @@ function TestcaseTabContent({
                 {v.name} =
               </span>
               <pre className="mono overflow-x-auto rounded-md border border-border bg-background/60 p-2.5 text-xs text-foreground leading-relaxed whitespace-pre-wrap">
-                {v.value || "(empty)"}
+                {formatVariableValue(v.value, v.name)}
               </pre>
             </div>
           ))
@@ -458,7 +459,11 @@ function TestResultTabContent({
           </span>
           <pre className="mono mt-1 max-h-36 overflow-auto rounded-md border border-border bg-background/60 p-2.5 text-xs text-foreground leading-relaxed whitespace-pre-wrap">
             {activeCase.variables && activeCase.variables.length > 0
-              ? activeCase.variables.map((v) => `${v.name}=${v.value}`).join("\n")
+              ? activeCase.variables
+                  .map(
+                    (v) => `${v.name} = ${formatVariableValue(v.value, v.name)}`,
+                  )
+                  .join("\n")
               : activeCase.input || "(empty)"}
           </pre>
         </div>
