@@ -4,6 +4,7 @@ import {
   check,
   index,
   integer,
+  jsonb,
   pgTable,
   text,
   timestamp,
@@ -37,7 +38,7 @@ export const events = pgTable(
   },
   (t) => [
     check("events_status_check", sql`${t.status} in ('draft', 'live', 'ended')`),
-    check("events_duration_check", sql`${t.durationMinutes} > 0`),
+    check("events_duration_check", sql`${t.durationMinutes} > 0` ),
     // A join code is unique among non-ended events; ended codes may be reused.
     uniqueIndex("events_live_code_unique")
       .on(t.code)
@@ -88,6 +89,11 @@ export const problemStarters = pgTable(
   ],
 );
 
+export type TestCaseVariable = {
+  name: string;
+  value: string;
+};
+
 export const testCases = pgTable(
   "test_cases",
   {
@@ -98,6 +104,7 @@ export const testCases = pgTable(
     position: integer("position").notNull(),
     input: text("input").notNull(),
     expectedOutput: text("expected_output").notNull(),
+    variables: jsonb("variables").$type<TestCaseVariable[]>(),
   },
   (t) => [
     uniqueIndex("test_cases_problem_position_unique").on(

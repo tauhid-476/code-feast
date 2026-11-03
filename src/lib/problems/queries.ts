@@ -5,11 +5,17 @@ import { listReadyFigureViews } from "@/lib/figures/queries";
 import type { FigureView } from "@/lib/figures/types";
 import { isLanguage, languageRank, type Language } from "@/lib/languages";
 
+export type TestCaseVariable = {
+  name: string;
+  value: string;
+};
+
 /** A Sample Test Case as the authoring surface sees it. Positions are 1 and 2. */
 export type SampleCase = {
   position: number;
   input: string;
   expectedOutput: string;
+  variables?: TestCaseVariable[] | null;
 };
 
 /**
@@ -55,6 +61,7 @@ export async function listSampleCases(
       position: testCases.position,
       input: testCases.input,
       expectedOutput: testCases.expectedOutput,
+      variables: testCases.variables,
     })
     .from(testCases)
     .where(inArray(testCases.problemId, problemIds))
@@ -67,6 +74,7 @@ export async function listSampleCases(
       position: row.position,
       input: row.input,
       expectedOutput: row.expectedOutput,
+      variables: row.variables ?? null,
     });
     byProblem.set(row.problemId, list);
   }

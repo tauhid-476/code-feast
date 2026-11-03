@@ -6,10 +6,16 @@ import type { Language } from "@/lib/languages";
  * from `listContestProblems` and `listDrafts`, so it never carries Harness text.
  */
 
+export type TestCaseVariable = {
+  name: string;
+  value: string;
+};
+
 export type ContestSampleCaseView = {
   position: number;
   input: string;
   expectedOutput: string;
+  variables?: TestCaseVariable[] | null;
 };
 
 export type ContestStarterView = {

@@ -151,38 +151,17 @@ export function ContestTestPanel({
                 <span className="flex size-2 rounded-full bg-rose-500" />
               )
             ) : null}
-            {running ? <Spinner className="size-3" /> : null}
           </button>
         </div>
 
-        {/* Action Controls: Run + Collapse/Expand */}
-        <div className="flex items-center gap-2">
+        {/* Panel collapse toggle button */}
+        <div className="flex items-center gap-1">
           <Button
             type="button"
-            size="xs"
-            variant="outline"
-            disabled={running || !canRun}
-            onClick={() => {
-              onTabChange("result");
-              if (isCollapsed) onToggleCollapsed();
-              onRun();
-            }}
-            className="gap-1.5 font-medium"
-          >
-            {running ? (
-              <Spinner className="size-3" />
-            ) : (
-              <Play className="size-3 text-emerald-500 fill-emerald-500" />
-            )}
-            {running ? "Running" : "Run"}
-          </Button>
-
-          <Button
-            type="button"
-            size="icon-xs"
             variant="ghost"
+            size="icon"
             onClick={onToggleCollapsed}
-            aria-label={isCollapsed ? "Expand test panel" : "Collapse test panel"}
+            className="size-6 text-muted-foreground hover:text-foreground"
             title={isCollapsed ? "Expand panel" : "Collapse panel"}
           >
             {isCollapsed ? (
@@ -196,7 +175,7 @@ export function ContestTestPanel({
 
       {/* Panel Body Content (hidden when collapsed) */}
       {!isCollapsed ? (
-        <div className="flex-1 min-h-0 overflow-y-auto p-4 select-text">
+        <div className="flex-1 min-h-0 overflow-y-auto p-4">
           {activeTab === "testcase" ? (
             <TestcaseTabContent
               problem={problem}
@@ -242,11 +221,13 @@ function TestcaseTabContent({
   }
 
   const activeCase = cases[selectedCaseIndex] ?? cases[0];
+  const hasVariables =
+    Array.isArray(activeCase.variables) && activeCase.variables.length > 0;
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-3 select-text">
       {/* Case Pills */}
-      <div className="flex flex-wrap items-center gap-1.5">
+      <div className="flex flex-wrap items-center gap-1.5 select-none">
         {cases.map((sample, idx) => (
           <button
             key={sample.position}
@@ -264,22 +245,35 @@ function TestcaseTabContent({
         ))}
       </div>
 
-      {/* Case Input & Expected */}
+      {/* Case Variables / Input & Expected */}
       <div className="space-y-3 pt-1">
-        <div>
-          <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
-            Input
-          </span>
-          <pre className="mono mt-1 overflow-x-auto rounded-md border border-border bg-background p-2.5 text-xs text-foreground leading-relaxed whitespace-pre-wrap">
-            {activeCase.input || "(empty)"}
-          </pre>
-        </div>
+        {hasVariables ? (
+          activeCase.variables!.map((v, i) => (
+            <div key={i} className="space-y-1">
+              <span className="mono text-xs font-medium text-muted-foreground">
+                {v.name} =
+              </span>
+              <pre className="mono overflow-x-auto rounded-md border border-border bg-background/60 p-2.5 text-xs text-foreground leading-relaxed whitespace-pre-wrap">
+                {v.value || "(empty)"}
+              </pre>
+            </div>
+          ))
+        ) : (
+          <div>
+            <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
+              Input
+            </span>
+            <pre className="mono mt-1 overflow-x-auto rounded-md border border-border bg-background/60 p-2.5 text-xs text-foreground leading-relaxed whitespace-pre-wrap">
+              {activeCase.input || "(empty)"}
+            </pre>
+          </div>
+        )}
 
-        <div>
-          <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
-            Expected Output
+        <div className="space-y-1">
+          <span className="mono text-xs font-medium text-muted-foreground">
+            Expected =
           </span>
-          <pre className="mono mt-1 overflow-x-auto rounded-md border border-border bg-background p-2.5 text-xs text-foreground leading-relaxed whitespace-pre-wrap">
+          <pre className="mono overflow-x-auto rounded-md border border-border bg-background/60 p-2.5 text-xs text-foreground leading-relaxed whitespace-pre-wrap">
             {activeCase.expectedOutput || "(empty)"}
           </pre>
         </div>
@@ -400,25 +394,27 @@ function TestResultTabContent({
   return (
     <div className="flex flex-col gap-3">
       {/* LeetCode Style Verdict Header */}
-      <div className="flex flex-wrap items-baseline gap-3">
-        <span
-          className={cn(
-            "text-base font-bold tracking-tight",
-            isAccepted ? "text-emerald-500" : "text-rose-500",
-          )}
-        >
-          {isAccepted ? "Accepted" : "Wrong Answer"}
-        </span>
-        <span className="mono text-xs text-muted-foreground tabular">
-          Runtime: {totalRuntimeMs} ms
-        </span>
-        <span className="text-xs text-muted-foreground">
-          ({passedCount} of {cases.length} passed)
+      <div className="flex flex-wrap items-baseline justify-between gap-3 select-none">
+        <div className="flex items-baseline gap-3">
+          <span
+            className={cn(
+              "text-base font-bold tracking-tight",
+              isAccepted ? "text-emerald-500" : "text-rose-500",
+            )}
+          >
+            {isAccepted ? "Accepted" : "Wrong Answer"}
+          </span>
+          <span className="mono text-xs text-muted-foreground tabular">
+            Runtime: {totalRuntimeMs} ms
+          </span>
+        </div>
+        <span className="text-xs font-medium text-muted-foreground tabular">
+          Passed test cases: {passedCount} / {cases.length}
         </span>
       </div>
 
       {/* Case Pills */}
-      <div className="flex flex-wrap items-center gap-1.5">
+      <div className="flex flex-wrap items-center gap-1.5 select-none">
         {cases.map((c, idx) => {
           const isSelected = idx === selectedCaseIndex;
           return (
@@ -444,24 +440,26 @@ function TestResultTabContent({
         })}
       </div>
 
-      {/* Active Case Details: Input, Output, Expected, Stderr */}
-      <div className="space-y-2.5 pt-1">
+      {/* Active Case Details: Input, Your Output, Expected output, Stderr */}
+      <div className="space-y-3 pt-1 select-text">
         <div>
-          <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
-            Input
+          <span className="text-xs font-semibold text-muted-foreground">
+            Input:
           </span>
-          <pre className="mono mt-1 max-h-36 overflow-auto rounded-md border border-border bg-background p-2.5 text-xs text-foreground leading-relaxed whitespace-pre-wrap">
-            {activeCase.input || "(empty)"}
+          <pre className="mono mt-1 max-h-36 overflow-auto rounded-md border border-border bg-background/60 p-2.5 text-xs text-foreground leading-relaxed whitespace-pre-wrap">
+            {activeCase.variables && activeCase.variables.length > 0
+              ? activeCase.variables.map((v) => `${v.name}=${v.value}`).join("\n")
+              : activeCase.input || "(empty)"}
           </pre>
         </div>
 
         <div>
-          <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
-            Output
+          <span className="text-xs font-semibold text-muted-foreground">
+            Your Output:
           </span>
           <pre
             className={cn(
-              "mono mt-1 max-h-36 overflow-auto rounded-md border bg-background p-2.5 text-xs leading-relaxed whitespace-pre-wrap",
+              "mono mt-1 max-h-36 overflow-auto rounded-md border bg-background/60 p-2.5 text-xs leading-relaxed whitespace-pre-wrap",
               activeCase.pass
                 ? "border-border text-foreground"
                 : "border-rose-500/40 text-rose-400 bg-rose-500/5",
@@ -476,20 +474,20 @@ function TestResultTabContent({
         </div>
 
         <div>
-          <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
-            Expected
+          <span className="text-xs font-semibold text-muted-foreground">
+            Expected output:
           </span>
-          <pre className="mono mt-1 max-h-36 overflow-auto rounded-md border border-border bg-background p-2.5 text-xs text-foreground leading-relaxed whitespace-pre-wrap">
+          <pre className="mono mt-1 max-h-36 overflow-auto rounded-md border border-border bg-background/60 p-2.5 text-xs text-foreground leading-relaxed whitespace-pre-wrap">
             {activeCase.expected || "(empty)"}
           </pre>
         </div>
 
         {activeCase.stderr ? (
           <div>
-            <span className="text-[11px] font-medium text-rose-500 uppercase tracking-wider">
-              Stderr / Traceback
+            <span className="text-xs font-semibold text-rose-500">
+              Stderr / Traceback:
             </span>
-            <pre className="mono mt-1 max-h-40 overflow-auto rounded-md border border-rose-500/30 bg-background p-2.5 text-xs leading-relaxed text-rose-400 whitespace-pre-wrap break-words">
+            <pre className="mono mt-1 max-h-40 overflow-auto rounded-md border border-rose-500/30 bg-background/60 p-2.5 text-xs leading-relaxed text-rose-400 whitespace-pre-wrap break-words">
               {activeCase.stderr}
             </pre>
           </div>

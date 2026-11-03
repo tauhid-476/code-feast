@@ -428,34 +428,6 @@ export function ContestWorkspace({
               markdown={problem.statementMd}
               figures={figureDimensionsMap(problem.figures)}
             />
-
-            {problem.sampleCases.length > 0 ? (
-              <section className="mt-8 flex flex-col gap-3">
-                <h3 className="label">Sample test cases</h3>
-                {problem.sampleCases.map((sample) => (
-                  <div
-                    key={sample.position}
-                    className="rounded-lg border border-border bg-card p-3"
-                  >
-                    <p className="label">Sample {sample.position}</p>
-                    <dl className="mt-2 grid grid-cols-2 gap-3">
-                      <div>
-                        <dt className="label">Input</dt>
-                        <dd className="mono mt-1 max-h-32 overflow-auto text-xs whitespace-pre-wrap text-foreground">
-                          {sample.input}
-                        </dd>
-                      </div>
-                      <div>
-                        <dt className="label">Expected</dt>
-                        <dd className="mono mt-1 max-h-32 overflow-auto text-xs whitespace-pre-wrap text-foreground">
-                          {sample.expectedOutput}
-                        </dd>
-                      </div>
-                    </dl>
-                  </div>
-                ))}
-              </section>
-            ) : null}
           </article>
 
           {/* Secondary Navigation Footer at the bottom of the statement panel */}
@@ -520,7 +492,7 @@ export function ContestWorkspace({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent alignItemWithTrigger={false}>
-                  {availableLanguages.map((option) =>  (
+                  {availableLanguages.map((option) => (
                     <SelectItem key={option} value={option}>
                       {LANGUAGE_LABELS[option]}
                     </SelectItem>
@@ -540,7 +512,7 @@ export function ContestWorkspace({
                 onClick={handleRun}
                 className="gap-1.5 font-medium"
               >
-                {runState.running ?  (
+                {runState.running ? (
                   <Spinner className="size-3.5" />
                 ) : (
                   <Play className="size-3.5 text-emerald-500 fill-emerald-500" />

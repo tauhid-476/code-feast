@@ -61,6 +61,7 @@ export async function assembleRunProgram(
       position: testCases.position,
       input: testCases.input,
       expectedOutput: testCases.expectedOutput,
+      variables: testCases.variables,
     })
     .from(testCases)
     .where(eq(testCases.problemId, problemId))
@@ -69,7 +70,12 @@ export async function assembleRunProgram(
   return {
     language,
     source: appendHarness(code, pair.harnessCode),
-    sampleCases,
+    sampleCases: sampleCases.map((row) => ({
+      position: row.position,
+      input: row.input,
+      expectedOutput: row.expectedOutput,
+      variables: row.variables ?? null,
+    })),
   };
 }
 
