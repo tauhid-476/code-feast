@@ -166,7 +166,7 @@ export function LandingPage() {
                   {s.icon}
                 </div>
                 <CardTitle className="text-xl font-semibold">{s.title}</CardTitle>
-                <CardText className="text-sm leading-relaxed text-muted-foreground">{s.description}</CardText>
+                <CardText className="line-clamp-none text-sm leading-relaxed text-muted-foreground">{s.description}</CardText>
               </CardBody>
             </Card>
           ))}
