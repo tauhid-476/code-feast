@@ -40,10 +40,10 @@ export const FOOTER_SECTIONS: FooterSection[] = [
     title: 'Social',
     wide: true,
     links: [
-      { label: 'x.com', href: 'https://x.com/ChaiCodeHQ', external: true },
-      { label: 'GitHub', href: 'https://github.com/hiteshchoudhary', external: true },
-      { label: 'LinkedIn', href: 'https://www.linkedin.com/company/chaicodehq/', external: true },
-      { label: 'YouTube', href: 'https://www.youtube.com/@chaiaurcode', external: true },
+      { label: 'x.com', href: 'https://x.com/tauhid_khan476', external: true },
+      { label: 'GitHub', href: 'https://github.com/tauhid-476/code-feast', external: true },
+      { label: 'LinkedIn', href: 'https://www.linkedin.com/in/khan-tauhid-6a4664285', external: true },
+      { label: 'Discord', href: 'https://discord.com/khantauheed_768', external: true },
     ],
   },
 ]
@@ -62,7 +62,7 @@ export function PageShell({ children }: { children: React.ReactNode }) {
           links={NAV_LINKS}
         />
         <main className="flex flex-col gap-y-4 p-6 sm:p-12">{children}</main>
-        <Footer logo={<Logo />} sections={FOOTER_SECTIONS} />
+        <Footer logo={<Logo />} owner="CodeFeast" sections={FOOTER_SECTIONS} />
       </div>
     </div>
   )

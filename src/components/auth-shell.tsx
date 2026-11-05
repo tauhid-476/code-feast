@@ -61,7 +61,7 @@ export function AuthShell({
         </div>
       </main>
 
-      <footer className="px-6 py-6 text-center font-montserrat text-[13px] text-gray-500">© {new Date().getFullYear()} ChaiCode. All rights reserved.</footer>
+      <footer className="px-6 py-6 text-center font-montserrat text-[13px] text-gray-500">© {new Date().getFullYear()} CodeFeast. All rights reserved.</footer>
     </div>
   )
 }
