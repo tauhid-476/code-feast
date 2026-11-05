@@ -1,7 +1,9 @@
 'use client'
 
 import * as React from 'react'
+import { useRouter } from 'next/navigation'
 
+import { authClient } from '@/lib/auth/client'
 import { Highlight } from '@/components/ui/highlight'
 import {
   AuthLink,
@@ -16,6 +18,7 @@ import {
   TextInput,
   useAuthSubmit,
   type OAuthProvider,
+  type SubmitHandlerResult,
   type SubmitResult,
 } from '@/components/auth-shell'
 
@@ -23,29 +26,53 @@ const MIN_PASSWORD = 8
 
 /**
  * Create an account: name, email and a password of at least eight
- * characters, or Google and GitHub. Wire `onSubmit` to your auth provider;
- * return a message such as "That email already has an account" to show it.
+ * characters. Defaults to Neon Auth email & password.
  */
 export function SignUpPage({
   onSubmit,
   onOAuth,
-  providers = ['google', 'github'],
+  providers = [],
   signInHref = '/sign-in',
   termsHref = '/terms-of-service',
   privacyHref = '/privacy-policy',
 }: {
-  onSubmit?: (values: { name: string; email: string; password: string }) => SubmitResult
+  onSubmit?: (values: { name: string; email: string; password: string }) => SubmitHandlerResult
   onOAuth?: (provider: OAuthProvider) => void
   providers?: OAuthProvider[]
   signInHref?: string
   termsHref?: string
   privacyHref?: string
 }) {
+  const router = useRouter()
   const [name, setName] = React.useState('')
   const [email, setEmail] = React.useState('')
   const [password, setPassword] = React.useState('')
   const [errors, setErrors] = React.useState<{ name?: string; email?: string; password?: string }>({})
-  const { busy, error, run, fail } = useAuthSubmit(onSubmit && (() => onSubmit({ name: name.trim(), email: email.trim(), password })))
+
+  const defaultSubmit = React.useCallback(
+    async (values: { name: string; email: string; password: string }): Promise<SubmitResult> => {
+      try {
+        const result = await authClient.signUp.email({
+          email: values.email,
+          password: values.password,
+          name: values.name || values.email.split('@')[0],
+        })
+        if (result?.error) {
+          return result.error.message ?? 'Could not create account.'
+        }
+        router.push('/')
+        router.refresh()
+      } catch (err: unknown) {
+        return err instanceof Error
+          ? err.message
+          : 'Could not create account. Please try again.'
+      }
+    },
+    [router],
+  )
+
+  const activeSubmit = onSubmit ?? defaultSubmit
+  const { busy, error, run, fail } = useAuthSubmit(() => activeSubmit({ name: name.trim(), email: email.trim(), password }))
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault()

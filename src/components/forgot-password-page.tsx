@@ -3,6 +3,7 @@
 import { MailCheck } from 'lucide-react'
 import * as React from 'react'
 
+import { authClient } from '@/lib/auth/client'
 import {
   AuthLink,
   AuthShell,
@@ -12,6 +13,7 @@ import {
   SubmitButton,
   TextInput,
   useAuthSubmit,
+  type SubmitHandlerResult,
   type SubmitResult,
 } from '@/components/auth-shell'
 
@@ -24,13 +26,38 @@ export function ForgotPasswordPage({
   onSubmit,
   signInHref = '/sign-in',
 }: {
-  onSubmit?: (values: { email: string }) => SubmitResult
+  onSubmit?: (values: { email: string }) => SubmitHandlerResult
   signInHref?: string
 }) {
   const [email, setEmail] = React.useState('')
   const [fieldError, setFieldError] = React.useState<string>()
   const [sent, setSent] = React.useState(false)
-  const { busy, error, run } = useAuthSubmit(onSubmit && (() => onSubmit({ email: email.trim() })))
+
+  const defaultSubmit = React.useCallback(
+    async (values: { email: string }): Promise<SubmitResult> => {
+      try {
+        const redirectTo =
+          typeof window !== 'undefined'
+            ? `${window.location.origin}/reset-password`
+            : '/reset-password'
+        const result = await authClient.requestPasswordReset({
+          email: values.email,
+          redirectTo,
+        })
+        if (result?.error) {
+          return result.error.message ?? 'Could not send reset link. Please try again.'
+        }
+      } catch (err: unknown) {
+        return err instanceof Error
+          ? err.message
+          : 'Something went wrong. Please try again.'
+      }
+    },
+    [],
+  )
+
+  const activeSubmit = onSubmit ?? defaultSubmit
+  const { busy, error, run } = useAuthSubmit(() => activeSubmit({ email: email.trim() }))
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -56,7 +83,11 @@ export function ForgotPasswordPage({
           <p className="text-sm leading-relaxed text-neutral-700 dark:text-neutral-400">
             If <span className="font-medium text-foreground">{email.trim()}</span> has an account, a link to reset the password is on its way.
           </p>
-          <button type="button" onClick={() => setSent(false)} className="cursor-pointer text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">
+          <button
+            type="button"
+            onClick={() => setSent(false)}
+            className="cursor-pointer text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+          >
             Use a different email
           </button>
         </div>
@@ -76,7 +107,14 @@ export function ForgotPasswordPage({
     >
       <form onSubmit={submit} noValidate className="space-y-5">
         <Field label="Email" error={fieldError}>
-          <TextInput type="email" autoComplete="email" inputMode="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" />
+          <TextInput
+            type="email"
+            autoComplete="email"
+            inputMode="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="you@example.com"
+          />
         </Field>
         <FormError message={error} />
         <SubmitButton busy={busy} busyLabel="Sending the link">

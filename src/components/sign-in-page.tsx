@@ -1,7 +1,9 @@
 'use client'
 
 import * as React from 'react'
+import { useRouter } from 'next/navigation'
 
+import { authClient } from '@/lib/auth/client'
 import {
   AuthLink,
   AuthShell,
@@ -15,31 +17,55 @@ import {
   TextInput,
   useAuthSubmit,
   type OAuthProvider,
+  type SubmitHandlerResult,
   type SubmitResult,
 } from '@/components/auth-shell'
 
 /**
  * Sign in. Wire `onSubmit` and `onOAuth` to your auth provider (Better Auth,
- * Clerk, Supabase, your own API). Return a message from onSubmit to show it,
- * such as "That email and password do not match".
+ * Clerk, Supabase, your own API). Defaults to Neon Auth email & password.
  */
 export function SignInPage({
   onSubmit,
   onOAuth,
-  providers = ['google', 'github'],
+  providers = [],
   signUpHref = '/sign-up',
   forgotHref = '/forgot-password',
 }: {
-  onSubmit?: (values: { email: string; password: string }) => SubmitResult
+  onSubmit?: (values: { email: string; password: string }) => SubmitHandlerResult
   onOAuth?: (provider: OAuthProvider) => void
   providers?: OAuthProvider[]
   signUpHref?: string
   forgotHref?: string
 }) {
+  const router = useRouter()
   const [email, setEmail] = React.useState('')
   const [password, setPassword] = React.useState('')
   const [errors, setErrors] = React.useState<{ email?: string; password?: string }>({})
-  const { busy, error, run, fail } = useAuthSubmit(onSubmit && (() => onSubmit({ email: email.trim(), password })))
+
+  const defaultSubmit = React.useCallback(
+    async (values: { email: string; password: string }): Promise<SubmitResult> => {
+      try {
+        const result = await authClient.signIn.email({
+          email: values.email,
+          password: values.password,
+        })
+        if (result?.error) {
+          return result.error.message ?? 'Invalid email or password.'
+        }
+        router.push('/')
+        router.refresh()
+      } catch (err: unknown) {
+        return err instanceof Error
+          ? err.message
+          : 'Invalid email or password. If you do not have an account yet, please sign up first.'
+      }
+    },
+    [router],
+  )
+
+  const activeSubmit = onSubmit ?? defaultSubmit
+  const { busy, error, run, fail } = useAuthSubmit(() => activeSubmit({ email: email.trim(), password }))
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault()
