@@ -1,7 +1,7 @@
 # Verifying the production deploy
 
 The app is live. This is the walk-through that ticks the remaining boxes on
-[`18: Production deploy`](../.scratch/live-contest/issues/18-production-deploy.md).
+[`18: Production deploy`](./tickets/18-production-deploy.md).
 Everything under **Already verified** was checked against the live deployment;
 everything under **Your turn** needs a real browser session, a live sandbox, or
 your judgement.
@@ -17,7 +17,7 @@ your judgement.
 | Neon project | `misty-sound-19889374` (`code-feast`) |
 | Neon branch | `production` (`br-hidden-violet-b8o7atng`), endpoint `ep-spring-hall-b8rgovsv` |
 | Neon Auth base | `https://ep-spring-hall-b8rgovsv.neonauth.c-14.us-east-1.aws.neon.tech/neondb/auth` |
-| Organizer account | `tauheedxd90@gmail.com` — password in `/Users/khantauhid/coding/code-feast-notes/prod-organizer-credentials.md` (outside the repo) |
+| Organizer account | `organizer@example.com` — password in `/Users/khantauhid/coding/code-feast-notes/prod-organizer-credentials.md` (outside the repo) |
 | Env vars | 7 set for **Production** only: `DATABASE_URL`, `NEON_AUTH_BASE_URL`, `NEON_AUTH_JWKS_URL`, `NEON_AUTH_COOKIE_SECRET`, `ADMIN_EMAILS`, `E2B_API_KEY`, `E2B_TEMPLATE_ID` |
 
 `E2B_TEMPLATE_ID` is `cbhhpuy8mlv96jgoy8ho`, the JDK template. If a Java run
@@ -80,7 +80,7 @@ Work down the list. Each step says what "working" looks like.
 ### 1. Sign in and sign out
 
 1. Open <https://code-feast-chi.vercel.app/sign-in> and sign in as
-   `tauheedxd90@gmail.com`.
+   `organizer@example.com`.
 2. You should land on `/admin/events` with the organizer navigation.
 3. Sign out. You should land back on `/sign-in`, on the same host.
 

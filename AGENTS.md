@@ -12,7 +12,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 A platform for one live DSA contest. Read `SPEC.md` for behaviour, `GLOSSARY.md`
 for vocabulary, `docs/adr/` for the decisions behind the shape, and
-`.scratch/live-contest/issues/` for the work.
+`docs/tickets/` for the work.
 
 ## Stack
 
@@ -106,6 +106,6 @@ Do not mock Postgres. Mock only the E2B transport and browser APIs.
 
 ## Issue tracker
 
-Local markdown in `.scratch/live-contest/issues/`. A ticket is done when every
+Local markdown in `docs/tickets/`. A ticket is done when every
 checkbox is ticked and its `Status:` line reads `resolved`. Append a short
 `## Notes` entry with the commit and anything the next reader needs.

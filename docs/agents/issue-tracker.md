@@ -1,13 +1,13 @@
 # Issue tracker: local markdown
 
-Issues and the spec for this repo live as markdown files in `.scratch/`.
+Issues and the spec for this repo live as markdown files in `docs/`.
 
 ## Conventions
 
-- One feature per directory: `.scratch/<feature-slug>/`
-- The spec is `.scratch/<feature-slug>/spec.md` (this repo keeps the authored
+- One feature per directory: `docs/<feature-slug>/`
+- The spec is `docs/<feature-slug>/spec.md` (this repo keeps the authored
   spec at `SPEC.md` at the root and links it from the feature directory).
-- Tickets are one file per ticket at `.scratch/<feature-slug>/issues/<NN>-<slug>.md`.
+- Tickets are one file per ticket at `docs/tickets/<NN>-<slug>.md`.
 - Triage state is a `Status:` line near the top. Values: `needs-triage`,
   `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`, `resolved`.
 - A ticket is closed by ticking every checkbox, setting `Status: resolved`, and
@@ -18,7 +18,7 @@ Issues and the spec for this repo live as markdown files in `.scratch/`.
 
 ## When a skill says "publish to the issue tracker"
 
-Create a new file under `.scratch/<feature-slug>/issues/`.
+Create a new file under `docs/tickets/`.
 
 ## When a skill says "fetch the relevant ticket"
 

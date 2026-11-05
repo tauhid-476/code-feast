@@ -1,10 +1,10 @@
 import "./load-env";
 import { randomInt, randomUUID } from "node:crypto";
-import { getPool } from "@/lib/db/client";
 import { figuresStorageConfig } from "@/lib/env";
 import { CopyObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { Pool } from "pg";
 
-// Embedded exact snapshot of "Code Feast - MU" data as fallback
+// Embedded exact snapshot of "Code Feast - MU" data
 const BACKUP_EVENT_DATA = {
   title: "Code Feast - MU",
   durationMinutes: 90,
@@ -642,7 +642,7 @@ function generateCode(): string {
   return code;
 }
 
-async function getUniqueJoinCode(pool: ReturnType<typeof getPool>): Promise<string> {
+async function getUniqueJoinCode(pool: Pool): Promise<string> {
   for (let i = 0; i < 30; i++) {
     const code = generateCode();
     const existing = await pool.query(
@@ -657,7 +657,7 @@ async function getUniqueJoinCode(pool: ReturnType<typeof getPool>): Promise<stri
 }
 
 async function resolveOrganizerId(
-  pool: ReturnType<typeof getPool>,
+  pool: Pool,
   targetEmail: string,
 ): Promise<{ id: string; email: string }> {
   try {
@@ -672,8 +672,8 @@ async function resolveOrganizerId(
     console.warn("Could not query neon_auth.user, using fallback user ID:", (err as Error).message);
   }
 
-  // Fallback to the known user ID for tauheedxd90@gmail.com
-  return { id: "6c6d3de6-f224-4856-938a-b950dc75f0f7", email: targetEmail };
+  // Fallback placeholder user ID
+  return { id: "00000000-0000-0000-0000-000000000000", email: targetEmail };
 }
 
 async function copyS3Figure(
@@ -709,14 +709,27 @@ async function copyS3Figure(
 }
 
 async function main() {
-  const pool = getPool();
+  // Use UNPOOLED direct connection to bypass pgbouncer transaction pooling quirks, fallback to DATABASE_URL
+  const connString =
+    process.env.DATABASE_URL_UNPOOLED || process.env.DATABASE_URL;
+
+  if (!connString) {
+    throw new Error("Neither DATABASE_URL_UNPOOLED nor DATABASE_URL is set in environment.");
+  }
+
+  const pool = new Pool({
+    connectionString: connString,
+    max: 5,
+  });
+
   const targetEmail = process.argv.includes("--email")
     ? process.argv[process.argv.indexOf("--email") + 1]
-    : "tauheedxd90@gmail.com";
+    : process.env.ADMIN_EMAILS?.split(",")[0]?.trim() || "organizer@example.com";
 
-  console.log(`\n========================================`);
-  console.log(` Generating Test Event: "${BACKUP_EVENT_DATA.title}"`);
-  console.log(`========================================`);
+  console.log(`\n======================================================`);
+  console.log(` Generating Event: "${BACKUP_EVENT_DATA.title}"`);
+  console.log(` Target DB Host: ${new URL(connString).host}`);
+  console.log(`======================================================`);
 
   const organizer = await resolveOrganizerId(pool, targetEmail);
   console.log(` Organizer: ${organizer.email} (${organizer.id})`);
@@ -726,81 +739,13 @@ async function main() {
 
   const eventId = randomUUID();
   const now = new Date();
-
-  // Try to read live data from the existing "Code Feast - MU" in the DB if available
-  let eventData = BACKUP_EVENT_DATA;
-  try {
-    const existingEv = await pool.query(
-      `SELECT * FROM events WHERE title = $1 ORDER BY created_at DESC LIMIT 1`,
-      ["Code Feast - MU"],
-    );
-    if (existingEv.rowCount && existingEv.rows[0]) {
-      const srcId = existingEv.rows[0].id;
-      const probRows = (
-        await pool.query(`SELECT * FROM problems WHERE event_id = $1 ORDER BY position`, [srcId])
-      ).rows;
-
-      if (probRows.length > 0) {
-        const probIds = probRows.map((p) => p.id);
-        const starterRows = (
-          await pool.query(`SELECT * FROM problem_starters WHERE problem_id = ANY($1)`, [probIds])
-        ).rows;
-        const testCaseRows = (
-          await pool.query(
-            `SELECT * FROM test_cases WHERE problem_id = ANY($1) ORDER BY problem_id, position`,
-            [probIds],
-          )
-        ).rows;
-        const figureRows = (
-          await pool.query(`SELECT * FROM problem_figures WHERE problem_id = ANY($1)`, [probIds])
-        ).rows;
-
-        eventData = {
-          title: existingEv.rows[0].title,
-          durationMinutes: existingEv.rows[0].duration_minutes,
-          problems: probRows.map((p) => ({
-            position: p.position,
-            title: p.title,
-            difficulty: p.difficulty,
-            statementMd: p.statement_md,
-            starters: starterRows
-              .filter((s) => s.problem_id === p.id)
-              .map((s) => ({
-                language: s.language,
-                starterCode: s.starter_code,
-                harnessCode: s.harness_code,
-              })),
-            testCases: testCaseRows
-              .filter((tc) => tc.problem_id === p.id)
-              .map((tc) => ({
-                position: tc.position,
-                input: tc.input,
-                expectedOutput: tc.expected_output,
-                variables: tc.variables,
-              })),
-            figures: figureRows
-              .filter((f) => f.problem_id === p.id)
-              .map((f) => ({
-                oldId: f.id,
-                storageKey: f.storage_key,
-                contentType: f.content_type,
-                bytes: f.bytes,
-                width: f.width,
-                height: f.height,
-              })),
-          })),
-        };
-      }
-    }
-  } catch (err) {
-    console.log("Using embedded backup data for problem set.");
-  }
+  const eventData = BACKUP_EVENT_DATA;
 
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
 
-    // 1. Insert Event
+    // 1. Insert Event in 'draft' status
     await client.query(
       `INSERT INTO events (id, title, code, status, duration_minutes, created_by, created_at)
        VALUES ($1, $2, $3, 'draft', $4, $5, $6)`,
@@ -849,14 +794,14 @@ async function main() {
         }
       }
 
-      // Insert problem first
+      // Insert problem first (foreign key requirement)
       await client.query(
         `INSERT INTO problems (id, event_id, position, title, difficulty, statement_md, created_at)
          VALUES ($1, $2, $3, $4, $5, $6, $7)`,
         [problemId, eventId, prob.position, prob.title, prob.difficulty, updatedStatementMd, now],
       );
 
-      // Now insert figures because problem exists
+      // Now insert figures
       for (const fig of preparedFigures) {
         await client.query(
           `INSERT INTO problem_figures (id, problem_id, storage_key, content_type, bytes, width, height, state, created_at)
@@ -896,31 +841,42 @@ async function main() {
     }
 
     await client.query("COMMIT");
+    client.release();
 
-    console.log(`\n Event successfully created!`);
-    console.log(`========================================`);
+    // Verify presence in database
+    const verify = await pool.query(`SELECT id, code, status FROM events WHERE id = $1`, [eventId]);
+    if (verify.rowCount === 0) {
+      throw new Error("Event verification failed — event was not committed to the database.");
+    }
+
+    console.log(`\n Successfully committed and verified in DB!`);
+    console.log(`======================================================`);
     console.log(` Event Title:  ${eventData.title}`);
     console.log(` Join Code:    ${joinCode}`);
     console.log(` Status:       draft`);
     console.log(` Duration:     ${eventData.durationMinutes} minutes`);
     console.log(` Organizer:    ${organizer.email}`);
     console.log(` Problems:     ${eventData.problems.length} configured`);
-    console.log(`----------------------------------------`);
-    console.log(` View in Organizer UI:`);
-    console.log(`   http://localhost:3000/admin/events/${eventId}`);
-    console.log(` Start / Live Controls:`);
-    console.log(`   http://localhost:3000/admin/events/${eventId}/live`);
-    console.log(` Participant Join URL:`);
-    console.log(`   http://localhost:3000/join  (code: ${joinCode})`);
-    console.log(`========================================\n`);
+    console.log(`------------------------------------------------------`);
+    console.log(` PROD Vercel Links:`);
+    console.log(`   Dashboard:  https://code-feast-chi.vercel.app/admin/events/${eventId}`);
+    console.log(`   Live Clock: https://code-feast-chi.vercel.app/admin/events/${eventId}/live`);
+    console.log(`   Join Link:  https://code-feast-chi.vercel.app/join  (code: ${joinCode})`);
+    console.log(`------------------------------------------------------`);
+    console.log(` LOCAL Links:`);
+    console.log(`   Dashboard:  http://localhost:3000/admin/events/${eventId}`);
+    console.log(`   Live Clock: http://localhost:3000/admin/events/${eventId}/live`);
+    console.log(`   Join Link:  http://localhost:3000/join  (code: ${joinCode})`);
+    console.log(`======================================================\n`);
   } catch (error) {
-    await client.query("ROLLBACK");
-    console.error("Failed to generate event, transaction rolled back:", error);
-    process.exit(1);
-  } finally {
+    await client.query("ROLLBACK").catch(() => {});
     client.release();
-    process.exit(0);
+    console.error("Failed to generate event, transaction rolled back:", error);
+    await pool.end();
+    process.exit(1);
   }
+
+  await pool.end();
 }
 
 main().catch((err) => {

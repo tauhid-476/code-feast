@@ -33,7 +33,7 @@ export function organizerEmails(): string[] {
 }
 
 /**
- * `SUPER_ADMIN_EMAILS` defaults to `ADMIN_EMAILS` or tauheedxd90@gmail.com.
+ * `SUPER_ADMIN_EMAILS` defaults to `ADMIN_EMAILS`.
  * Only users in this list can access super-admin actions like whitelisting organizers.
  */
 export function superAdminEmails(): string[] {
@@ -49,7 +49,7 @@ export function superAdminEmails(): string[] {
       .map((email) => email.trim().toLowerCase())
       .filter(Boolean);
   }
-  return ["tauheedxd90@gmail.com"];
+  return [];
 }
 
 export function isSuperAdminEmail(email: string | null | undefined): boolean {
@@ -115,7 +115,7 @@ export function figuresStorageConfigured(): boolean {
 
 /**
  * Language vocabulary lives in a neutral module so client components can read
- * it without importing anything that touches `process.env`.
+ * it without importing anything that touches `process.env` rationale.
  */
 export {
   LANGUAGES,
