@@ -93,7 +93,7 @@ describe("ChaiUI Auth Pages rendering", () => {
     expect(html).toContain('href="https://x.com/tauhid_khan476"');
     expect(html).toContain('href="https://github.com/tauhid-476/code-feast"');
     expect(html).toContain('href="https://www.linkedin.com/in/khan-tauhid-6a4664285"');
-    expect(html).toContain('href="https://discord.com/khantauheed_768"');
+    expect(html).toContain('href="https://discord.com/users/997005691900416000"');
     expect(html).not.toContain("https://www.youtube.com/@chaiaurcode");
   });
 });

@@ -43,7 +43,7 @@ export const FOOTER_SECTIONS: FooterSection[] = [
       { label: 'x.com', href: 'https://x.com/tauhid_khan476', external: true },
       { label: 'GitHub', href: 'https://github.com/tauhid-476/code-feast', external: true },
       { label: 'LinkedIn', href: 'https://www.linkedin.com/in/khan-tauhid-6a4664285', external: true },
-      { label: 'Discord', href: 'https://discord.com/khantauheed_768', external: true },
+      { label: 'Discord', href: 'https://discord.com/users/997005691900416000', external: true },
     ],
   },
 ]
