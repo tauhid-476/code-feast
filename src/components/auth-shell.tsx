@@ -1,6 +1,7 @@
 'use client'
 
 import { Eye, EyeOff } from 'lucide-react'
+import Link from 'next/link'
 import * as React from 'react'
 
 import { cn } from '@/lib/utils'
@@ -22,7 +23,8 @@ import { Input } from '@/components/ui/input'
 export type OAuthProvider = 'google' | 'github'
 
 /** Returns nothing on success, or a message to show the person. */
-export type SubmitResult = void | string | Promise<void | string>
+export type SubmitResult = void | string | null | undefined
+export type SubmitHandlerResult = SubmitResult | Promise<SubmitResult>
 
 export function AuthShell({
   title,
@@ -39,16 +41,16 @@ export function AuthShell({
   homeHref?: string
 }) {
   return (
-    <div className="flex min-h-dvh flex-col">
+    <div className="relative isolate flex min-h-dvh flex-col">
       <Backdrop />
-      <header className="flex items-center justify-between px-6 py-5 sm:px-12">
-        <a href={homeHref} aria-label="Home" className="rounded-md outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50">
+      <header className="flex shrink-0 items-center justify-between px-6 py-5 sm:px-12">
+        <Link href={homeHref} aria-label="Home" className="rounded-md outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50">
           <Logo />
-        </a>
+        </Link>
         <ThemeSwitcher />
       </header>
 
-      <main className="flex flex-1 items-start justify-center px-6 pt-8 pb-16 sm:items-center sm:pt-0">
+      <main className="flex flex-1 items-start justify-center px-6 pt-8 pb-12 sm:items-center sm:py-0">
         <div className="w-full max-w-sm">
           <div className="mb-6 text-center">
             <h1 className="text-2xl font-medium tracking-tight sm:text-3xl">{title}</h1>
@@ -59,15 +61,16 @@ export function AuthShell({
         </div>
       </main>
 
-      <footer className="px-6 py-6 text-center font-montserrat text-[13px] text-gray-500">© {new Date().getFullYear()} ChaiCode. All rights reserved.</footer>
+      <footer className="shrink-0 px-6 py-4 text-center font-montserrat text-[13px] text-gray-500">© {new Date().getFullYear()} CodeFeast. All rights reserved.</footer>
     </div>
   )
 }
 
 /** A text link in auth copy: quiet until hovered, then the brand colour. */
-export function AuthLink({ className, ...props }: React.ComponentProps<'a'>) {
+export function AuthLink({ className, href, ...props }: React.ComponentProps<typeof Link>) {
   return (
-    <a
+    <Link
+      href={href}
       className={cn('font-medium text-foreground underline-offset-4 transition-colors duration-200 hover:text-brand hover:underline focus-visible:underline', className)}
       {...props}
     />
@@ -181,7 +184,7 @@ export function oauthHandler(onOAuth: ((p: OAuthProvider) => void) | undefined, 
  * Runs a submit handler with a busy flag and a form-level error. Without a
  * handler it says so, rather than pretending to sign anyone in.
  */
-export function useAuthSubmit(handler?: () => SubmitResult) {
+export function useAuthSubmit(handler?: () => SubmitHandlerResult) {
   const [busy, setBusy] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
   const run = async () => {

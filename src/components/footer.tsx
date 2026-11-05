@@ -14,7 +14,7 @@ export type FooterSection = { title: string; links: FooterLink[]; /** Two column
 export function Footer({
   logo,
   tagline = 'Home for Programmers',
-  owner = 'ChaiCode',
+  owner = 'CodeFeast',
   sections,
   className,
 }: {
