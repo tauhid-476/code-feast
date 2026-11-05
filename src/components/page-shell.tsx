@@ -50,7 +50,7 @@ export const FOOTER_SECTIONS: FooterSection[] = [
 
 export function PageShell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-dvh">
+    <div className="relative isolate min-h-dvh">
       <Backdrop />
       <div className="sm:max-w-6xl lg:mx-auto">
         <Navbar

@@ -41,16 +41,16 @@ export function AuthShell({
   homeHref?: string
 }) {
   return (
-    <div className="flex min-h-dvh flex-col">
+    <div className="relative isolate flex min-h-dvh flex-col">
       <Backdrop />
-      <header className="flex items-center justify-between px-6 py-5 sm:px-12">
+      <header className="flex shrink-0 items-center justify-between px-6 py-5 sm:px-12">
         <Link href={homeHref} aria-label="Home" className="rounded-md outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50">
           <Logo />
         </Link>
         <ThemeSwitcher />
       </header>
 
-      <main className="flex flex-1 items-start justify-center px-6 pt-8 pb-16 sm:items-center sm:pt-0">
+      <main className="flex flex-1 items-start justify-center px-6 pt-8 pb-12 sm:items-center sm:py-0">
         <div className="w-full max-w-sm">
           <div className="mb-6 text-center">
             <h1 className="text-2xl font-medium tracking-tight sm:text-3xl">{title}</h1>
@@ -61,7 +61,7 @@ export function AuthShell({
         </div>
       </main>
 
-      <footer className="px-6 py-6 text-center font-montserrat text-[13px] text-gray-500">© {new Date().getFullYear()} CodeFeast. All rights reserved.</footer>
+      <footer className="shrink-0 px-6 py-4 text-center font-montserrat text-[13px] text-gray-500">© {new Date().getFullYear()} CodeFeast. All rights reserved.</footer>
     </div>
   )
 }
